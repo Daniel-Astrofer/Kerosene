@@ -1,13 +1,15 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/theme/app_animations.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
@@ -36,9 +38,9 @@ class WalletFlowSelector extends ConsumerStatefulWidget {
 }
 
 class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
-  static const Color _background = Color(0xFF000000);
-  static const Color _text = Color(0xFFFFFFFF);
-  static const Color _muted = Color(0xFFA1A1A1);
+  static const Color _background = AppColors.hexFF000000;
+  static const Color _text = AppColors.hexFFFFFFFF;
+  static const Color _muted = AppColors.hexFFA1A1A1;
 
   Wallet? _selectedWallet;
 
@@ -93,7 +95,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
                   ? IconButton(
                       onPressed:
                           widget.onBack ?? () => Navigator.maybePop(context),
-                      icon: const Icon(LucideIcons.arrowLeft, size: 22),
+                      icon: const Icon(KeroseneIcons.back, size: 22),
                       tooltip: context.tr.authBackAction,
                       style: IconButton.styleFrom(
                         foregroundColor: _text,
@@ -108,7 +110,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
               textAlign: TextAlign.center,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.ibmPlexSerif(
+              style: AppTypography.newsreader(
                 color: _text,
                 fontSize: 24,
                 fontWeight: FontWeight.w600,
@@ -132,10 +134,9 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           child: CircularProgressIndicator(color: _text),
         ),
       WalletError(:final message) => _buildError(context, message),
-      WalletLoaded(:final wallets) =>
-        wallets.where((wallet) => wallet.isActive).isEmpty
-            ? _buildEmpty(context)
-            : _buildWalletGrid(context, walletState),
+      WalletLoaded(:final wallets) => wallets.isEmpty
+          ? _buildEmpty(context)
+          : _buildWalletGrid(context, walletState),
     };
   }
 
@@ -145,12 +146,12 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
       child: Column(
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
-          const Icon(LucideIcons.alertCircle, color: _muted, size: 34),
+          const Icon(KeroseneIcons.warning, color: _muted, size: 34),
           const SizedBox(height: 16),
           Text(
             context.tr.walletSelectorLoadErrorTitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _text,
               fontSize: 28,
               fontWeight: FontWeight.w600,
@@ -169,7 +170,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           const SizedBox(height: 24),
           TextButton.icon(
             onPressed: () => ref.read(walletProvider.notifier).refresh(),
-            icon: const Icon(LucideIcons.refreshCw, size: 18),
+            icon: const Icon(KeroseneIcons.refresh, size: 18),
             label: Text(context.tr.walletSelectorRetry),
           ),
         ],
@@ -194,8 +195,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
   }
 
   Widget _buildWalletGrid(BuildContext context, WalletLoaded walletState) {
-    final wallets =
-        walletState.wallets.where((wallet) => wallet.isActive).toList();
+    final wallets = walletState.wallets.toList();
     final selectedWallet = _resolveSelectedWallet(
       walletState.copyWith(wallets: wallets),
     );
@@ -206,9 +206,9 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
       child: Stack(
         children: [
           Positioned.fill(
-            child: wallets.length <= 2
+            child: wallets.length <= 3
                 ? _buildTwoWalletLayout(wallets, selectedWallet)
-                : _buildMultiWalletGrid(wallets, selectedWallet),
+                : _buildVerticalWalletList(wallets, selectedWallet),
           ),
           Positioned(
             left: 0,
@@ -235,9 +235,14 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
               wallet: wallets[index],
               selected: _sameWallet(wallets[index], selectedWallet),
               showLeftBorder: index > 0,
+              listLayout: false,
               onTap: () => _select(wallets[index]),
             )
-                .animate(delay: Duration(milliseconds: 60 * index))
+                .animate(
+                    delay: KeroseneMotion.stagger(
+                  index,
+                  step: KeroseneMotion.listStagger,
+                ))
                 .fade(
                   duration: AppAnimations.emphasized,
                   curve: AppAnimations.standardCurve,
@@ -253,47 +258,40 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
     );
   }
 
-  Widget _buildMultiWalletGrid(List<Wallet> wallets, Wallet? selectedWallet) {
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final crossAxisCount = constraints.maxWidth < 330 ? 1 : 2;
-        final tileWidth = constraints.maxWidth / crossAxisCount;
-        final aspectRatio = (tileWidth / 292.0).clamp(0.56, 1.08).toDouble();
-
-        return GridView.builder(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          padding: const EdgeInsets.only(bottom: 112),
-          gridDelegate: SliverGridDelegateWithFixedCrossAxisCount(
-            crossAxisCount: crossAxisCount,
-            mainAxisSpacing: 0,
-            crossAxisSpacing: 0,
-            childAspectRatio: aspectRatio,
-          ),
-          itemCount: wallets.length,
-          itemBuilder: (context, index) {
-            final wallet = wallets[index];
-            final selected = _sameWallet(wallet, selectedWallet);
-            return _WalletFlowTile(
-              wallet: wallet,
-              selected: selected,
-              showLeftBorder: crossAxisCount > 1 && index.isOdd,
-              onTap: () => _select(wallet),
+  Widget _buildVerticalWalletList(
+      List<Wallet> wallets, Wallet? selectedWallet) {
+    return ListView.separated(
+      physics: const BouncingScrollPhysics(
+        parent: AlwaysScrollableScrollPhysics(),
+      ),
+      padding: const EdgeInsets.only(bottom: 112),
+      itemCount: wallets.length,
+      separatorBuilder: (_, __) => const SizedBox(height: 12),
+      itemBuilder: (context, index) {
+        final wallet = wallets[index];
+        final selected = _sameWallet(wallet, selectedWallet);
+        return _WalletFlowTile(
+          wallet: wallet,
+          selected: selected,
+          showLeftBorder: true,
+          listLayout: true,
+          onTap: () => _select(wallet),
+        )
+            .animate(
+                delay: KeroseneMotion.stagger(
+              index,
+              step: KeroseneMotion.compactStagger,
+            ))
+            .fade(
+              duration: AppAnimations.emphasized,
+              curve: AppAnimations.standardCurve,
             )
-                .animate(delay: Duration(milliseconds: 45 * index))
-                .fade(
-                  duration: AppAnimations.emphasized,
-                  curve: AppAnimations.standardCurve,
-                )
-                .slideY(
-                  begin: 0.04,
-                  end: 0,
-                  duration: AppAnimations.emphasized,
-                  curve: AppAnimations.emphasizedCurve,
-                );
-          },
-        );
+            .slideY(
+              begin: 0.03,
+              end: 0,
+              duration: AppAnimations.emphasized,
+              curve: AppAnimations.emphasizedCurve,
+            );
       },
     );
   }
@@ -352,8 +350,8 @@ class _ContinueOverlay extends StatelessWidget {
     required this.onPressed,
   });
 
-  static const Color _background = Color(0xFF000000);
-  static const Color _text = Color(0xFFFFFFFF);
+  static const Color _background = AppColors.hexFF000000;
+  static const Color _text = AppColors.hexFFFFFFFF;
 
   @override
   Widget build(BuildContext context) {
@@ -401,26 +399,29 @@ class _WalletFlowTile extends StatelessWidget {
   final Wallet wallet;
   final bool selected;
   final bool showLeftBorder;
+  final bool listLayout;
   final VoidCallback onTap;
 
   const _WalletFlowTile({
     required this.wallet,
     required this.selected,
     required this.showLeftBorder,
+    required this.listLayout,
     required this.onTap,
   });
 
-  static const Color _background = Color(0xFF000000);
-  static const Color _surface = Color(0xFF1A1A1A);
-  static const Color _surfaceHigh = Color(0xFF2A2A2A);
-  static const Color _border = Color(0xFF333333);
-  static const Color _text = Color(0xFFFFFFFF);
-  static const Color _muted = Color(0xFFA1A1A1);
+  static const Color _background = AppColors.hexFF000000;
+  static const Color _surface = AppColors.hexFF1A1A1A;
+  static const Color _surfaceHigh = AppColors.hexFF2A2A2A;
+  static const Color _border = AppColors.hexFF333333;
+  static const Color _text = AppColors.hexFFFFFFFF;
+  static const Color _muted = AppColors.hexFFA1A1A1;
 
   @override
   Widget build(BuildContext context) {
     final foreground = selected ? _background : _text;
     final muted = selected ? _background.withValues(alpha: 0.68) : _muted;
+    final balanceLabel = '${wallet.balance.toStringAsFixed(6)} BTC';
 
     return Semantics(
       key: ValueKey('wallet-flow-tile-${wallet.id}'),
@@ -440,7 +441,12 @@ class _WalletFlowTile extends StatelessWidget {
             child: AnimatedContainer(
               duration: AppAnimations.emphasized,
               curve: AppAnimations.standardCurve,
-              padding: const EdgeInsets.fromLTRB(20, 28, 20, 24),
+              padding: EdgeInsets.fromLTRB(
+                20,
+                listLayout ? 22 : 28,
+                20,
+                listLayout ? 20 : 24,
+              ),
               decoration: BoxDecoration(
                 color: selected ? _text : _surface,
                 border: Border(
@@ -467,60 +473,62 @@ class _WalletFlowTile extends StatelessWidget {
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                mainAxisSize: listLayout ? MainAxisSize.min : MainAxisSize.max,
                 children: [
                   const SizedBox(height: 2),
-                  Flexible(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        AnimatedContainer(
-                          duration: AppAnimations.emphasized,
-                          curve: AppAnimations.standardCurve,
-                          width: 64,
-                          height: 64,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selected
-                                ? _background.withValues(alpha: 0.10)
-                                : _surfaceHigh,
-                          ),
-                          child: Icon(
-                            _walletIcon(wallet),
-                            color: foreground,
-                            size: 30,
-                          ),
+                  Column(
+                    mainAxisAlignment: MainAxisAlignment.center,
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      AnimatedContainer(
+                        duration: AppAnimations.emphasized,
+                        curve: AppAnimations.standardCurve,
+                        width: 64,
+                        height: 64,
+                        decoration: BoxDecoration(
+                          shape: BoxShape.circle,
+                          color: selected
+                              ? _background.withValues(alpha: 0.10)
+                              : _surfaceHigh,
                         ),
-                        const SizedBox(height: 18),
-                        Text(
-                          _displayName(wallet.name),
-                          textAlign: TextAlign.center,
-                          maxLines: 2,
-                          overflow: TextOverflow.ellipsis,
-                          style: GoogleFonts.ibmPlexSerif(
-                            color: foreground,
-                            fontSize: 22,
-                            fontWeight: FontWeight.w700,
-                            height: 1.05,
-                            letterSpacing: 0,
-                          ),
+                        child: Icon(
+                          _walletIcon(wallet),
+                          color: foreground,
+                          size: 30,
                         ),
-                        const SizedBox(height: 9),
-                        Text(
-                          _modeLabel(wallet),
-                          textAlign: TextAlign.center,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style:
-                              Theme.of(context).textTheme.labelSmall?.copyWith(
-                                    color: muted,
-                                    fontSize: 10,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 1.2,
-                                  ),
+                      ),
+                      SizedBox(height: listLayout ? 14 : 18),
+                      Text(
+                        _displayName(wallet.name),
+                        textAlign: TextAlign.center,
+                        maxLines: 2,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.newsreader(
+                          color: foreground,
+                          fontSize: 22,
+                          fontWeight: FontWeight.w700,
+                          height: 1.05,
+                          letterSpacing: 0,
                         ),
-                      ],
-                    ),
+                      ),
+                      const SizedBox(height: 9),
+                      Text(
+                        _modeLabel(wallet),
+                        textAlign: TextAlign.center,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                              color: muted,
+                              fontSize: 10,
+                              fontWeight: FontWeight.w800,
+                              letterSpacing: 1.2,
+                            ),
+                      ),
+                    ],
                   ),
+                  if (listLayout) ...[
+                    const SizedBox(height: 14),
+                  ],
                   Column(
                     children: [
                       Text(
@@ -537,16 +545,18 @@ class _WalletFlowTile extends StatelessWidget {
                       FittedBox(
                         fit: BoxFit.scaleDown,
                         child: Text(
-                          '${wallet.balance.toStringAsFixed(6)} BTC',
+                          balanceLabel,
                           maxLines: 1,
-                          style:
-                              Theme.of(context).textTheme.bodyMedium?.copyWith(
-                                    color: foreground,
-                                    fontFamily: 'IBMPlexSansHebrew',
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    letterSpacing: 0,
-                                  ),
+                          style: Theme.of(context)
+                              .textTheme
+                              .bodyMedium
+                              ?.copyWith(
+                                color: foreground,
+                                fontFamily: AppTypography.financialFontFamily,
+                                fontSize: 16,
+                                fontWeight: FontWeight.w800,
+                                letterSpacing: 0,
+                              ),
                         ),
                       ),
                     ],
@@ -561,14 +571,10 @@ class _WalletFlowTile extends StatelessWidget {
   }
 
   static IconData _walletIcon(Wallet wallet) {
-    final mode = wallet.walletMode.trim().toUpperCase();
-    if (wallet.isSelfCustody ||
-        mode.contains('COLD') ||
-        mode.contains('ONCHAIN') ||
-        mode.contains('ON_CHAIN')) {
-      return LucideIcons.snowflake;
+    if (wallet.isColdWallet || wallet.isCustodialOnchain) {
+      return KeroseneIcons.coldWallet;
     }
-    return LucideIcons.wallet;
+    return KeroseneIcons.wallet;
   }
 
   static String _displayName(String value) {
@@ -580,11 +586,6 @@ class _WalletFlowTile extends StatelessWidget {
   }
 
   static String _modeLabel(Wallet wallet) {
-    final mode = wallet.walletMode.trim();
-    if (mode.isEmpty) return 'KEROSENE';
-    final normalized = mode.replaceAll('_', ' ').toUpperCase();
-    if (normalized.contains('COLD')) return 'COLD WALLET';
-    if (wallet.isSelfCustody) return 'SELF CUSTODY';
-    return normalized;
+    return wallet.custodyDisplayLabel;
   }
 }

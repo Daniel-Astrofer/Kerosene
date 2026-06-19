@@ -1,5 +1,4 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import '../providers/appearance_provider.dart';
 import 'app_colors.dart';
@@ -171,23 +170,24 @@ class AppTheme {
         selectionColor: onSurface.withValues(alpha: 0.18),
         selectionHandleColor: onSurface,
       ),
-      // Base TextTheme: Inter for body/labels. Headings are mapped through
-      // AppTypography to IBM Plex Serif and IBM Plex Sans Hebrew.
-      textTheme: GoogleFonts.interTextTheme(baseTextTheme).copyWith(
-        displayLarge: AppTypography.h1.copyWith(color: onSurface),
-        displayMedium: AppTypography.h1.copyWith(color: onSurface),
+      // Base TextTheme: Inter for body/labels.
+      // Display and hero moments use Newsreader.
+      // Financial and technical values use IBM Plex Mono with tabular figures.
+      textTheme: AppTypography.interTextTheme(baseTextTheme).copyWith(
+        displayLarge: AppTypography.displayLarge.copyWith(color: onSurface),
+        displayMedium: AppTypography.display.copyWith(color: onSurface),
         displaySmall: AppTypography.h2.copyWith(color: onSurface),
-        headlineLarge: AppTypography.h1.copyWith(color: onSurface),
+        headlineLarge: AppTypography.display.copyWith(color: onSurface),
         headlineMedium: AppTypography.h2.copyWith(color: onSurface),
         headlineSmall: AppTypography.h3.copyWith(color: onSurface),
         titleLarge: AppTypography.h2.copyWith(color: onSurface),
         titleMedium: AppTypography.h3.copyWith(color: onSurface),
-        titleSmall: AppTypography.bodyLarge.copyWith(color: onSurface),
+        titleSmall: AppTypography.descriptionStrong.copyWith(color: onSurface),
         bodyLarge: AppTypography.bodyLarge.copyWith(color: onSurface),
         bodyMedium: AppTypography.bodyMedium.copyWith(color: onSurface),
         bodySmall: AppTypography.bodySmall.copyWith(color: onSurfaceVariant),
         labelLarge: AppTypography.buttonText.copyWith(color: onSurface),
-        labelMedium: AppTypography.caption.copyWith(color: onSurfaceVariant),
+        labelMedium: AppTypography.captionLarge.copyWith(color: onSurfaceVariant),
         labelSmall: AppTypography.caption.copyWith(color: onSurfaceVariant),
       ),
       inputDecorationTheme: InputDecorationTheme(

@@ -2,6 +2,8 @@ import 'dart:math' as math;
 import 'dart:ui' as ui;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 import 'kerosene_logo.dart';
 
@@ -37,7 +39,7 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2600),
+      duration: KeroseneMotion.ceremonial,
     )..repeat();
   }
 
@@ -60,9 +62,12 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
       widget.logoSize,
       math.max(148.0, availableWidth * 0.58),
     );
+    final foregroundColor = widget.isError
+        ? KeroseneBrandTokens.error
+        : KeroseneBrandTokens.textPrimary;
 
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: KeroseneBrandTokens.background,
       body: SafeArea(
         child: Center(
           child: SizedBox(
@@ -83,7 +88,7 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
                       opacity: 0.10,
                       child: KeroseneLogo(
                         size: logoSize,
-                        color: Colors.white,
+                        color: KeroseneBrandTokens.textPrimary,
                       ),
                     ),
                     ClipPath(
@@ -104,15 +109,13 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
                                 ),
                                 child: KeroseneLogo(
                                   size: logoSize,
-                                  color: const Color(0xFF00E5BC),
+                                  color: KeroseneBrandTokens.info,
                                 ),
                               ),
                             ),
                           KeroseneLogo(
                             size: logoSize,
-                            color: widget.isError
-                                ? const Color(0xFFFF5A5F)
-                                : Colors.white,
+                            color: foregroundColor,
                           ),
                         ],
                       ),
@@ -129,14 +132,14 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
 
   double _revealProgress(double value) {
     if (value < 0.56) {
-      return Curves.easeInOutCubic.transform(value / 0.56);
+      return KeroseneMotion.standard.transform(value / 0.56);
     }
     return 1.0;
   }
 
   double _eraseProgress(double value) {
     if (value < 0.74) return 0.0;
-    return Curves.easeInOutCubic.transform((value - 0.74) / 0.26);
+    return KeroseneMotion.standard.transform((value - 0.74) / 0.26);
   }
 
   double _glowOpacity(double value) {
@@ -169,7 +172,10 @@ class _DiagonalLogoClipper extends CustomClipper<Path> {
     final visible = Path.combine(PathOperation.difference, revealed, erased);
 
     return Path.combine(
-        PathOperation.intersect, Path()..addRect(bounds), visible);
+      PathOperation.intersect,
+      Path()..addRect(bounds),
+      visible,
+    );
   }
 
   Path _diagonalHalfPlane(Size size, double edge) {

@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 
 class AnimatedLoadingButton extends StatefulWidget {
@@ -33,13 +34,14 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
+      duration: KeroseneMotion.calm,
     )..repeat(reverse: true);
 
     _glowAnimation = Tween<double>(
       begin: 0.2,
       end: 0.8,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard));
   }
 
   @override
@@ -58,7 +60,7 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
     });
 
     if (widget.loadingTexts.length > 1) {
-      _timer = Timer.periodic(const Duration(milliseconds: 1800), (timer) {
+      _timer = Timer.periodic(KeroseneMotion.loop, (timer) {
         if (!mounted) return;
         setState(() {
           _currentTextIndex =
@@ -84,7 +86,7 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
   @override
   Widget build(BuildContext context) {
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 300),
+      duration: KeroseneMotion.medium,
       width: double.infinity,
       height: 56,
       decoration: BoxDecoration(
@@ -129,7 +131,7 @@ class _AnimatedLoadingButtonState extends State<AnimatedLoadingButton>
             ),
             const SizedBox(width: 12),
             AnimatedSwitcher(
-              duration: const Duration(milliseconds: 400),
+              duration: KeroseneMotion.long,
               child: Text(
                 widget.loadingTexts[_currentTextIndex],
                 key: ValueKey<int>(_currentTextIndex),

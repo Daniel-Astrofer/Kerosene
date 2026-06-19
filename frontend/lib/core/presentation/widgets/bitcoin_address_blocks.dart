@@ -20,8 +20,8 @@ List<String> splitBitcoinAddress(
 class BitcoinAddressBlocks extends StatelessWidget {
   final String address;
   final TextStyle? style;
-  final Color backgroundColor;
-  final Color borderColor;
+  final Color? backgroundColor;
+  final Color? borderColor;
   final EdgeInsetsGeometry padding;
   final int chunkSize;
 
@@ -29,8 +29,8 @@ class BitcoinAddressBlocks extends StatelessWidget {
     super.key,
     required this.address,
     this.style,
-    this.backgroundColor = const Color(0xFF141414),
-    this.borderColor = const Color(0xFF262626),
+    this.backgroundColor,
+    this.borderColor,
     this.padding = const EdgeInsets.symmetric(horizontal: 7, vertical: 5),
     this.chunkSize = 4,
   });
@@ -38,6 +38,11 @@ class BitcoinAddressBlocks extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final chunks = splitBitcoinAddress(address, chunkSize: chunkSize);
+    final colorScheme = Theme.of(context).colorScheme;
+    final resolvedBackgroundColor =
+        backgroundColor ?? colorScheme.surfaceContainerHighest;
+    final resolvedBorderColor = borderColor ?? colorScheme.outlineVariant;
+
     return SelectionArea(
       child: Wrap(
         alignment: WrapAlignment.center,
@@ -47,8 +52,8 @@ class BitcoinAddressBlocks extends StatelessWidget {
           for (final chunk in chunks)
             DecoratedBox(
               decoration: BoxDecoration(
-                color: backgroundColor,
-                border: Border.all(color: borderColor),
+                color: resolvedBackgroundColor,
+                border: Border.all(color: resolvedBorderColor),
               ),
               child: Padding(
                 padding: padding,

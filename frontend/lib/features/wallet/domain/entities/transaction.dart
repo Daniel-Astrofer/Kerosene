@@ -122,25 +122,6 @@ final class Transaction extends Equatable {
   /// Verifica se a transação está pendente
   bool get isPending => status == TransactionStatus.pending;
 
-  bool get canCancelPendingReceive {
-    final rawStatus = (externalTransferStatus ?? '').toUpperCase();
-    final rawType = (externalTransferType ?? '').toUpperCase();
-    final hasOnchainActivity =
-        (blockchainTxid ?? '').trim().isNotEmpty || confirmations > 0;
-    final isReceiveLike =
-        type == TransactionType.deposit || type == TransactionType.receive;
-    final isInboundTransfer = rawType == 'ADDRESS_ISSUE' ||
-        rawType == 'ONRAMP_PURCHASE' ||
-        rawType == 'INBOUND_INVOICE' ||
-        rawType.isEmpty;
-    return (externalTransferId ?? '').trim().isNotEmpty &&
-        isReceiveLike &&
-        isInboundTransfer &&
-        rawStatus == 'PENDING' &&
-        status == TransactionStatus.pending &&
-        !hasOnchainActivity;
-  }
-
   Map<String, dynamic> toJson() {
     return {
       'id': id,

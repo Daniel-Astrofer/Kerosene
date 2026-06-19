@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
@@ -67,7 +67,7 @@ class AmountInputPad extends StatelessWidget {
             children: [
               _buildKey('.'),
               _buildKey('0'),
-              _buildActionKey(LucideIcons.delete, onBackspace),
+              _buildActionKey(KeroseneIcons.backspace, onBackspace),
             ],
           ),
         ],
@@ -102,7 +102,7 @@ class AmountInputPad extends StatelessWidget {
               style: AppTypography.h3.copyWith(
                 color: Colors.white,
                 fontWeight: FontWeight.w300,
-                fontFamily: 'IBMPlexSansHebrew',
+                fontFamily: AppTypography.financialFontFamily,
               ),
             ),
           ),

@@ -6,7 +6,7 @@ import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/transactions/presentation/screens/deposits_screen.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 
 void main() {
@@ -88,7 +88,7 @@ void main() {
     expect(find.text('Lightning'), findsOneWidget);
     expect(find.text('Onchain'), findsOneWidget);
 
-    await tester.tap(find.byIcon(LucideIcons.search));
+    await tester.tap(find.byIcon(KeroseneIcons.search));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'lightning');
     await tester.pumpAndSettle();
@@ -101,7 +101,7 @@ void main() {
   testWidgets('empty statement search can clear filters', (tester) async {
     await pumpStatement(tester, [onchain, lightning]);
 
-    await tester.tap(find.byIcon(LucideIcons.search));
+    await tester.tap(find.byIcon(KeroseneIcons.search));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'no matching tx');
     await tester.pumpAndSettle();
@@ -124,21 +124,21 @@ void main() {
       (tester) async {
     await pumpStatement(tester, [onchain, lightning]);
 
-    await tester.tap(find.byIcon(LucideIcons.search));
+    await tester.tap(find.byIcon(KeroseneIcons.search));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'lightning');
     await tester.pumpAndSettle();
 
     expect(find.text('Lightning'), findsOneWidget);
     expect(find.text('Onchain'), findsNothing);
-    expect(find.byIcon(LucideIcons.x), findsOneWidget);
+    expect(find.byIcon(KeroseneIcons.close), findsOneWidget);
 
-    await tester.tap(find.byIcon(LucideIcons.x));
+    await tester.tap(find.byIcon(KeroseneIcons.close));
     await tester.pumpAndSettle();
 
     final field = tester.widget<TextField>(find.byType(TextField));
     expect(field.controller?.text, isEmpty);
-    expect(find.byIcon(LucideIcons.x), findsNothing);
+    expect(find.byIcon(KeroseneIcons.close), findsNothing);
     expect(find.text('Lightning'), findsOneWidget);
     expect(find.text('Onchain'), findsOneWidget);
     expect(tester.takeException(), isNull);
@@ -148,20 +148,20 @@ void main() {
       (tester) async {
     await pumpStatement(tester, [onchain, lightning]);
 
-    await tester.tap(find.byIcon(LucideIcons.search));
+    await tester.tap(find.byIcon(KeroseneIcons.search));
     await tester.pumpAndSettle();
     await tester.enterText(find.byType(TextField), 'lightning');
     await tester.pumpAndSettle();
 
     expect(find.text('Onchain'), findsNothing);
 
-    await tester.tap(find.byIcon(LucideIcons.chevronLeft));
+    await tester.tap(find.byIcon(KeroseneIcons.chevronLeft));
     await tester.pumpAndSettle();
 
     expect(find.text('Lightning'), findsOneWidget);
     expect(find.text('Onchain'), findsOneWidget);
 
-    await tester.tap(find.byIcon(LucideIcons.search));
+    await tester.tap(find.byIcon(KeroseneIcons.search));
     await tester.pumpAndSettle();
 
     final field = tester.widget<TextField>(find.byType(TextField));

@@ -1,9 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
@@ -12,8 +13,6 @@ import 'package:kerosene/features/auth/controller/auth_providers.dart';
 import 'package:kerosene/features/auth/presentation/widgets/auth_motion.dart';
 import 'package:kerosene/features/auth/presentation/widgets/totp_input_container.dart';
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
-import 'package:kerosene/core/l10n/l10n_extension.dart';
-
 import 'passkey_verification_screen.dart';
 
 class _AuthColors {
@@ -48,30 +47,30 @@ class _AuthColors {
     if (isLight) {
       return const _AuthColors(
         isLight: true,
-        background: Color(0xFFF7F7F5),
-        surface: Color(0xFFFFFFFF),
-        field: Color(0xFFF0F1EE),
-        border: Color(0xFFDDE0D8),
-        borderSoft: Color(0xFFE2E4DE),
-        text: Color(0xFF181A17),
-        muted: Color(0xFF62675F),
-        dim: Color(0xFF8B9087),
-        success: Color(0xFF16A34A),
-        errorText: Color(0xFFDC2626),
+        background: AppColors.hexFFF7F7F5,
+        surface: AppColors.hexFFFFFFFF,
+        field: AppColors.hexFFF0F1EE,
+        border: AppColors.hexFFDDE0D8,
+        borderSoft: AppColors.hexFFE2E4DE,
+        text: AppColors.hexFF181A17,
+        muted: AppColors.hexFF62675F,
+        dim: AppColors.hexFF8B9087,
+        success: AppColors.hexFF16A34A,
+        errorText: AppColors.hexFFDC2626,
       );
     }
     return const _AuthColors(
       isLight: false,
-      background: Color(0xFF000000),
-      surface: Color(0xFF0A0A0A),
-      field: Color(0xFF1A1A1A),
-      border: Color(0xFF333333),
-      borderSoft: Color(0xFF27272A),
-      text: Color(0xFFFFFFFF),
-      muted: Color(0xFFA1A1AA),
-      dim: Color(0xFF71717A),
-      success: Color(0xFF4ADE80),
-      errorText: Color(0xFFF4C7C7),
+      background: AppColors.hexFF000000,
+      surface: AppColors.hexFF0A0A0A,
+      field: AppColors.hexFF1A1A1A,
+      border: AppColors.hexFF333333,
+      borderSoft: AppColors.hexFF27272A,
+      text: AppColors.hexFFFFFFFF,
+      muted: AppColors.hexFFA1A1AA,
+      dim: AppColors.hexFF71717A,
+      success: AppColors.hexFF4ADE80,
+      errorText: AppColors.hexFFF4C7C7,
     );
   }
 
@@ -419,7 +418,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                   title: _inlineErrorTitle ??
                                       context.tr.authFlowInterruptedTitle,
                                   message: _inlineErrorMessage!,
-                                  icon: LucideIcons.alertTriangle,
+                                  icon: KeroseneIcons.error,
                                 ),
                               ),
                             ],
@@ -464,13 +463,13 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 textInputAction: TextInputAction.next,
                                 autofillHints: const [AutofillHints.username],
                                 prefixIcon: Icon(
-                                  LucideIcons.user,
+                                  KeroseneIcons.user,
                                   size: 18,
                                   color: colors.muted,
                                 ),
                                 suffixIcon: _usernameController.text.isNotEmpty
                                     ? Icon(
-                                        LucideIcons.checkCircle2,
+                                        KeroseneIcons.success,
                                         size: 18,
                                         color:
                                             colors.text.withValues(alpha: 0.86),
@@ -500,7 +499,7 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                 textInputAction: TextInputAction.done,
                                 autofillHints: const [AutofillHints.password],
                                 prefixIcon: Icon(
-                                  LucideIcons.lock,
+                                  KeroseneIcons.lock,
                                   size: 18,
                                   color: colors.muted,
                                 ),
@@ -515,8 +514,8 @@ class _LoginScreenState extends ConsumerState<LoginScreen> {
                                         },
                                   icon: Icon(
                                     _obscurePassword
-                                        ? LucideIcons.eye
-                                        : LucideIcons.eyeOff,
+                                        ? KeroseneIcons.eye
+                                        : KeroseneIcons.eyeOff,
                                     size: 18,
                                     color: colors.muted,
                                   ),
@@ -590,7 +589,7 @@ class _LoginTopBar extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: onBack,
-              icon: const Icon(LucideIcons.arrowLeft, size: 24),
+              icon: const Icon(KeroseneIcons.back, size: 24),
               color: colors.text.withValues(alpha: 0.86),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 44, height: 44),
@@ -826,7 +825,7 @@ class _LoginTotpPanel extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  LucideIcons.keyRound,
+                  KeroseneIcons.passkey,
                   color: colors.text,
                   size: 20,
                 ),
@@ -1010,7 +1009,7 @@ class _LoginTypography {
   const _LoginTypography._();
 
   static TextStyle title(_AuthColors colors) {
-    return GoogleFonts.ibmPlexSerif(
+    return AppTypography.newsreader(
       color: colors.text,
       fontSize: 32,
       fontWeight: FontWeight.w500,

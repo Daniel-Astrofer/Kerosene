@@ -2,9 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Analytics module with aggregate metrics only.
 class AnalyticsScreen extends ConsumerWidget {
@@ -30,7 +32,7 @@ class AnalyticsScreen extends ConsumerWidget {
               AdminMetricCard(
                 label: 'Success Rate',
                 value: '${(kpis.successRate * 100).toStringAsFixed(1)}%',
-                icon: Icons.check_circle_outline,
+                icon: KeroseneIcons.success,
                 accentColor: kpis.successRate > 0.95
                     ? AdminColors.positive
                     : AdminColors.warning,
@@ -38,7 +40,7 @@ class AnalyticsScreen extends ConsumerWidget {
               AdminMetricCard(
                 label: 'Failure Rate',
                 value: '${(kpis.failureRate * 100).toStringAsFixed(1)}%',
-                icon: Icons.error_outline,
+                icon: KeroseneIcons.error,
                 accentColor: kpis.failureRate < 0.05
                     ? AdminColors.positive
                     : AdminColors.negative,
@@ -46,12 +48,12 @@ class AnalyticsScreen extends ConsumerWidget {
               AdminMetricCard(
                 label: 'Link Conversion',
                 value: '${(kpis.linkConversionRate * 100).toStringAsFixed(1)}%',
-                icon: Icons.trending_up,
+                icon: KeroseneIcons.trendUp,
               ),
               AdminMetricCard(
                 label: 'Avg Aggregate Event',
                 value: '${kpis.avgTicketBtc.toStringAsFixed(8)} BTC',
-                icon: Icons.receipt_outlined,
+                icon: KeroseneIcons.receipt,
               ),
             ],
           ),
@@ -66,7 +68,7 @@ class AnalyticsScreen extends ConsumerWidget {
                       ? 'approx \$${(kpis.totalFeesBtc * (p['btcUsd'] ?? 0)).toStringAsFixed(2)}'
                       : null,
                 ),
-                icon: Icons.payments_outlined,
+                icon: KeroseneIcons.payments,
                 accentColor: AdminColors.warning,
               ),
               AdminMetricCard(
@@ -74,20 +76,20 @@ class AnalyticsScreen extends ConsumerWidget {
                 value: kpis.onchainVolumeBtc > 0
                     ? '${(kpis.onchainFeesBtc / kpis.onchainVolumeBtc * 100).toStringAsFixed(3)}%'
                     : '0.000%',
-                icon: Icons.link,
+                icon: KeroseneIcons.onchain,
               ),
               AdminMetricCard(
                 label: 'Lightning Fee Ratio',
                 value: kpis.lightningVolumeBtc > 0
                     ? '${(kpis.lightningFeesBtc / kpis.lightningVolumeBtc * 100).toStringAsFixed(3)}%'
                     : '0.000%',
-                icon: Icons.flash_on_outlined,
+                icon: KeroseneIcons.lightning,
               ),
               AdminMetricCard(
                 label: 'Net Flow',
                 value:
                     '${kpis.netFlowBtc >= 0 ? '+' : ''}${kpis.netFlowBtc.toStringAsFixed(8)} BTC',
-                icon: Icons.swap_vert,
+                icon: KeroseneIcons.moveHorizontal,
                 accentColor: kpis.netFlowBtc >= 0
                     ? AdminColors.positive
                     : AdminColors.negative,
@@ -106,7 +108,8 @@ class AnalyticsScreen extends ConsumerWidget {
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Text('CHANNEL DISTRIBUTION', style: AdminTypography.label),
+                Text(AdminCopy.channelDistributionTitle,
+                    style: AdminTypography.label),
                 const SizedBox(height: AdminTheme.spacingLg),
                 _DistributionBar(
                   label: 'On-chain',

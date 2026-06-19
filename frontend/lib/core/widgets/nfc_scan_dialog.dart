@@ -1,5 +1,9 @@
 import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:nfc_manager/nfc_manager.dart';
 import 'package:nfc_manager_ndef/nfc_manager_ndef.dart';
 
@@ -11,7 +15,7 @@ class NfcScanDialog extends StatefulWidget {
 }
 
 class _NfcScanDialogState extends State<NfcScanDialog> {
-  String _status = "Ready to Scan";
+  String _status = KeroseneUiCopy.nfcReadyToScan;
   bool _isScanning = false;
 
   @override
@@ -57,7 +61,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
     if (!isAvailable) {
       if (mounted) {
         setState(() {
-          _status = "NFC not available on this device";
+          _status = KeroseneUiCopy.nfcUnavailable;
         });
       }
       return;
@@ -65,7 +69,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
 
     setState(() {
       _isScanning = true;
-      _status = "Hold your device near the NFC tag";
+      _status = KeroseneUiCopy.nfcHoldNearTag;
     });
 
     NfcManager.instance.startSession(
@@ -98,13 +102,13 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
         setState(() {
           _isScanning = false;
           _status = paymentRequestString != null
-              ? "Payment request read!"
-              : "Tag Detected!";
+              ? KeroseneUiCopy.nfcPaymentRequestRead
+              : KeroseneUiCopy.nfcTagDetected;
         });
 
         await NfcManager.instance.stopSession();
 
-        Future.delayed(const Duration(milliseconds: 800), () {
+        Future.delayed(KeroseneMotion.calm, () {
           if (mounted) {
             Navigator.of(context).pop(paymentRequestString);
           }
@@ -127,7 +131,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
       child: Container(
         padding: const EdgeInsets.all(24),
         decoration: BoxDecoration(
-          color: const Color(0xFF1A1F3C),
+          color: KeroseneBrandTokens.surface,
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
               color: Theme.of(context)
@@ -136,7 +140,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
                   .withValues(alpha: 0.1)),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF00D4FF).withValues(alpha: 0.1),
+              color: KeroseneBrandTokens.info.withValues(alpha: 0.1),
               blurRadius: 20,
               spreadRadius: 5,
             ),
@@ -146,7 +150,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
           mainAxisSize: MainAxisSize.min,
           children: [
             Text(
-              "NFC Scanner",
+              KeroseneUiCopy.nfcScannerTitle,
               style: TextStyle(
                 color: Theme.of(context).colorScheme.onPrimary,
                 fontSize: 20,
@@ -165,11 +169,12 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
                     .withValues(alpha: 0.05),
               ),
               child: _isScanning
-                  ? const Icon(Icons.nfc, size: 80, color: Color(0xFF00D4FF))
+                  ? const Icon(KeroseneIcons.nfc,
+                      size: 80, color: KeroseneBrandTokens.info)
                   : const Icon(
-                      Icons.check_circle,
+                      KeroseneIcons.success,
                       size: 80,
-                      color: Colors.greenAccent,
+                      color: KeroseneBrandTokens.success,
                     ),
             ),
             const SizedBox(height: 32),
@@ -188,7 +193,7 @@ class _NfcScanDialogState extends State<NfcScanDialog> {
             TextButton(
               onPressed: () => Navigator.of(context).pop(),
               child: Text(
-                "Cancel",
+                KeroseneUiCopy.cancel,
                 style: TextStyle(
                     color: Theme.of(context)
                         .colorScheme

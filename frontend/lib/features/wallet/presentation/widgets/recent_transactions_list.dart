@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/glass_container.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
@@ -9,6 +10,8 @@ import '../../domain/entities/transaction.dart';
 import 'package:timeago/timeago.dart' as timeago;
 
 /// Lista de transações recentes com design premium e animações staggered
+import 'package:kerosene/core/theme/app_typography.dart';
+
 class RecentTransactionsList extends StatelessWidget {
   final List<Transaction> transactions;
 
@@ -17,6 +20,7 @@ class RecentTransactionsList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (transactions.isEmpty) {
+      const emptyStateLabel = 'Nenhuma transação encontrada';
       return Center(
         child: Padding(
           padding: const EdgeInsets.all(AppSpacing.xxl),
@@ -24,7 +28,7 @@ class RecentTransactionsList extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                LucideIcons.ghost,
+                KeroseneIcons.privateMode,
                 color: Theme.of(context)
                     .colorScheme
                     .onPrimary
@@ -33,7 +37,7 @@ class RecentTransactionsList extends StatelessWidget {
               ),
               const SizedBox(height: AppSpacing.md),
               Text(
-                'Nenhuma transação encontrada',
+                emptyStateLabel,
                 style: Theme.of(context).textTheme.bodySmall!.copyWith(
                       color: Theme.of(context)
                           .colorScheme
@@ -45,7 +49,7 @@ class RecentTransactionsList extends StatelessWidget {
             ],
           ),
         ),
-      ).animate().fade().scale(curve: Curves.easeOutBack);
+      ).animate().fade().scale(curve: KeroseneMotion.spring);
     }
 
     return ListView.separated(
@@ -58,7 +62,7 @@ class RecentTransactionsList extends StatelessWidget {
         return TransactionItemWidget(transaction: transactions[index])
             .animate(delay: (index * 50).ms)
             .fade(duration: 300.ms)
-            .slideX(begin: 0.1, end: 0, curve: Curves.easeOutCubic);
+            .slideX(begin: 0.1, end: 0, curve: KeroseneMotion.standard);
       },
     );
   }
@@ -89,124 +93,136 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
 
     return RepaintBoundary(
       child: GestureDetector(
-      onTap: () {
-        setState(() => _isExpanded = !_isExpanded);
-      },
-      child: GlassContainer(
-        borderRadius: BorderRadius.circular(AppSpacing.lg),
-        padding: EdgeInsets.zero,
-        border: Border.all(
-          color: _isExpanded
-              ? statusColor.withValues(alpha: 0.3)
-              : Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.05),
-          width: 1,
-        ),
-        child: Column(
-          children: [
-            Padding(
-              padding: const EdgeInsets.symmetric(
-                  horizontal: AppSpacing.md, vertical: AppSpacing.md),
-              child: Row(
-                children: [
-                  // Icon Block
-                  TransactionTypeIconBadge(
-                    spec: visual,
-                    size: 44,
-                    iconSize: 20,
-                    borderRadius: AppSpacing.sm,
-                    backgroundColor: const Color(0xFF111720),
-                    borderColor: statusColor.withValues(alpha: 0.24),
-                  ),
-                  const SizedBox(width: AppSpacing.md),
+        onTap: () {
+          setState(() => _isExpanded = !_isExpanded);
+        },
+        child: GlassContainer(
+          borderRadius: BorderRadius.circular(AppSpacing.lg),
+          padding: EdgeInsets.zero,
+          border: Border.all(
+            color: _isExpanded
+                ? statusColor.withValues(alpha: 0.3)
+                : Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.05),
+            width: 1,
+          ),
+          child: Column(
+            children: [
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: AppSpacing.md, vertical: AppSpacing.md),
+                child: Row(
+                  children: [
+                    // Icon Block
+                    TransactionTypeIconBadge(
+                      spec: visual,
+                      size: 44,
+                      iconSize: 20,
+                      borderRadius: AppSpacing.sm,
+                      backgroundColor: AppColors.hexFF111720,
+                      borderColor: statusColor.withValues(alpha: 0.24),
+                    ),
+                    const SizedBox(width: AppSpacing.md),
 
-                  // Info Block
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
+                    // Info Block
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            t.description ?? visual.localizedLabel(context),
+                            style: Theme.of(context)
+                                .textTheme
+                                .bodyMedium!
+                                .copyWith(
+                                  fontWeight: FontWeight.bold,
+                                  letterSpacing: 0.5,
+                                ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                          const SizedBox(height: 2),
+                          Text(
+                            timeago.format(t.timestamp).toUpperCase(),
+                            style: Theme.of(context)
+                                .textTheme
+                                .labelSmall!
+                                .copyWith(
+                                  color: Theme.of(context)
+                                      .colorScheme
+                                      .onPrimary
+                                      .withValues(alpha: 0.3),
+                                  fontWeight: FontWeight.w900,
+                                  fontSize: 9,
+                                ),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    // Amount Block
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
                       children: [
-                        Text(
-                          t.description ?? visual.localizedLabel(context),
-                          style:
-                              Theme.of(context).textTheme.bodyMedium!.copyWith(
-                                    fontWeight: FontWeight.bold,
-                                    letterSpacing: 0.5,
-                                  ),
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
+                        _buildBtcAmount(
+                          t.amountBTC.abs(),
+                          amountPrefix,
+                          statusColor,
                         ),
-                        const SizedBox(height: 2),
-                        Text(
-                          timeago.format(t.timestamp).toUpperCase(),
-                          style:
-                              Theme.of(context).textTheme.labelSmall!.copyWith(
-                                    color: Theme.of(context)
-                                        .colorScheme
-                                        .onPrimary
-                                        .withValues(alpha: 0.3),
-                                    fontWeight: FontWeight.w900,
-                                    fontSize: 9,
-                                  ),
-                        ),
+                        const SizedBox(height: 4),
+                        _buildStatusBadge(t.status, statusColor),
                       ],
                     ),
-                  ),
-
-                  // Amount Block
-                  Column(
-                    crossAxisAlignment: CrossAxisAlignment.end,
-                    children: [
-                      _buildBtcAmount(
-                        t.amountBTC.abs(),
-                        amountPrefix,
-                        statusColor,
-                      ),
-                      const SizedBox(height: 4),
-                      _buildStatusBadge(t.status, statusColor),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-
-            // Details Expansion
-            AnimatedCrossFade(
-              firstChild: const SizedBox(width: double.infinity, height: 0),
-              secondChild: Container(
-                width: double.infinity,
-                padding: const EdgeInsets.fromLTRB(
-                    AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Divider(
-                        color: Theme.of(context)
-                            .colorScheme
-                            .onPrimary
-                            .withValues(alpha: 0.05)),
-                    const SizedBox(height: AppSpacing.sm),
-                    _buildDetailRow('TXID', t.id),
-                    const SizedBox(height: AppSpacing.xs),
-                    _buildDetailRow('TIMESTAMP', t.timestamp.toIso8601String()),
-                    const SizedBox(height: AppSpacing.xs),
-                    _buildDetailRow('BLOCKCHAIN FEE', '${t.feeSatoshis} SATS'),
                   ],
                 ),
               ),
-              crossFadeState: _isExpanded
-                  ? CrossFadeState.showSecond
-                  : CrossFadeState.showFirst,
-              duration: const Duration(milliseconds: 300),
-              sizeCurve: Curves.easeOutCubic,
-            ),
-          ],
+
+              // Details Expansion
+              AnimatedCrossFade(
+                firstChild: const SizedBox(width: double.infinity, height: 0),
+                secondChild: Container(
+                  width: double.infinity,
+                  padding: const EdgeInsets.fromLTRB(
+                      AppSpacing.md, 0, AppSpacing.md, AppSpacing.md),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Divider(
+                          color: Theme.of(context)
+                              .colorScheme
+                              .onPrimary
+                              .withValues(alpha: 0.05)),
+                      const SizedBox(height: AppSpacing.sm),
+                      _buildDetailRow('TXID', t.id),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildDetailRow(
+                          'TIMESTAMP', t.timestamp.toIso8601String()),
+                      const SizedBox(height: AppSpacing.xs),
+                      _buildDetailRow(
+                          'BLOCKCHAIN FEE', '${t.feeSatoshis} SATS'),
+                    ],
+                  ),
+                ),
+                crossFadeState: _isExpanded
+                    ? CrossFadeState.showSecond
+                    : CrossFadeState.showFirst,
+                duration: KeroseneMotion.medium,
+                sizeCurve: KeroseneMotion.standard,
+              ),
+            ],
+          ),
         ),
       ),
-    ),
     );
   }
 
   Widget _buildBtcAmount(double amount, String prefix, Color color) {
     final parts = amount.toStringAsFixed(8).split('.');
+    final wholePart = parts[0];
+    final fractionalPart = '.${parts[1]}';
+    const btcLabel = 'BTC';
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
@@ -218,25 +234,25 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
             style: Theme.of(context).textTheme.bodySmall!.copyWith(
                 color: color,
                 fontWeight: FontWeight.bold,
-                fontFamily: 'IBMPlexSansHebrew'),
+                fontFamily: AppTypography.financialFontFamily),
           ),
         Text(
-          parts[0],
+          wholePart,
           style: Theme.of(context).textTheme.bodyLarge!.copyWith(
               color: color,
               fontWeight: FontWeight.w900,
-              fontFamily: 'IBMPlexSansHebrew'),
+              fontFamily: AppTypography.financialFontFamily),
         ),
         Text(
-          '.${parts[1]}',
+          fractionalPart,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
               color: color.withValues(alpha: 0.6),
               fontWeight: FontWeight.w500,
-              fontFamily: 'IBMPlexSansHebrew'),
+              fontFamily: AppTypography.financialFontFamily),
         ),
         const SizedBox(width: 4),
         Text(
-          'BTC',
+          btcLabel,
           style: Theme.of(context).textTheme.labelSmall!.copyWith(
               color: color.withValues(alpha: 0.4),
               fontWeight: FontWeight.w900,
@@ -328,7 +344,7 @@ class _TransactionItemWidgetState extends State<TransactionItemWidget> {
                       .colorScheme
                       .onPrimary
                       .withValues(alpha: 0.5),
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                   fontSize: 9,
                 ),
           ),

@@ -1,8 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
@@ -55,9 +56,10 @@ class ServerUnavailableScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final authState = ref.watch(authControllerProvider);
     final isLoading = authState is AuthLoading;
+    const title = 'Conexão indisponível';
 
     return Scaffold(
-      backgroundColor: const Color(0xFF000000),
+      backgroundColor: AppColors.hexFF000000,
       body: SafeArea(
         child: Center(
           child: Padding(
@@ -68,15 +70,15 @@ class ServerUnavailableScreen extends ConsumerWidget {
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   const Icon(
-                    LucideIcons.serverOff,
+                    KeroseneIcons.serverUnavailable,
                     size: 76,
-                    color: Color(0xFFFFFFFF),
+                    color: AppColors.hexFFFFFFFF,
                   ),
                   const SizedBox(height: AppSpacing.xxl),
                   Text(
-                    'Conexão indisponível',
-                    style: GoogleFonts.ibmPlexSerif(
-                      color: const Color(0xFFFFFFFF),
+                    title,
+                    style: AppTypography.newsreader(
+                      color: AppColors.hexFFFFFFFF,
                       fontSize: 32,
                       fontWeight: FontWeight.w500,
                       height: 1.08,
@@ -89,7 +91,7 @@ class ServerUnavailableScreen extends ConsumerWidget {
                     message,
                     style: const TextStyle(
                       fontFamily: AppTypography.fontFamily,
-                      color: Color(0xFFA1A1AA),
+                      color: AppColors.hexFFA1A1AA,
                       fontSize: 15,
                       fontWeight: FontWeight.w400,
                       height: 1.45,
@@ -103,10 +105,10 @@ class ServerUnavailableScreen extends ConsumerWidget {
                     height: 48,
                     child: FilledButton(
                       style: FilledButton.styleFrom(
-                        backgroundColor: const Color(0xFFFFFFFF),
-                        foregroundColor: const Color(0xFF000000),
-                        disabledBackgroundColor: const Color(0xFFE4E4E7),
-                        disabledForegroundColor: const Color(0xFF52525B),
+                        backgroundColor: AppColors.hexFFFFFFFF,
+                        foregroundColor: AppColors.hexFF000000,
+                        disabledBackgroundColor: AppColors.hexFFE4E4E7,
+                        disabledForegroundColor: AppColors.hexFF52525B,
                         shape: RoundedRectangleBorder(
                           borderRadius: BorderRadius.circular(4),
                         ),
@@ -125,10 +127,10 @@ class ServerUnavailableScreen extends ConsumerWidget {
                               height: 18,
                               child: CircularProgressIndicator(
                                 strokeWidth: 2,
-                                color: Color(0xFF000000),
+                                color: AppColors.hexFF000000,
                               ),
                             )
-                          : const Text('Tentar novamente'),
+                          : Text(context.tr.tryAgain),
                     ),
                   ),
                 ],

@@ -16,6 +16,32 @@ void main() {
   const compactLandscape = Size(568, 320);
   const regularPortrait = Size(390, 844);
 
+  String? clipboardText;
+
+  setUp(() {
+    clipboardText = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      switch (call.method) {
+        case 'Clipboard.setData':
+          final arguments = call.arguments;
+          if (arguments is Map) {
+            clipboardText = arguments['text']?.toString();
+          }
+          return null;
+        case 'Clipboard.getData':
+          return <String, dynamic>{'text': clipboardText};
+        default:
+          return null;
+      }
+    });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
   final transaction = Transaction(
     id: 'tx-responsive-001',
     fromAddress: 'bc1qsourceaddresswithaverylongvalue00000000000000000000',
@@ -60,7 +86,19 @@ void main() {
 
     await tester.pumpWidget(
       ProviderScope(
-        overrides: [latestBtcPriceProvider.overrideWith((ref) => 76500)],
+        overrides: [
+          backendBtcRatesProvider.overrideWith(
+            (ref) async => const BackendBtcRates(
+              btcUsd: 76500,
+              btcBrl: 382500,
+              btcEur: 70380,
+              usdBrl: 5,
+            ),
+          ),
+          latestBtcPriceProvider.overrideWithValue(76500),
+          btcBrlPriceProvider.overrideWithValue(382500),
+          btcEurPriceProvider.overrideWithValue(70380),
+        ],
         child: MaterialApp(
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,

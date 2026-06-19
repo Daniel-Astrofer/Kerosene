@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:intl/intl.dart';
 
 class AnimatedNumberDisplay extends StatefulWidget {
@@ -82,9 +83,10 @@ class _RollingDigitState extends State<_RollingDigit>
     _previousDigit = _targetDigit;
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 400),
+      duration: KeroseneMotion.long,
     );
-    _animation = CurvedAnimation(parent: _controller, curve: Curves.easeInOut);
+    _animation =
+        CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard);
   }
 
   @override

@@ -70,7 +70,7 @@ final walletNetworkProfileProvider =
 });
 
 List<Transaction> _mergeExternalHistory({
-  required List<Transaction> ledgerTransactions,
+  required List<Transaction> kfeTransactions,
   required List<ExternalTransfer> externalTransfers,
 }) {
   final merged = <String, Transaction>{};
@@ -83,7 +83,7 @@ List<Transaction> _mergeExternalHistory({
     }
   }
 
-  for (final transaction in ledgerTransactions) {
+  for (final transaction in kfeTransactions) {
     upsert(transaction);
   }
 
@@ -173,7 +173,7 @@ final transactionHistoryProvider = FutureProvider<List<Transaction>>((
     (failure) => throw Exception(failure.message),
     (transactions) {
       return _mergeExternalHistory(
-        ledgerTransactions: transactions,
+        kfeTransactions: transactions,
         externalTransfers: externalTransfers,
       );
     },
@@ -201,7 +201,7 @@ final pagedTransactionHistoryProvider =
 
   final externalTransfers = await _loadExternalTransfersSafely(ref);
   final merged = _mergeExternalHistory(
-    ledgerTransactions: transactions,
+    kfeTransactions: transactions,
     externalTransfers: externalTransfers,
   );
   return merged.take(request.size).toList();
@@ -335,18 +335,6 @@ final depositDetailProvider = FutureProvider.family<Deposit, String>((
 final paymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) async {
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getPaymentLinks();
-});
-
-final paymentLinkDetailProvider = FutureProvider.family<PaymentLink, String>((
-  ref,
-  linkId,
-) async {
-  final repo = ref.watch(ledgerRepositoryProvider);
-  final result = await repo.getPaymentRequest(linkId);
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (data) => PaymentLink.fromJson(data),
-  );
 });
 
 final externalTransfersProvider = FutureProvider<List<ExternalTransfer>>((
@@ -509,74 +497,12 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
     return null;
   }
 
-  Future<TxStatus?> broadcast({
-    required String rawTxHex,
-    required String toAddress,
-    required double amount,
-    String? message,
-  }) async {
-    state = const AsyncActionState(isLoading: true);
-    final result = await _repository.broadcastTransaction(
-      rawTxHex: rawTxHex,
-      toAddress: toAddress,
-      amount: amount,
-      message: message,
-    );
-    return result.fold(
-      (failure) {
-        state = AsyncActionState(error: failure.message);
-        return null;
-      },
-      (txStatus) {
-        state = AsyncActionState(result: txStatus);
-        return txStatus;
-      },
-    );
-  }
-
   void reset() => state = const AsyncActionState();
 }
 
 final sendTransactionProvider =
     NotifierProvider<SendTransactionNotifier, AsyncActionState>(
         SendTransactionNotifier.new);
-
-/// Notifier para confirmar depósitos
-class ConfirmDepositNotifier extends Notifier<AsyncActionState> {
-  late TransactionRepository _repository;
-
-  @override
-  AsyncActionState build() {
-    _repository = ref.watch(transactionRepositoryProvider);
-    return const AsyncActionState();
-  }
-
-  Future<Deposit?> confirm({
-    required String txid,
-    required String fromAddress,
-    required double amount,
-  }) async {
-    state = const AsyncActionState(isLoading: true);
-    try {
-      final result = await _repository.confirmDeposit(
-        txid: txid,
-        fromAddress: fromAddress,
-        amount: amount,
-      );
-      state = AsyncActionState(result: result);
-      return result;
-    } catch (e) {
-      state = AsyncActionState(error: e.toString());
-      return null;
-    }
-  }
-
-  void reset() => state = const AsyncActionState();
-}
-
-final confirmDepositProvider =
-    NotifierProvider<ConfirmDepositNotifier, AsyncActionState>(
-        ConfirmDepositNotifier.new);
 
 /// Notifier para Payment Links
 class PaymentLinkNotifier extends Notifier<AsyncActionState> {
@@ -627,8 +553,12 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
     String? totpCode,
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
+    String? idempotencyKey,
   }) async {
     state = const AsyncActionState(isLoading: true);
+    final operationIdempotencyKey = idempotencyKey?.trim().isNotEmpty == true
+        ? idempotencyKey!.trim()
+        : const Uuid().v4();
     try {
       final link = await _repository.getPaymentLink(linkId);
       final result = await _repository.withdraw(
@@ -641,6 +571,7 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         confirmationPassphrase: confirmationPassphrase,
         passkeyAssertionJson: passkeyAssertionJson,
         totpCode: totpCode,
+        idempotencyKey: operationIdempotencyKey,
       );
       ref.invalidate(transactionHistoryProvider);
       ref.invalidate(depositsProvider);

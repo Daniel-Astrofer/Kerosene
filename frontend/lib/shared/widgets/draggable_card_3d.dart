@@ -1,6 +1,7 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 class DraggableCard3D extends StatefulWidget {
   final Widget child;
@@ -31,7 +32,7 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 220),
+      duration: KeroseneMotion.medium,
     )..addListener(() {
         setState(() => _dragOffset = _resetAnimation.value);
       });
@@ -49,7 +50,8 @@ class _DraggableCard3DState extends State<DraggableCard3D>
     _resetAnimation = Tween<double>(
       begin: _dragOffset,
       end: 0,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard));
     _controller.forward(from: 0);
   }
 

@@ -2,8 +2,8 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 
 void main() {
-  group('PaymentLink compatibility fields', () {
-    test('parses backend PaymentIntent compatibility metadata', () {
+  group('PaymentLink settlement fields', () {
+    test('parses KFE settlement metadata', () {
       final link = PaymentLink.fromJson({
         'id': 'pay_1',
         'userId': 10,
@@ -13,18 +13,18 @@ void main() {
         'status': 'paid',
         'txid': 'tx-1',
         'paymentRail': 'ONCHAIN',
-        'paymentIntentStatus': 'SETTLED',
+        'settlementStatus': 'SETTLED',
         'settlementReference': 'tx-1',
         'terminal': true,
       });
 
       expect(link.paymentRail, 'ONCHAIN');
-      expect(link.paymentIntentStatus, 'SETTLED');
+      expect(link.settlementStatus, 'SETTLED');
       expect(link.settlementReference, 'tx-1');
       expect(link.terminal, isTrue);
     });
 
-    test('derives compatibility metadata for older responses', () {
+    test('derives settlement metadata from KFE status', () {
       final link = PaymentLink.fromJson({
         'id': 'pay_2',
         'userId': 10,
@@ -35,7 +35,7 @@ void main() {
       });
 
       expect(link.paymentRail, 'ONCHAIN');
-      expect(link.paymentIntentStatus, 'CANCELED');
+      expect(link.settlementStatus, 'CANCELED');
       expect(link.terminal, isTrue);
     });
   });

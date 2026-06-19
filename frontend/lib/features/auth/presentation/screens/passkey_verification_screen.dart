@@ -2,13 +2,13 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
@@ -19,14 +19,14 @@ import '../../controller/auth_controller.dart';
 import '../../../home/presentation/screens/home_screen.dart';
 import 'login_screen.dart';
 
-const Color _authBlack = Color(0xFF000000);
-const Color _authWhite = Color(0xFFFFFFFF);
-const Color _authMuted = Color(0xFFA3A3A3);
-const Color _authSurface = Color(0xFF141313);
-const Color _authSurfaceRaised = Color(0xFF1C1C1E);
-const Color _authBorder = Color(0xFF2A2A2A);
-const Color _authErrorText = Color(0xFFF4C7C7);
-const Color _authSuccess = Color(0xFF4ADE80);
+const Color _authBlack = AppColors.hexFF000000;
+const Color _authWhite = AppColors.hexFFFFFFFF;
+const Color _authMuted = AppColors.hexFFA3A3A3;
+const Color _authSurface = AppColors.hexFF141313;
+const Color _authSurfaceRaised = AppColors.hexFF1C1C1E;
+const Color _authBorder = AppColors.hexFF2A2A2A;
+const Color _authErrorText = AppColors.hexFFF4C7C7;
+const Color _authSuccess = AppColors.hexFF4ADE80;
 
 enum _PasskeyPhase { connecting, sending, prompt, totp, success, issue }
 
@@ -88,7 +88,7 @@ class _PasskeyVerificationScreenState
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 5000),
+      duration: KeroseneMotion.passkeyPulse,
     )..repeat();
     WidgetsBinding.instance.addPostFrameCallback((_) {
       _startPasskeySequence();
@@ -118,7 +118,7 @@ class _PasskeyVerificationScreenState
       });
     }
 
-    final step1 = await _waitForScene(const Duration(milliseconds: 900));
+    final step1 = await _waitForScene(KeroseneMotion.passkeyScene);
     if (!step1 || !mounted) {
       _isRunningSequence = false;
       return;
@@ -126,7 +126,7 @@ class _PasskeyVerificationScreenState
 
     setState(() => _phase = _PasskeyPhase.sending);
 
-    final step2 = await _waitForScene(const Duration(milliseconds: 760));
+    final step2 = await _waitForScene(KeroseneMotion.passkeySceneCompact);
     if (!step2 || !mounted) {
       _isRunningSequence = false;
       return;
@@ -291,8 +291,8 @@ class _PasskeyVerificationScreenState
         code == 'ERR_AUTH_USER_NOT_FOUND' ||
         error.statusCode == 404) {
       return _IssueInfo(
-        icon: LucideIcons.userX,
-        title: AppCopy.passkeyVerificationUserNotFound.resolve(context),
+        icon: KeroseneIcons.userUnavailable,
+        title: context.tr.passkeyVerificationUserNotFound,
         message: translated,
         allowRetry: false,
         allowTotpFallback: false,
@@ -303,24 +303,24 @@ class _PasskeyVerificationScreenState
         code == 'ERR_AUTH_PASSKEY_NOT_REGISTERED' ||
         code == 'ERR_AUTH_PASSKEY_CORRUPTED_KEY_MATERIAL') {
       return _IssueInfo(
-        icon: LucideIcons.keyRound,
-        title: AppCopy.passkeyVerificationNoLocal.resolve(context),
+        icon: KeroseneIcons.passkey,
+        title: context.tr.passkeyVerificationNoLocal,
         message: translated,
       );
     }
 
     if (code == 'ERR_AUTH_PASSKEY_AUTH_CANCELLED') {
       return _IssueInfo(
-        icon: LucideIcons.ban,
-        title: AppCopy.passkeyVerificationCancelled.resolve(context),
+        icon: KeroseneIcons.accessDenied,
+        title: context.tr.passkeyVerificationCancelled,
         message: translated,
       );
     }
 
     if (code == 'CHALLENGE_EXPIRED') {
       return _IssueInfo(
-        icon: LucideIcons.timerOff,
-        title: AppCopy.passkeyVerificationChallengeExpired.resolve(context),
+        icon: KeroseneIcons.timerOff,
+        title: context.tr.passkeyVerificationChallengeExpired,
         message: translated,
       );
     }
@@ -332,8 +332,8 @@ class _PasskeyVerificationScreenState
         code == 'VERIFY_ERROR' ||
         code == 'MISSING_CREDENTIAL_ID') {
       return _IssueInfo(
-        icon: LucideIcons.shieldOff,
-        title: AppCopy.passkeyVerificationRejected.resolve(context),
+        icon: KeroseneIcons.shieldOff,
+        title: context.tr.passkeyVerificationRejected,
         message: translated,
         allowRetry: actionRequired?.canRetryAssertion ?? true,
         allowTotpFallback: actionRequired?.totpFallbackAvailable ?? true,
@@ -342,7 +342,7 @@ class _PasskeyVerificationScreenState
 
     if (code == 'AUTH_014' || code == 'AUTH_016' || code == 'AUTH_017') {
       return _IssueInfo(
-        icon: LucideIcons.link2Off,
+        icon: KeroseneIcons.linkUnavailable,
         title: _copy(
           pt: 'Vincule uma nova passkey',
           en: 'Link a new passkey',
@@ -355,8 +355,8 @@ class _PasskeyVerificationScreenState
     }
 
     return _IssueInfo(
-      icon: LucideIcons.alertTriangle,
-      title: AppCopy.passkeyVerificationFailed.resolve(context),
+      icon: KeroseneIcons.error,
+      title: context.tr.passkeyVerificationFailed,
       message: translated,
     );
   }
@@ -384,9 +384,9 @@ class _PasskeyVerificationScreenState
   String _authSubtitle() {
     switch (_phase) {
       case _PasskeyPhase.connecting:
-        return AppCopy.passkeyVerificationBodyPreparing.resolve(context);
+        return context.tr.passkeyVerificationBodyPreparing;
       case _PasskeyPhase.sending:
-        return AppCopy.passkeyVerificationBodySending.resolve(context);
+        return context.tr.passkeyVerificationBodySending;
       case _PasskeyPhase.prompt:
         return _copy(
           pt: 'Toque no sensor para continuar',
@@ -394,7 +394,7 @@ class _PasskeyVerificationScreenState
           es: 'Toca el sensor para continuar',
         );
       case _PasskeyPhase.success:
-        return AppCopy.passkeyVerificationBodySuccess.resolve(context);
+        return context.tr.passkeyVerificationBodySuccess;
       case _PasskeyPhase.totp:
       case _PasskeyPhase.issue:
         return '';
@@ -424,7 +424,7 @@ class _PasskeyVerificationScreenState
             _phase = _PasskeyPhase.success;
           });
         }
-        await Future<void>.delayed(const Duration(milliseconds: 1000));
+        await Future<void>.delayed(KeroseneMotion.calm);
         if (!context.mounted) {
           return;
         }
@@ -451,7 +451,7 @@ class _PasskeyVerificationScreenState
               _phase = _PasskeyPhase.connecting;
             });
           }
-          await Future<void>.delayed(const Duration(milliseconds: 250));
+          await Future<void>.delayed(KeroseneMotion.medium);
           if (mounted) {
             unawaited(_startPasskeySequence(resetChallengeRenewals: false));
           }
@@ -615,7 +615,7 @@ class _TopBackButton extends StatelessWidget {
         child: IconButton(
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
           onPressed: onPressed,
-          icon: const Icon(LucideIcons.arrowLeft, size: 24),
+          icon: const Icon(KeroseneIcons.back, size: 24),
           color: _authWhite.withValues(alpha: 0.84),
           padding: EdgeInsets.zero,
         ),
@@ -669,7 +669,7 @@ class _PasskeyAuthView extends StatelessWidget {
           Text(
             title,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _authWhite,
               fontSize: titleSize,
               fontWeight: FontWeight.w500,
@@ -744,7 +744,7 @@ class _SensorVisualizer extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  isSuccess ? LucideIcons.shieldCheck : LucideIcons.fingerprint,
+                  isSuccess ? KeroseneIcons.security : KeroseneIcons.biometric,
                   size: iconSize,
                   color: isSuccess ? _authSuccess : _authWhite,
                 ),
@@ -842,7 +842,7 @@ class _PasskeyIssueView extends StatelessWidget {
               es: 'Falló la Autenticación',
             ),
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _authWhite.withValues(alpha: 0.96),
               fontSize: titleSize,
               fontWeight: FontWeight.w500,
@@ -930,7 +930,7 @@ class _ErrorGlyph extends StatelessWidget {
               ],
             ),
             child: Icon(
-              icon ?? LucideIcons.fingerprint,
+              icon ?? KeroseneIcons.biometric,
               color: _authErrorText,
               size: size * 0.46,
             ),
@@ -947,7 +947,7 @@ class _ErrorGlyph extends StatelessWidget {
                 border: Border.all(color: _authBlack, width: 2),
               ),
               child: Icon(
-                LucideIcons.alertCircle,
+                KeroseneIcons.warning,
                 size: size * 0.16,
                 color: _authBlack,
               ),
@@ -1011,7 +1011,7 @@ class _TotpFallbackView extends StatelessWidget {
               es: 'Código de Seguridad',
             ),
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _authWhite,
               fontSize: titleSize,
               fontWeight: FontWeight.w500,
@@ -1091,8 +1091,8 @@ class _PinDots extends StatelessWidget {
       children: List.generate(6, (index) {
         final filled = index < codeLength;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 180),
-          curve: Curves.easeOutCubic,
+          duration: KeroseneMotion.short,
+          curve: KeroseneMotion.standard,
           width: 40,
           height: 40,
           margin: const EdgeInsets.symmetric(horizontal: 5),
@@ -1154,7 +1154,7 @@ class _TotpKeypad extends StatelessWidget {
             SizedBox(width: gap),
             Expanded(
               child: _KeypadButton(
-                icon: LucideIcons.delete,
+                icon: KeroseneIcons.backspace,
                 isShort: isShort,
                 onPressed: onDelete,
               ),
@@ -1226,7 +1226,7 @@ class _KeypadButton extends StatelessWidget {
                   ? Icon(icon, color: _authMuted, size: 22)
                   : Text(
                       value ?? '',
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: _authWhite,
                         fontSize: isShort ? 25 : 29,
                         fontWeight: FontWeight.w500,

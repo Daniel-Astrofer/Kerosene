@@ -2,9 +2,11 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 import 'package:kerosene/core/presentation/widgets/app_screen_feedback_host.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
@@ -34,8 +36,8 @@ class GlobalNotificationHost extends ConsumerWidget {
                   ref.read(notificationSidebarProvider.notifier).close(),
               child: AnimatedOpacity(
                 opacity: sidebarOpen ? 1 : 0,
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
+                duration: KeroseneMotion.medium,
+                curve: KeroseneMotion.standard,
                 child: ColoredBox(color: Colors.black.withValues(alpha: 0.48)),
               ),
             ),
@@ -43,8 +45,8 @@ class GlobalNotificationHost extends ConsumerWidget {
         ),
         if (sidebarOpen)
           AnimatedPositioned(
-            duration: const Duration(milliseconds: 320),
-            curve: Curves.easeOutCubic,
+            duration: KeroseneMotion.long,
+            curve: KeroseneMotion.standard,
             top: 0,
             right: 0,
             bottom: 0,
@@ -76,9 +78,9 @@ class _TopNotificationBanner extends ConsumerWidget {
         child: IgnorePointer(
           ignoring: notification == null,
           child: AnimatedSwitcher(
-            duration: const Duration(milliseconds: 260),
-            switchInCurve: Curves.easeOutCubic,
-            switchOutCurve: Curves.easeInCubic,
+            duration: KeroseneMotion.medium,
+            switchInCurve: KeroseneMotion.standard,
+            switchOutCurve: KeroseneMotion.exit,
             transitionBuilder: (child, animation) {
               final offset = Tween<Offset>(
                 begin: const Offset(0, -0.16),
@@ -127,7 +129,7 @@ class _DismissibleNotificationBannerState
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 180),
+      duration: KeroseneMotion.short,
     );
     _offsetAnimation = const AlwaysStoppedAnimation(Offset.zero);
   }
@@ -160,7 +162,8 @@ class _DismissibleNotificationBannerState
     _offsetAnimation = Tween<Offset>(
       begin: _dragOffset,
       end: Offset.zero,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeOutCubic));
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard));
     _controller
       ..reset()
       ..forward();
@@ -230,7 +233,7 @@ class _NotificationBannerCard extends ConsumerWidget {
       decoration: TextDecoration.none,
     );
     final bodyStyle = AppTypography.bodySmall.copyWith(
-      color: const Color(0xFFC4C4C4),
+      color: AppColors.hexFFC4C4C4,
       fontSize: compact ? 12 : 13,
       height: 1.34,
       fontWeight: FontWeight.w400,
@@ -258,10 +261,10 @@ class _NotificationBannerCard extends ConsumerWidget {
           },
           child: DecoratedBox(
             decoration: BoxDecoration(
-              color: const Color(0xFF050505),
+              color: AppColors.hexFF050505,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(
-                color: const Color(0xFF1F2937).withValues(alpha: 0.50),
+                color: AppColors.hexFF1F2937.withValues(alpha: 0.50),
               ),
               boxShadow: [
                 BoxShadow(
@@ -352,7 +355,7 @@ class _NotificationBannerCard extends ConsumerWidget {
                       onPressed: () => ref
                           .read(notificationBannerProvider.notifier)
                           .dismiss(),
-                      icon: const Icon(LucideIcons.x),
+                      icon: const Icon(KeroseneIcons.close),
                       color: Colors.white.withValues(alpha: 0.48),
                       hoverColor: Colors.white.withValues(alpha: 0.08),
                       iconSize: 18,
@@ -378,11 +381,11 @@ class _NotificationBannerCard extends ConsumerWidget {
 
   static Color _accentFor(AppNotificationTone tone) {
     return switch (tone) {
-      AppNotificationTone.error => const Color(0xFFF8312F),
-      AppNotificationTone.warning => const Color(0xFFF8312F),
-      AppNotificationTone.success => const Color(0xFFE5E7EB),
-      AppNotificationTone.info => const Color(0xFFD4D4D8),
-      AppNotificationTone.neutral => const Color(0xFFD4D4D8),
+      AppNotificationTone.error => AppColors.hexFFF8312F,
+      AppNotificationTone.warning => AppColors.hexFFF8312F,
+      AppNotificationTone.success => AppColors.hexFFE5E7EB,
+      AppNotificationTone.info => AppColors.hexFFD4D4D8,
+      AppNotificationTone.neutral => AppColors.hexFFD4D4D8,
     };
   }
 

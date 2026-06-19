@@ -137,6 +137,10 @@ jobs:
         working-directory: frontend
         run: flutter pub get
 
+      - name: Check frontend cleanup rules
+        working-directory: frontend
+        run: tool/check_frontend_cleanup_rules.sh
+
       - name: Analyze Flutter
         working-directory: frontend
         run: flutter analyze --fatal-warnings --no-fatal-infos

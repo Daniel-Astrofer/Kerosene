@@ -1,1 +1,1 @@
-enum ReceiveAmountMethod { qrCode, paymentLink, nfc }
+enum ReceiveAmountMethod { qrCode, paymentLink, nfc, p2p }

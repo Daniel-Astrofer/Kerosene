@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
+import 'package:kerosene/core/utils/snackbar_helper.dart';
 import 'package:kerosene/features/transactions/domain/entities/external_transfer.dart';
 import 'package:kerosene/features/transactions/domain/entities/onchain_address_allocation.dart';
 import 'package:kerosene/features/transactions/domain/repositories/transaction_repository.dart';
@@ -14,9 +15,34 @@ import 'package:kerosene/features/wallet/presentation/screens/receive_request_fl
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
+  String? clipboardText;
+
+  setUp(() {
+    clipboardText = null;
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, (call) async {
+      switch (call.method) {
+        case 'Clipboard.setData':
+          final arguments = call.arguments as Map<dynamic, dynamic>;
+          clipboardText = arguments['text']?.toString();
+          return null;
+        case 'Clipboard.getData':
+          return <String, dynamic>{'text': clipboardText};
+        default:
+          return null;
+      }
+    });
+  });
+
+  tearDown(() {
+    TestDefaultBinaryMessengerBinding.instance.defaultBinaryMessenger
+        .setMockMethodCallHandler(SystemChannels.platform, null);
+  });
+
   testWidgets(
     'updates on-chain receive confirmation progress while polling',
     (tester) async {
+      _setMobileViewport(tester);
       final repository = _PollingReceiveRepository(
         updates: [
           _externalTransfer(status: 'DETECTED', confirmations: 1),
@@ -32,6 +58,7 @@ void main() {
             externalTransfersProvider.overrideWith((ref) async => const []),
           ],
           child: MaterialApp(
+            scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
             locale: const Locale('pt'),
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
@@ -64,6 +91,7 @@ void main() {
   testWidgets('copies raw receive address from the QR address pill', (
     tester,
   ) async {
+    _setMobileViewport(tester);
     final wallet = _wallet();
 
     await tester.pumpWidget(
@@ -73,6 +101,7 @@ void main() {
           externalTransfersProvider.overrideWith((ref) async => const []),
         ],
         child: MaterialApp(
+          scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
           locale: const Locale('en'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -89,18 +118,23 @@ void main() {
     );
 
     await tester.pump();
-    await tester.tap(find.byKey(const ValueKey('receive-address-pill-copy')));
+    final copyPill = find.byKey(const ValueKey('receive-address-pill-copy'));
+    await tester.ensureVisible(copyPill);
+    await tester.tap(copyPill);
     await tester.pump();
 
     final clipboardData = await Clipboard.getData('text/plain');
     expect(clipboardData?.text, wallet.address);
 
+    await tester.pump(const Duration(seconds: 3));
+    await tester.pump();
     await tester.pumpWidget(const SizedBox.shrink());
   });
 
   testWidgets('shows payment details before sharing the receive request', (
     tester,
   ) async {
+    _setMobileViewport(tester);
     final wallet = _wallet();
 
     await tester.pumpWidget(
@@ -110,6 +144,7 @@ void main() {
           externalTransfersProvider.overrideWith((ref) async => const []),
         ],
         child: MaterialApp(
+          scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
           locale: const Locale('pt'),
           localizationsDelegates: AppLocalizations.localizationsDelegates,
           supportedLocales: AppLocalizations.supportedLocales,
@@ -136,6 +171,15 @@ void main() {
     expect(find.text('Endereço'), findsOneWidget);
 
     await tester.pumpWidget(const SizedBox.shrink());
+  });
+}
+
+void _setMobileViewport(WidgetTester tester) {
+  tester.view.physicalSize = const Size(430, 900);
+  tester.view.devicePixelRatio = 1;
+  addTearDown(() {
+    tester.view.resetPhysicalSize();
+    tester.view.resetDevicePixelRatio();
   });
 }
 

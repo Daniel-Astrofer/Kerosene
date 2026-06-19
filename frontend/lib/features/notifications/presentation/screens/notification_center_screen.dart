@@ -4,10 +4,11 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
@@ -54,8 +55,8 @@ Rect _fallbackOriginRect(Size size) {
 Route<void> _notificationCenterRoute(Rect originRect) {
   return PageRouteBuilder<void>(
     opaque: true,
-    transitionDuration: const Duration(milliseconds: 460),
-    reverseTransitionDuration: const Duration(milliseconds: 280),
+    transitionDuration: KeroseneMotion.long,
+    reverseTransitionDuration: KeroseneMotion.medium,
     pageBuilder: (context, animation, secondaryAnimation) {
       return const NotificationCenterScreen();
     },
@@ -63,8 +64,8 @@ Route<void> _notificationCenterRoute(Rect originRect) {
       final reduceMotion = KeroseneMotion.reduceMotion(context);
       final curved = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
+        curve: KeroseneMotion.standard,
+        reverseCurve: KeroseneMotion.exit,
       );
 
       if (reduceMotion) {
@@ -82,7 +83,7 @@ Route<void> _notificationCenterRoute(Rect originRect) {
           final opacity = const Interval(
             0.10,
             0.78,
-            curve: Curves.easeOutCubic,
+            curve: KeroseneMotion.standard,
           ).transform(curved.value);
 
           return ClipPath(
@@ -229,7 +230,7 @@ class _NotificationCenterScreenState
                         child: _animated(
                           Text(
                             group.label,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.inter(
                               color: Colors.white.withValues(alpha: 0.58),
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -326,7 +327,7 @@ class _NotificationCenterScreenState
         .fadeIn(
           duration: 320.ms,
           delay: delay.ms,
-          curve: Curves.easeOutCubic,
+          curve: KeroseneMotion.standard,
           begin: 0.18,
         )
         .slideY(
@@ -334,7 +335,7 @@ class _NotificationCenterScreenState
           end: 0,
           duration: 360.ms,
           delay: delay.ms,
-          curve: Curves.easeOutCubic,
+          curve: KeroseneMotion.standard,
         );
   }
 }
@@ -364,7 +365,7 @@ class _NotificationCenterHeader extends StatelessWidget {
               en: 'Notifications',
               es: 'Notificaciones',
             ),
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: Colors.white,
               fontSize: 30,
               fontWeight: FontWeight.w700,
@@ -385,7 +386,7 @@ class _NotificationCenterHeader extends StatelessWidget {
               builder: (_) => const NotificationSettingsScreen(),
             ),
           ),
-          icon: const Icon(LucideIcons.settings),
+          icon: const Icon(KeroseneIcons.settings),
           color: Colors.white.withValues(alpha: 0.78),
           iconSize: 18,
           style: IconButton.styleFrom(
@@ -422,7 +423,7 @@ class _NotificationFilterBar extends StatelessWidget {
         ),
         _NotificationFilterChip(
           label: _copy(context, pt: 'Avisos', en: 'Alerts', es: 'Avisos'),
-          icon: LucideIcons.bell,
+          icon: KeroseneIcons.notifications,
           selected: selected == _NotificationCenterFilter.alerts,
           onTap: () => onChanged(_NotificationCenterFilter.alerts),
         ),
@@ -433,7 +434,7 @@ class _NotificationFilterBar extends StatelessWidget {
             en: 'Security',
             es: 'Seguridad',
           ),
-          icon: LucideIcons.shieldCheck,
+          icon: KeroseneIcons.security,
           selected: selected == _NotificationCenterFilter.security,
           onTap: () => onChanged(_NotificationCenterFilter.security),
         ),
@@ -484,7 +485,7 @@ class _NotificationCenterActions extends StatelessWidget {
           ),
           child: Text(
             statusLabel,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: Colors.white.withValues(alpha: 0.58),
               fontSize: 11,
               fontWeight: FontWeight.w700,
@@ -534,7 +535,7 @@ class _NotificationActionTextButton extends StatelessWidget {
         padding: const EdgeInsets.symmetric(horizontal: 8),
         tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(7)),
-        textStyle: GoogleFonts.inter(
+        textStyle: AppTypography.inter(
           fontSize: 11,
           fontWeight: FontWeight.w800,
           letterSpacing: 0,
@@ -588,7 +589,7 @@ class _NotificationFilterChip extends StatelessWidget {
               ],
               Text(
                 label,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: foreground,
                   fontSize: 12,
                   fontWeight: FontWeight.w700,
@@ -623,7 +624,7 @@ class _NotificationCenterCard extends StatelessWidget {
         child: Ink(
           padding: const EdgeInsets.fromLTRB(12, 13, 12, 13),
           decoration: BoxDecoration(
-            color: const Color(0xFF141414),
+            color: AppColors.hexFF141414,
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: Colors.white.withValues(alpha: 0.035)),
           ),
@@ -652,7 +653,7 @@ class _NotificationCenterCard extends StatelessWidget {
                             item.title,
                             maxLines: 1,
                             overflow: TextOverflow.ellipsis,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.inter(
                               color: Colors.white.withValues(alpha: 0.92),
                               fontSize: 12.5,
                               fontWeight: FontWeight.w600,
@@ -664,7 +665,7 @@ class _NotificationCenterCard extends StatelessWidget {
                         const SizedBox(width: 10),
                         Text(
                           _timeLabel(context, item.timestamp),
-                          style: GoogleFonts.inter(
+                          style: AppTypography.inter(
                             color: Colors.white.withValues(alpha: 0.35),
                             fontSize: 10,
                             fontWeight: FontWeight.w500,
@@ -679,7 +680,7 @@ class _NotificationCenterCard extends StatelessWidget {
                       item.body,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: Colors.white.withValues(alpha: 0.58),
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
@@ -742,7 +743,7 @@ class _NotificationEmptyState extends StatelessWidget {
         child: Container(
           padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
-            color: const Color(0xFF141414),
+            color: AppColors.hexFF141414,
             borderRadius: BorderRadius.circular(15),
             border: Border.all(color: Colors.white.withValues(alpha: 0.06)),
           ),
@@ -750,7 +751,7 @@ class _NotificationEmptyState extends StatelessWidget {
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                LucideIcons.bellOff,
+                KeroseneIcons.notificationsOff,
                 color: Colors.white.withValues(alpha: 0.54),
                 size: 26,
               ),
@@ -758,7 +759,7 @@ class _NotificationEmptyState extends StatelessWidget {
               Text(
                 title,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: Colors.white.withValues(alpha: 0.86),
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
@@ -774,7 +775,7 @@ class _NotificationEmptyState extends StatelessWidget {
                   es: 'Cuando ocurra algo importante, aparece aqui.',
                 ),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: Colors.white.withValues(alpha: 0.48),
                   fontSize: 12,
                   height: 1.35,
@@ -808,11 +809,11 @@ bool _isSecurityNotification(
 
 Color _accentFor(AppNotificationTone tone) {
   return switch (tone) {
-    AppNotificationTone.success => const Color(0xFF22C55E),
-    AppNotificationTone.warning => const Color(0xFFAEB7C1),
-    AppNotificationTone.error => const Color(0xFFFF5A67),
-    AppNotificationTone.info => const Color(0xFFA7B0BA),
-    AppNotificationTone.neutral => const Color(0xFF9CA3AF),
+    AppNotificationTone.success => AppColors.hexFF22C55E,
+    AppNotificationTone.warning => AppColors.hexFFAEB7C1,
+    AppNotificationTone.error => AppColors.hexFFFF5A67,
+    AppNotificationTone.info => AppColors.hexFFA7B0BA,
+    AppNotificationTone.neutral => AppColors.hexFF9CA3AF,
   };
 }
 

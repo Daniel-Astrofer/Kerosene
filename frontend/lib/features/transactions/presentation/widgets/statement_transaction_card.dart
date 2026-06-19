@@ -1,17 +1,21 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/transaction_address_display.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+
+import 'package:kerosene/core/theme/app_typography.dart';
 
 enum StatementTransactionCardMode { stacked, separated }
 
@@ -116,8 +120,8 @@ class _StatementTransactionScrollStackState
     final stackedTop = index * widget.stackGap;
     final top = naturalTop + (stackedTop - naturalTop) * collapseProgress;
     return AnimatedPositioned(
-      duration: const Duration(milliseconds: 150),
-      curve: Curves.easeOutCubic,
+      duration: KeroseneMotion.fast,
+      curve: KeroseneMotion.standard,
       left: 0,
       right: 0,
       top: top,
@@ -166,6 +170,8 @@ class StatementTransactionCard extends ConsumerWidget {
     final title = _title(context, transaction, visual);
     final counterparty = _counterparty(context, transaction);
     final date = transaction.timestamp.toLocal();
+    final timestampLabel =
+        '${_dateFormat.format(date)}\n${_timeFormat.format(date)}';
     final compact = mode == StatementTransactionCardMode.stacked && !expanded;
     final cardPadding = compact ? 16.0 : 20.0;
     final iconSize = compact ? 42.0 : 48.0;
@@ -182,8 +188,8 @@ class StatementTransactionCard extends ConsumerWidget {
         onTap: onTap,
         borderRadius: BorderRadius.circular(28),
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 260),
-          curve: Curves.easeOutCubic,
+          duration: KeroseneMotion.medium,
+          curve: KeroseneMotion.standard,
           padding: EdgeInsets.all(cardPadding),
           decoration: BoxDecoration(
             color: style.background,
@@ -228,7 +234,7 @@ class StatementTransactionCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: Colors.black,
-                            fontFamily: 'Inter',
+                            fontFamily: AppTypography.bodyFontFamily,
                             fontSize: titleFontSize,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0,
@@ -241,7 +247,7 @@ class StatementTransactionCard extends ConsumerWidget {
                           overflow: TextOverflow.ellipsis,
                           style: TextStyle(
                             color: style.secondaryText,
-                            fontFamily: 'Inter',
+                            fontFamily: AppTypography.bodyFontFamily,
                             fontSize: counterpartyFontSize,
                             fontWeight: FontWeight.w400,
                             letterSpacing: 0,
@@ -252,11 +258,11 @@ class StatementTransactionCard extends ConsumerWidget {
                   ),
                   const SizedBox(width: 10),
                   Text(
-                    '${_dateFormat.format(date)}\n${_timeFormat.format(date)}',
+                    timestampLabel,
                     textAlign: TextAlign.right,
                     style: TextStyle(
                       color: style.timeText,
-                      fontFamily: 'Inter',
+                      fontFamily: AppTypography.bodyFontFamily,
                       fontSize: 11,
                       fontWeight: FontWeight.w500,
                       height: 1.18,
@@ -272,7 +278,7 @@ class StatementTransactionCard extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: TextStyle(
                   color: Colors.black,
-                  fontFamily: 'Inter',
+                  fontFamily: AppTypography.bodyFontFamily,
                   fontSize: amountFontSize,
                   fontWeight: FontWeight.w700,
                   height: 1.05,
@@ -286,8 +292,8 @@ class StatementTransactionCard extends ConsumerWidget {
                 child: _StatusPill(status: transaction.status),
               ),
               AnimatedSize(
-                duration: const Duration(milliseconds: 260),
-                curve: Curves.easeOutCubic,
+                duration: KeroseneMotion.medium,
+                curve: KeroseneMotion.standard,
                 alignment: Alignment.topCenter,
                 child: expanded
                     ? Padding(
@@ -372,10 +378,10 @@ class StatementTransactionCard extends ConsumerWidget {
   }
 
   static IconData _iconFor(Transaction tx, TransactionVisualSpec visual) {
-    if (tx.isInternal) return LucideIcons.users;
-    if (tx.isLightning) return LucideIcons.zap;
-    if (tx.status == TransactionStatus.failed) return LucideIcons.alertCircle;
-    return LucideIcons.box;
+    if (tx.isInternal) return KeroseneIcons.group;
+    if (tx.isLightning) return KeroseneIcons.lightning;
+    if (tx.status == TransactionStatus.failed) return KeroseneIcons.warning;
+    return KeroseneIcons.archive;
   }
 
   static String _shorten(String value, {int head = 12, int tail = 6}) {
@@ -508,7 +514,7 @@ class _TransactionDetailsRow extends StatelessWidget {
           row.label,
           style: const TextStyle(
             color: Colors.black,
-            fontFamily: 'Inter',
+            fontFamily: AppTypography.bodyFontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w600,
             letterSpacing: 0,
@@ -524,8 +530,8 @@ class _TransactionDetailsRow extends StatelessWidget {
             style: TextStyle(
               color: style.secondaryText,
               fontFamily: row.displayValue.length > 20
-                  ? 'IBMPlexSansHebrew'
-                  : 'Inter',
+                  ? AppTypography.financialFontFamily
+                  : AppTypography.bodyFontFamily,
               fontSize: row.displayValue.length > 20 ? 12 : 14,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,
@@ -557,7 +563,7 @@ class _TransactionDetailCopyButton extends StatelessWidget {
         visualDensity: VisualDensity.compact,
         padding: EdgeInsets.zero,
         constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-        icon: Icon(LucideIcons.copy, size: 15, color: style.secondaryText),
+        icon: Icon(KeroseneIcons.copy, size: 15, color: style.secondaryText),
       ),
     );
   }
@@ -588,7 +594,7 @@ class _TransactionDetailCopyButton extends StatelessWidget {
             ),
           ),
           behavior: SnackBarBehavior.floating,
-          duration: const Duration(seconds: 2),
+          duration: KeroseneMotion.loop,
         ),
       );
   }
@@ -649,27 +655,27 @@ class _StatusPill extends StatelessWidget {
   Widget build(BuildContext context) {
     final colors = switch (status) {
       TransactionStatus.confirmed => (
-          bg: const Color(0xFFDCFCE7),
-          fg: const Color(0xFF166534),
-          icon: LucideIcons.checkCircle2,
+          bg: AppColors.hexFFDCFCE7,
+          fg: AppColors.hexFF166534,
+          icon: KeroseneIcons.success,
           label: 'Concluída',
         ),
       TransactionStatus.confirming => (
-          bg: const Color(0xFFFFEDD5),
-          fg: const Color(0xFF9A3412),
-          icon: LucideIcons.clock3,
+          bg: AppColors.hexFFFFEDD5,
+          fg: AppColors.hexFF9A3412,
+          icon: KeroseneIcons.pending,
           label: 'Confirmando',
         ),
       TransactionStatus.pending => (
-          bg: const Color(0xFFFFEDD5),
-          fg: const Color(0xFF9A3412),
-          icon: LucideIcons.clock3,
+          bg: AppColors.hexFFFFEDD5,
+          fg: AppColors.hexFF9A3412,
+          icon: KeroseneIcons.pending,
           label: 'Pendente',
         ),
       TransactionStatus.failed => (
-          bg: const Color(0xFFFEE2E2),
-          fg: const Color(0xFF991B1B),
-          icon: LucideIcons.alertCircle,
+          bg: AppColors.hexFFFEE2E2,
+          fg: AppColors.hexFF991B1B,
+          icon: KeroseneIcons.warning,
           label: 'Falhou',
         ),
     };
@@ -689,7 +695,7 @@ class _StatusPill extends StatelessWidget {
             colors.label,
             style: TextStyle(
               color: colors.fg,
-              fontFamily: 'Inter',
+              fontFamily: AppTypography.bodyFontFamily,
               fontSize: 12,
               fontWeight: FontWeight.w600,
               letterSpacing: 0,
@@ -719,28 +725,28 @@ class _StatementCardStyle {
   factory _StatementCardStyle.fromTransaction(Transaction tx) {
     if (tx.isLightning) {
       return const _StatementCardStyle(
-        background: Color(0xFFFCE353),
-        border: Color(0xFFE7CA32),
-        secondaryText: Color(0xB3000000),
-        timeText: Color(0x80000000),
-        divider: Color(0x22000000),
+        background: AppColors.hexFFFCE353,
+        border: AppColors.hexFFE7CA32,
+        secondaryText: AppColors.hexB3000000,
+        timeText: AppColors.hex80000000,
+        divider: AppColors.hex22000000,
       );
     }
     if (!tx.isInternal) {
       return const _StatementCardStyle(
-        background: Color(0xFFFBBD75),
-        border: Color(0xFFECA75D),
-        secondaryText: Color(0xB3000000),
-        timeText: Color(0x80000000),
-        divider: Color(0x22000000),
+        background: AppColors.hexFFFBBD75,
+        border: AppColors.hexFFECA75D,
+        secondaryText: AppColors.hexB3000000,
+        timeText: AppColors.hex80000000,
+        divider: AppColors.hex22000000,
       );
     }
     return const _StatementCardStyle(
       background: Colors.white,
-      border: Color(0xFFE8E8EA),
-      secondaryText: Color(0xFF6B7280),
-      timeText: Color(0xFF9CA3AF),
-      divider: Color(0xFFE5E7EB),
+      border: AppColors.hexFFE8E8EA,
+      secondaryText: AppColors.hexFF6B7280,
+      timeText: AppColors.hexFF9CA3AF,
+      divider: AppColors.hexFFE5E7EB,
     );
   }
 }

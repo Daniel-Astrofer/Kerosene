@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 import 'package:kerosene/features/transactions/presentation/widgets/transaction_amount_surface.dart';
 
@@ -20,13 +20,13 @@ void main() {
           prefix: 'From',
           title: 'Main wallet',
           subtitle: 'bc1qsource0000000000000000000000000000000000',
-          icon: LucideIcons.wallet,
+          icon: KeroseneIcons.wallet,
         ),
         destinationParty: const TransactionPartyData(
           prefix: 'To',
           title: 'Recipient',
           subtitle: 'bc1qdest000000000000000000000000000000000000',
-          icon: LucideIcons.send,
+          icon: KeroseneIcons.send,
         ),
         amountLabel: '0.001',
         unitLabel: 'BTC',
@@ -63,6 +63,34 @@ void main() {
     await tester.tap(find.text('≈ R\$ 320,00'));
 
     expect(switched, isTrue);
+  });
+
+  testWidgets('renders selected network connector between parties', (
+    tester,
+  ) async {
+    await _pumpSurface(
+      tester,
+      const TransactionAmountSurface(
+        rail: 'Pagamento',
+        connectionLabel: 'Lightning',
+        sourceParty: TransactionPartyData(
+          prefix: 'De',
+          title: 'Carteira principal',
+          subtitle: 'wallet-1',
+        ),
+        destinationParty: TransactionPartyData(
+          prefix: 'Para',
+          title: 'Invoice Lightning',
+          subtitle: 'lnbc...',
+        ),
+        amountLabel: '0.001',
+        unitLabel: 'BTC',
+      ),
+    );
+
+    expect(find.textContaining('Carteira principal'), findsOneWidget);
+    expect(find.text('Lightning'), findsOneWidget);
+    expect(find.textContaining('Invoice Lightning'), findsOneWidget);
   });
 
   testWidgets('renders locked read-only value without keypad', (tester) async {
@@ -199,14 +227,14 @@ void main() {
           title: 'Wallet with a very long user configured name',
           subtitle:
               'bc1qverylongaddress000000000000000000000000000000000000000000',
-          icon: LucideIcons.wallet,
+          icon: KeroseneIcons.wallet,
         ),
         destinationParty: TransactionPartyData(
           prefix: 'Invoice',
           title: 'Lightning invoice with long memo',
           subtitle:
               'lnbc2500u1pverylonginvoice000000000000000000000000000000000000',
-          icon: LucideIcons.zap,
+          icon: KeroseneIcons.lightning,
         ),
         amountLabel: '123456789.12345678',
         unitLabel: 'BTC',

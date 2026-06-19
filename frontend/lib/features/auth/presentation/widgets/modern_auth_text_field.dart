@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
@@ -60,7 +61,6 @@ class ModernAuthTextField extends StatelessWidget {
         Text(
           label.toUpperCase(),
           style: AppTypography.caption.copyWith(
-            fontFamily: 'IBMPlexSansHebrew',
             color: Colors.white.withValues(alpha: 0.76),
             fontWeight: FontWeight.w700,
             letterSpacing: 0,
@@ -118,13 +118,13 @@ class ModernAuthTextField extends StatelessWidget {
             errorBorder: OutlineInputBorder(
               borderRadius: BorderRadius.zero,
               borderSide: BorderSide(
-                color: const Color(0xFFFF6B6B).withValues(alpha: 0.72),
+                color: AppColors.hexFFFF6B6B.withValues(alpha: 0.72),
                 width: 1,
               ),
             ),
             focusedErrorBorder: focusedBorder,
             errorStyle: AppTypography.bodySmall.copyWith(
-              color: const Color(0xFFFF6B6B),
+              color: AppColors.hexFFFF6B6B,
               fontWeight: FontWeight.w600,
             ),
           ),

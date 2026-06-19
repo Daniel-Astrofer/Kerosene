@@ -1,34 +1,148 @@
+// ignore_for_file: unused_element
+
 import 'dart:async';
 import 'dart:convert';
 import 'dart:math';
 
 import 'package:bip39/bip39.dart' as bip39;
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:kerosene/core/presentation/widgets/bitcoin_address_blocks.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
 import 'package:kerosene/features/bitcoin_accounts/data/cold_wallet_public_material.dart';
 import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
-import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 part 'screens/cold_wallet_creation_screen.dart';
 part 'screens/internal_account_creation_screen.dart';
 part 'widgets/receive_sheet.dart';
-part 'widgets/create_psbt_sheet.dart';
 part 'widgets/bottom_sheets.dart';
+
+const _keroseneBrandLabel = 'Kerosene';
+
+String _screenAccountCardIdentifier(
+  BitcoinAccount account, {
+  ReceivingRequestView? receiveRequest,
+}) {
+  final candidates = [
+    if (!account.isWatchOnly) receiveRequest?.address,
+    if (account.isWatchOnly) account.xpubFingerprint,
+    if (account.isWatchOnly) account.coldWalletId,
+    account.cardId,
+    account.xpubFingerprint,
+    account.coldWalletId,
+    account.id,
+  ];
+  for (final candidate in candidates) {
+    final value = candidate?.trim() ?? '';
+    if (value.isNotEmpty) return value;
+  }
+  return '';
+}
+
+String _screenAccountCustodyLabel(
+    BuildContext context, BitcoinAccount account) {
+  if (account.isWatchOnly) return context.tr.bitcoinAccountsColdWalletBadge;
+  if (account.isCustodialOnchain) {
+    return context.tr.bitcoinAccountsCustodyOnchainTitle;
+  }
+  return context.tr.bitcoinAccountsKeroseneCardBadge;
+}
+
+String _screenAccountTypeLabel(BuildContext context, BitcoinAccount account) {
+  final description = account.walletTypeDescription.trim();
+  if (description.isNotEmpty) return description;
+  if (account.isWatchOnly) {
+    return context.tr.bitcoinAccountsCustodyWatchOnlyTitle;
+  }
+  if (account.isCustodialOnchain) {
+    return context.tr.bitcoinAccountsCustodyOnchainTitle;
+  }
+  return context.tr.bitcoinAccountsCustodyInternalTitle;
+}
+
+int _screenAccountVisibleBalance(BitcoinAccount account) {
+  if (account.isWatchOnly) return account.observedBalanceSats;
+  return account.totalSats;
+}
+
+ReceivingRequestView? _firstReceiveRequest(
+  AsyncValue<List<ReceivingRequestView>> requestsAsync,
+) {
+  final requests = requestsAsync.asData?.value;
+  if (requests == null || requests.isEmpty) return null;
+  return requests.first;
+}
+
+bool _screenHasPublicMaterial(BitcoinAccount account) {
+  return account.isWatchOnly ||
+      account.isCustodialOnchain ||
+      (account.xpubFingerprint ?? '').trim().isNotEmpty ||
+      (account.derivationPath ?? '').trim().isNotEmpty ||
+      (account.scriptPolicy ?? '').trim().isNotEmpty;
+}
+
+String _screenDisplayValue(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? 'Não informado' : trimmed;
+}
+
+String _screenShortText(String value) {
+  if (value.length <= 18) return value;
+  return '${value.substring(0, 8)}…${value.substring(value.length - 6)}';
+}
+
+String _screenHistoryDetail(Transaction transaction) {
+  final candidates = [
+    transaction.blockchainTxid,
+    transaction.externalReference,
+    transaction.isDebit ? transaction.toAddress : transaction.fromAddress,
+    transaction.invoiceId,
+    transaction.paymentHash,
+    transaction.id,
+  ];
+  for (final candidate in candidates) {
+    final value = candidate?.trim() ?? '';
+    if (value.isNotEmpty) return _screenShortText(value);
+  }
+  return 'Movimento Bitcoin';
+}
+
+String _screenHistoryTimestampLabel(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month/${local.year}\n$hour:$minute';
+}
+
+String _screenTransactionStatusLabel(
+  BuildContext context,
+  TransactionStatus status,
+) {
+  return switch (status) {
+    TransactionStatus.pending => context.tr.bitcoinReceiveStatusWaiting,
+    TransactionStatus.confirming => context.tr.bitcoinReceiveStatusConfirming,
+    TransactionStatus.confirmed => context.tr.bitcoinReceiveStatusPaid,
+    TransactionStatus.failed => context.tr.bitcoinReceiveStatusProtected,
+  };
+}
 
 class _BitcoinAccountsColors {
   final bool isLight;
@@ -62,16 +176,16 @@ class _BitcoinAccountsColors {
     if (isLight) {
       return const _BitcoinAccountsColors(
         isLight: true,
-        background: Color(0xFFF7F7F5),
-        surface: Color(0xFFFFFFFF),
-        surfaceAlt: Color(0xFFF0F1EE),
-        surfaceRaised: Color(0xFFE5E7E3),
-        border: Color(0xFFDDE0D8),
-        borderStrong: Color(0xFFC8CDC3),
-        divider: Color(0xFFE2E4DE),
-        text: Color(0xFF181A17),
-        mutedText: Color(0xFF62675F),
-        faintText: Color(0xFF8B9087),
+        background: AppColors.hexFFF7F7F5,
+        surface: AppColors.hexFFFFFFFF,
+        surfaceAlt: AppColors.hexFFF0F1EE,
+        surfaceRaised: AppColors.hexFFE5E7E3,
+        border: AppColors.hexFFDDE0D8,
+        borderStrong: AppColors.hexFFC8CDC3,
+        divider: AppColors.hexFFE2E4DE,
+        text: AppColors.hexFF181A17,
+        mutedText: AppColors.hexFF62675F,
+        faintText: AppColors.hexFF8B9087,
       );
     }
 
@@ -287,8 +401,7 @@ class BitcoinAccountsScreen extends ConsumerStatefulWidget {
 }
 
 class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
-  int _selectedInternalIndex = 0;
-  String? _managedAccountId;
+  int _selectedAccountIndex = 0;
 
   @override
   Widget build(BuildContext context) {
@@ -299,8 +412,7 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
     final isEmptyState = accounts.asData?.value.isEmpty == true;
 
     return Scaffold(
-      backgroundColor:
-          isEmptyState ? const Color(0xFF000000) : colors.background,
+      backgroundColor: isEmptyState ? AppColors.hexFF000000 : colors.background,
       body: Stack(
         children: [
           SafeArea(
@@ -335,19 +447,13 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
                               crossAxisAlignment: CrossAxisAlignment.stretch,
                               children: [
                                 _Header(
-                                  onAdd: _openInternalAccountFlow,
-                                  managing: _managedAccountId != null,
-                                  onBack: _managedAccountId == null
-                                      ? null
-                                      : () => setState(
-                                            () => _managedAccountId = null,
-                                          ),
+                                  onBack: _handleHeaderBack,
                                 ),
                                 const SizedBox(height: AppSpacing.lg),
                                 accounts.when(
                                   loading: () => const _AccountsSkeleton(),
                                   error: (_, __) => _StatePanel(
-                                    icon: LucideIcons.alertTriangle,
+                                    icon: KeroseneIcons.error,
                                     title: context.tr.bitcoinAccountsErrorTitle,
                                     message:
                                         context.tr.bitcoinAccountsErrorMessage,
@@ -358,21 +464,12 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
                                   ),
                                   data: (items) => _AccountsContent(
                                     accounts: items,
-                                    selectedInternalIndex:
-                                        _selectedInternalIndex,
-                                    managedAccountId: _managedAccountId,
-                                    onInternalChanged: (index) => setState(() {
-                                      _selectedInternalIndex = index;
-                                      _managedAccountId = null;
+                                    selectedAccountIndex: _selectedAccountIndex,
+                                    onAccountChanged: (index) => setState(() {
+                                      _selectedAccountIndex = index;
                                     }),
-                                    onManageAccount: (account) => setState(() {
-                                      _managedAccountId = account.id;
-                                    }),
-                                    onCreateColdWallet: _openColdWalletFlow,
                                     onCreateInternalAccount:
                                         _openInternalAccountFlow,
-                                    onReceive: (account) =>
-                                        _showReceiveSheet(context, account),
                                   ),
                                 ),
                               ],
@@ -387,14 +484,6 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
             currentDestination: AppPrimaryDestination.card,
           ),
         ],
-      ),
-    );
-  }
-
-  void _openColdWalletFlow() {
-    Navigator.of(context).push(
-      MaterialPageRoute<void>(
-        builder: (_) => const ColdWalletCreationScreen(),
       ),
     );
   }
@@ -482,7 +571,7 @@ class _BitcoinAccountsEmptyLayout extends StatelessWidget {
                           backgroundColor: Colors.white,
                           foregroundColor: Colors.black,
                           minimumSize: const Size.fromHeight(56),
-                          textStyle: GoogleFonts.inter(
+                          textStyle: AppTypography.inter(
                             fontSize: 16,
                             fontWeight: FontWeight.w600,
                             letterSpacing: 0,
@@ -530,7 +619,7 @@ class _BitcoinAccountsEmptyHeader extends StatelessWidget {
               context.tr.bitcoinAccountsTitle,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.ibmPlexSerif(
+              style: AppTypography.newsreader(
                 color: colors.text,
                 fontSize: 24,
                 fontWeight: FontWeight.w500,
@@ -563,7 +652,7 @@ class _BitcoinAccountsEmptyBackButton extends StatelessWidget {
         child: SizedBox(
           width: 40,
           height: 40,
-          child: Icon(LucideIcons.arrowLeft, color: colors.text, size: 24),
+          child: Icon(KeroseneIcons.back, color: colors.text, size: 24),
         ),
       ),
     );
@@ -588,7 +677,7 @@ class _BitcoinAccountsEmptyContent extends StatelessWidget {
             color: colors.text.withValues(alpha: 0.05),
             border: Border.all(color: colors.text.withValues(alpha: 0.10)),
           ),
-          child: Icon(LucideIcons.walletCards, color: colors.text, size: 32),
+          child: Icon(KeroseneIcons.wallet, color: colors.text, size: 32),
         ),
         const SizedBox(height: 28),
         Padding(
@@ -598,7 +687,7 @@ class _BitcoinAccountsEmptyContent extends StatelessWidget {
               Text(
                 context.tr.bitcoinAccountsEmptyTitle,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: colors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.w600,
@@ -610,7 +699,7 @@ class _BitcoinAccountsEmptyContent extends StatelessWidget {
               Text(
                 context.tr.bitcoinAccountsEmptyMessage,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: colors.mutedText,
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -627,43 +716,26 @@ class _BitcoinAccountsEmptyContent extends StatelessWidget {
 }
 
 class _Header extends StatelessWidget {
-  final VoidCallback onAdd;
-  final VoidCallback? onBack;
-  final bool managing;
+  final VoidCallback onBack;
 
   const _Header({
-    required this.onAdd,
-    required this.managing,
-    this.onBack,
+    required this.onBack,
   });
 
   @override
   Widget build(BuildContext context) {
     final colors = _BitcoinAccountsColors.of(context);
 
-    return Row(
-      children: [
-        if (onBack != null) ...[
-          _RoundHeaderButton(icon: LucideIcons.chevronLeft, onTap: onBack!),
-          const SizedBox(width: 10),
-        ],
-        Expanded(
-          child: Text(
-            'Carteira interna',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: GoogleFonts.ibmPlexSerif(
-              color: colors.text,
-              fontSize: managing ? 32 : 36,
-              fontWeight: FontWeight.w500,
-              height: 1.05,
-              letterSpacing: 0,
-            ),
-          ),
+    return SizedBox(
+      height: 48,
+      child: Align(
+        alignment: Alignment.centerLeft,
+        child: _RoundHeaderButton(
+          icon: KeroseneIcons.chevronLeft,
+          onTap: onBack,
+          backgroundColor: colors.background,
         ),
-        const SizedBox(width: 12),
-        _RoundHeaderButton(icon: LucideIcons.plus, onTap: onAdd),
-      ],
+      ),
     );
   }
 }
@@ -671,15 +743,20 @@ class _Header extends StatelessWidget {
 class _RoundHeaderButton extends StatelessWidget {
   final IconData icon;
   final VoidCallback onTap;
+  final Color? backgroundColor;
 
-  const _RoundHeaderButton({required this.icon, required this.onTap});
+  const _RoundHeaderButton({
+    required this.icon,
+    required this.onTap,
+    this.backgroundColor,
+  });
 
   @override
   Widget build(BuildContext context) {
     final colors = _BitcoinAccountsColors.of(context);
 
     return Material(
-      color: colors.headerButtonBackground,
+      color: backgroundColor ?? colors.headerButtonBackground,
       shape: const CircleBorder(),
       child: InkWell(
         customBorder: const CircleBorder(),
@@ -699,46 +776,22 @@ class _RoundHeaderButton extends StatelessWidget {
 
 class _AccountsContent extends ConsumerWidget {
   final List<BitcoinAccount> accounts;
-  final int selectedInternalIndex;
-  final String? managedAccountId;
-  final ValueChanged<int> onInternalChanged;
-  final ValueChanged<BitcoinAccount> onManageAccount;
-  final VoidCallback onCreateColdWallet;
+  final int selectedAccountIndex;
+  final ValueChanged<int> onAccountChanged;
   final VoidCallback onCreateInternalAccount;
-  final ValueChanged<BitcoinAccount> onReceive;
 
   const _AccountsContent({
     required this.accounts,
-    required this.selectedInternalIndex,
-    required this.managedAccountId,
-    required this.onInternalChanged,
-    required this.onManageAccount,
-    required this.onCreateColdWallet,
+    required this.selectedAccountIndex,
+    required this.onAccountChanged,
     required this.onCreateInternalAccount,
-    required this.onReceive,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final internal = accounts.where((account) => account.isInternal).toList();
-    final watchOnly = accounts.where((account) => account.isWatchOnly).toList();
-    final selectedIndex = internal.isEmpty
-        ? 0
-        : selectedInternalIndex.clamp(0, internal.length - 1);
-    final selectedInternal = internal.isEmpty ? null : internal[selectedIndex];
-    BitcoinAccount? managedAccount;
-    if (managedAccountId != null) {
-      for (final account in internal) {
-        if (account.id == managedAccountId) {
-          managedAccount = account;
-          break;
-        }
-      }
-    }
-
     if (accounts.isEmpty) {
       return _StatePanel(
-        icon: LucideIcons.walletCards,
+        icon: KeroseneIcons.wallet,
         title: context.tr.bitcoinAccountsEmptyTitle,
         message: context.tr.bitcoinAccountsEmptyMessage,
         actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
@@ -746,61 +799,1411 @@ class _AccountsContent extends ConsumerWidget {
       );
     }
 
-    if (managedAccount != null) {
-      final account = managedAccount;
-      return _InternalAccountManagementView(
-        account: account,
-        onReceive: () => onReceive(account),
-      );
-    }
-
+    final selectedIndex = selectedAccountIndex.clamp(0, accounts.length - 1);
+    final selectedAccount = accounts[selectedIndex];
     final txAsync = ref.watch(transactionHistoryProvider);
-    final requestsAsync = selectedInternal == null
+    final requestsAsync = selectedAccount.isWatchOnly
         ? const AsyncValue<List<ReceivingRequestView>>.data(
             <ReceivingRequestView>[],
           )
-        : ref.watch(bitcoinAccountReceiveRequestsProvider(selectedInternal.id));
+        : ref.watch(bitcoinAccountReceiveRequestsProvider(selectedAccount.id));
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (selectedInternal == null)
-          _StatePanel(
-            icon: LucideIcons.creditCard,
-            title: context.tr.bitcoinAccountsNoKeroseneCard,
-            message: context.tr.bitcoinAccountsEmptyMessage,
-            actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
-            onAction: onCreateInternalAccount,
-          )
-        else ...[
-          _InternalCardPager(
-            accounts: internal,
-            selectedIndex: selectedIndex,
-            onChanged: onInternalChanged,
-            onTapCard: () => onManageAccount(selectedInternal),
-          ),
-          const SizedBox(height: 30),
-          _InternalBalanceSection(account: selectedInternal),
-          const SizedBox(height: 30),
-          _ReceiveRequestsSection(
-            requestsAsync: requestsAsync,
-            onRetry: () => ref.invalidate(
-              bitcoinAccountReceiveRequestsProvider(selectedInternal.id),
-            ),
-          ),
-          const SizedBox(height: 30),
-          _InternalTransactionsSection(
-            account: selectedInternal,
-            transactionsAsync: txAsync,
-            requestsAsync: requestsAsync,
-          ),
-        ],
-        const SizedBox(height: 32),
-        _ColdWalletSection(
-          accounts: watchOnly,
-          onCreateColdWallet: onCreateColdWallet,
+        _FocusedAccountPager(
+          accounts: accounts,
+          selectedIndex: selectedIndex,
+          onChanged: onAccountChanged,
+          selectedReceiveRequest: _firstReceiveRequest(requestsAsync),
+        ),
+        const SizedBox(height: 18),
+        _CreateWalletShortcut(onTap: onCreateInternalAccount),
+        const SizedBox(height: 22),
+        _FocusedAccountOptions(
+          account: selectedAccount,
+          requestsAsync: requestsAsync,
+        ),
+        const SizedBox(height: 28),
+        _FocusedAccountHistory(
+          account: selectedAccount,
+          transactionsAsync: txAsync,
+          requestsAsync: requestsAsync,
         ),
       ],
+    );
+  }
+}
+
+class _FocusedAccountPager extends StatelessWidget {
+  final List<BitcoinAccount> accounts;
+  final int selectedIndex;
+  final ValueChanged<int> onChanged;
+  final ReceivingRequestView? selectedReceiveRequest;
+
+  const _FocusedAccountPager({
+    required this.accounts,
+    required this.selectedIndex,
+    required this.onChanged,
+    this.selectedReceiveRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _BitcoinAccountsColors.of(context);
+
+    return Column(
+      children: [
+        SizedBox(
+          height: 220,
+          child: PageView.builder(
+            controller: PageController(
+              viewportFraction: 0.96,
+              initialPage: selectedIndex,
+            ),
+            onPageChanged: (index) {
+              HapticFeedback.selectionClick();
+              onChanged(index);
+            },
+            itemCount: accounts.length,
+            itemBuilder: (context, index) {
+              return Padding(
+                padding: const EdgeInsets.symmetric(horizontal: 3),
+                child: _FocusedAccountCard(
+                  account: accounts[index],
+                  receiveRequest:
+                      index == selectedIndex ? selectedReceiveRequest : null,
+                ),
+              );
+            },
+          ),
+        ),
+        const SizedBox(height: 16),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            for (var index = 0; index < accounts.length; index++)
+              AnimatedContainer(
+                duration: KeroseneMotion.fast,
+                width: 7,
+                height: 7,
+                margin: const EdgeInsets.symmetric(horizontal: 5),
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: index == selectedIndex
+                      ? colors.text
+                      : colors.text.withValues(alpha: 0.18),
+                ),
+              ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _FocusedAccountCard extends StatelessWidget {
+  final BitcoinAccount account;
+  final ReceivingRequestView? receiveRequest;
+
+  const _FocusedAccountCard({
+    required this.account,
+    this.receiveRequest,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final label = account.label.trim().isEmpty
+        ? context.tr.bitcoinAccountsUnnamedAccount
+        : account.label.trim();
+    final identifier = _screenAccountCardIdentifier(
+      account,
+      receiveRequest: receiveRequest,
+    );
+    final displayIdentifier = identifier.isEmpty ? account.id : identifier;
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(24),
+        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+        gradient: LinearGradient(
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+          colors: [
+            KeroseneBrandTokens.surfaceHigh,
+            KeroseneBrandTokens.surface,
+            KeroseneBrandTokens.background,
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: KeroseneBrandTokens.background.withValues(alpha: 0.45),
+            blurRadius: 26,
+            spreadRadius: -16,
+            offset: const Offset(0, 18),
+          ),
+        ],
+      ),
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(28, 26, 28, 24),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            Text(
+              '( ${context.tr.bitcoinAccountsTitle.toUpperCase()} )',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.technicalMono(
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: KeroseneBrandTokens.textMuted,
+                      fontSize: 11,
+                      letterSpacing: 3,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ),
+            const Spacer(),
+            Text(
+              '( $label )',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.newsreader(
+                color: KeroseneBrandTokens.textPrimary,
+                fontSize: 25,
+                fontWeight: FontWeight.w500,
+                height: 1.1,
+                letterSpacing: 0,
+              ),
+            ),
+            const SizedBox(height: 8),
+            Text(
+              '( ${_screenAccountCustodyLabel(context, account).toUpperCase()} )',
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.technicalMono(
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: KeroseneBrandTokens.bitcoin,
+                      fontSize: 12,
+                      letterSpacing: 0.8,
+                      fontWeight: FontWeight.w500,
+                    ),
+              ),
+            ),
+            const Spacer(),
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '( ${_shortText(displayIdentifier)} )',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.technicalMono(
+                      textStyle:
+                          Theme.of(context).textTheme.labelSmall?.copyWith(
+                                color: KeroseneBrandTokens.textSecondary,
+                                fontSize: 13,
+                                letterSpacing: 2,
+                                fontWeight: FontWeight.w500,
+                              ),
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 8),
+                _InlineCopyButton(
+                  value: displayIdentifier,
+                  semanticLabel: 'Copiar identificador da carteira',
+                ),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _InlineCopyButton extends StatelessWidget {
+  final String value;
+  final String semanticLabel;
+
+  const _InlineCopyButton({
+    required this.value,
+    required this.semanticLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Semantics(
+      label: semanticLabel,
+      button: true,
+      child: IconButton(
+        visualDensity: VisualDensity.compact,
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 28, height: 28),
+        onPressed: value.trim().isEmpty
+            ? null
+            : () => _copyText(
+                  context,
+                  value,
+                  title: 'Copiado',
+                  message: 'Dado disponível na área de transferência.',
+                ),
+        icon: Icon(
+          KeroseneIcons.copy,
+          color: KeroseneBrandTokens.textSecondary,
+          size: 18,
+        ),
+      ),
+    );
+  }
+}
+
+class _CreateWalletShortcut extends StatelessWidget {
+  final VoidCallback onTap;
+
+  const _CreateWalletShortcut({required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Material(
+          color: KeroseneBrandTokens.textPrimary,
+          shape: const CircleBorder(),
+          child: InkWell(
+            customBorder: const CircleBorder(),
+            onTap: () {
+              HapticFeedback.selectionClick();
+              onTap();
+            },
+            child: SizedBox(
+              width: 48,
+              height: 48,
+              child: Icon(
+                KeroseneIcons.plus,
+                color: KeroseneBrandTokens.background,
+                size: 26,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          context.tr.createWalletAction,
+          style: AppTypography.inter(
+            color: KeroseneBrandTokens.textPrimary,
+            fontSize: 14,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _FocusedAccountOptions extends ConsumerStatefulWidget {
+  final BitcoinAccount account;
+  final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+
+  const _FocusedAccountOptions({
+    required this.account,
+    required this.requestsAsync,
+  });
+
+  @override
+  ConsumerState<_FocusedAccountOptions> createState() =>
+      _FocusedAccountOptionsState();
+}
+
+class _FocusedAccountOptionsState
+    extends ConsumerState<_FocusedAccountOptions> {
+  String? _expandedKey;
+  String? _busyAction;
+
+  @override
+  void didUpdateWidget(covariant _FocusedAccountOptions oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.account.id != widget.account.id) {
+      _expandedKey = null;
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final account = widget.account;
+    final hasPublicMaterial = _screenHasPublicMaterial(account);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AccountExpansionItem(
+          title: 'STATUS DA CARTEIRA',
+          expanded: _expandedKey == 'status',
+          onTap: () => _toggle('status'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AccountDetailRows(
+                rows: [
+                  _AccountDetail(
+                    'Status',
+                    _friendlyStatus(context, account.status),
+                  ),
+                  _AccountDetail(
+                    'Tipo',
+                    _screenAccountTypeLabel(context, account),
+                  ),
+                  _AccountDetail(
+                    'Custódia',
+                    _screenAccountCustodyLabel(context, account),
+                  ),
+                  _AccountDetail(
+                    'Saldo',
+                    _formatSats(_screenAccountVisibleBalance(account)),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _AccountOptionActionButton(
+                label: _archiveActionLabel(account),
+                icon: account.isWatchOnly
+                    ? KeroseneIcons.archive
+                    : KeroseneIcons.lock,
+                busy: _busyAction == 'archive',
+                destructive: true,
+                onPressed: () => _archiveWallet(account),
+              ),
+            ],
+          ),
+        ),
+        _AccountExpansionItem(
+          title: 'ENDEREÇO DE RECEBIMENTO',
+          expanded: _expandedKey == 'receive',
+          onTap: () => _toggle('receive'),
+          child: _ReceiveMaterialDetails(
+            account: account,
+            requestsAsync: widget.requestsAsync,
+            rotating: _busyAction == 'rotate',
+            onRotate: account.isWatchOnly
+                ? null
+                : () => _rotateReceiveAddress(account),
+          ),
+        ),
+        _AccountExpansionItem(
+          title: 'NOME DA CARTEIRA',
+          expanded: _expandedKey == 'name',
+          onTap: () => _toggle('name'),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AccountDetailRows(
+                rows: [
+                  _AccountDetail(
+                    'Nome',
+                    account.label.trim().isEmpty
+                        ? context.tr.bitcoinAccountsUnnamedAccount
+                        : account.label.trim(),
+                  ),
+                  _AccountDetail('ID da conta', account.id, copyable: true),
+                  if ((account.cardId ?? '').trim().isNotEmpty)
+                    _AccountDetail('Card ID', account.cardId!, copyable: true),
+                  if ((account.coldWalletId ?? '').trim().isNotEmpty)
+                    _AccountDetail(
+                      'Cold wallet ID',
+                      account.coldWalletId!,
+                      copyable: true,
+                    ),
+                ],
+              ),
+              const SizedBox(height: 12),
+              _AccountOptionActionButton(
+                label: 'Trocar nome',
+                icon: KeroseneIcons.edit,
+                busy: _busyAction == 'rename',
+                onPressed: () => _renameWallet(account),
+              ),
+            ],
+          ),
+        ),
+        if (hasPublicMaterial)
+          _AccountExpansionItem(
+            title: 'MATERIAL PÚBLICO',
+            expanded: _expandedKey == 'public',
+            onTap: () => _toggle('public'),
+            child: _AccountDetailRows(
+              rows: [
+                _AccountDetail(
+                  'Fingerprint',
+                  _screenDisplayValue(account.xpubFingerprint),
+                  copyable: (account.xpubFingerprint ?? '').trim().isNotEmpty,
+                ),
+                _AccountDetail(
+                  'Derivação',
+                  _screenDisplayValue(account.derivationPath),
+                  copyable: (account.derivationPath ?? '').trim().isNotEmpty,
+                ),
+                _AccountDetail(
+                  'Script policy',
+                  _screenDisplayValue(account.scriptPolicy),
+                  copyable: (account.scriptPolicy ?? '').trim().isNotEmpty,
+                ),
+              ],
+            ),
+          ),
+        if (account.isWatchOnly)
+          _ColdWalletBackendOptions(
+            account: account,
+            expandedKey: _expandedKey,
+            onToggle: _toggle,
+          ),
+      ],
+    );
+  }
+
+  void _toggle(String key) {
+    HapticFeedback.selectionClick();
+    setState(() => _expandedKey = _expandedKey == key ? null : key);
+  }
+
+  String _archiveActionLabel(BitcoinAccount account) {
+    if (account.isWatchOnly) return 'Arquivar acompanhamento';
+    if (account.isCustodialOnchain) return 'Bloquear carteira';
+    return 'Bloquear cartão';
+  }
+
+  Future<void> _rotateReceiveAddress(BitcoinAccount account) async {
+    setState(() => _busyAction = 'rotate');
+    try {
+      final rotated = await ref
+          .read(bitcoinAccountsProvider.notifier)
+          .rotateReceiveAddress(accountId: account.id);
+      ref.invalidate(bitcoinAccountReceiveRequestsProvider(account.id));
+      if (!mounted) return;
+      AppNotice.showSuccess(
+        context,
+        title: 'Endereço rotacionado',
+        message: _screenDisplayValue(rotated.address),
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: 'Endereço não rotacionado',
+        message: 'A Kerosene não conseguiu gerar um novo endereço agora.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busyAction = null);
+      }
+    }
+  }
+
+  Future<void> _renameWallet(BitcoinAccount account) async {
+    final nextLabel = await _askWalletName(context, account);
+    if (nextLabel == null) return;
+    setState(() => _busyAction = 'rename');
+    try {
+      await ref.read(bitcoinAccountsProvider.notifier).renameWallet(
+            accountId: account.id,
+            label: nextLabel,
+          );
+      if (!mounted) return;
+      AppNotice.showSuccess(
+        context,
+        title: 'Nome atualizado',
+        message: nextLabel,
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: 'Nome não atualizado',
+        message: 'Revise o nome da carteira e tente novamente.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busyAction = null);
+      }
+    }
+  }
+
+  Future<void> _archiveWallet(BitcoinAccount account) async {
+    final confirmed = await _confirmWalletArchive(context, account);
+    if (!confirmed) return;
+    setState(() => _busyAction = 'archive');
+    try {
+      await ref.read(bitcoinAccountsProvider.notifier).archiveWallet(
+            accountId: account.id,
+          );
+      if (!mounted) return;
+      AppNotice.showSuccess(
+        context,
+        title: account.isWatchOnly
+            ? 'Acompanhamento arquivado'
+            : 'Carteira bloqueada',
+        message: account.isWatchOnly
+            ? 'A carteira saiu da lista ativa.'
+            : 'A carteira saiu da lista ativa de movimentação.',
+      );
+    } catch (_) {
+      if (!mounted) return;
+      AppNotice.showError(
+        context,
+        title: 'Ação não concluída',
+        message: 'A carteira não pode ser alterada neste momento.',
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _busyAction = null);
+      }
+    }
+  }
+}
+
+class _ColdWalletBackendOptions extends ConsumerWidget {
+  final BitcoinAccount account;
+  final String? expandedKey;
+  final ValueChanged<String> onToggle;
+
+  const _ColdWalletBackendOptions({
+    required this.account,
+    required this.expandedKey,
+    required this.onToggle,
+  });
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final coldWalletId = _coldWalletIdForAccount(account);
+    final utxosAsync = ref.watch(bitcoinColdWalletUtxosProvider(coldWalletId));
+    final psbtsAsync = ref.watch(bitcoinColdWalletPsbtsProvider(coldWalletId));
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        _AccountExpansionItem(
+          title: 'UTXOS MONITORADOS',
+          expanded: expandedKey == 'utxos',
+          onTap: () => onToggle('utxos'),
+          child: utxosAsync.when(
+            loading: () => const _InlineLoadingState(),
+            error: (_, __) => _MiniEmptyState(
+              text: context.tr.bitcoinAdvancedUtxosUnavailableMessage,
+            ),
+            data: (utxos) => _UtxoPreviewList(utxos: utxos),
+          ),
+        ),
+        _AccountExpansionItem(
+          title: 'PSBT WORKFLOWS',
+          expanded: expandedKey == 'psbts',
+          onTap: () => onToggle('psbts'),
+          child: psbtsAsync.when(
+            loading: () => const _InlineLoadingState(),
+            error: (_, __) => _MiniEmptyState(
+              text: context.tr.bitcoinAdvancedPsbtsUnavailableMessage,
+            ),
+            data: (workflows) => _ReadOnlyPsbtWorkflowList(
+              workflows: workflows,
+              onCopyUnsigned: (workflow) => _copyText(
+                context,
+                workflow.unsignedPsbt,
+                title: context.tr.bitcoinAdvancedPsbtCopiedTitle,
+                message: context.tr.bitcoinAdvancedSignExternallyMessage,
+              ),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _ReadOnlyPsbtWorkflowList extends StatelessWidget {
+  final List<PsbtWorkflowView> workflows;
+  final ValueChanged<PsbtWorkflowView> onCopyUnsigned;
+
+  const _ReadOnlyPsbtWorkflowList({
+    required this.workflows,
+    required this.onCopyUnsigned,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (workflows.isEmpty) {
+      return _MiniEmptyState(text: context.tr.bitcoinAdvancedNoPsbts);
+    }
+
+    final visible = workflows.take(3).toList(growable: false);
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < visible.length; index++)
+          _ReadOnlyPsbtWorkflowRow(
+            workflow: visible[index],
+            showDivider: index != visible.length - 1,
+            onCopyUnsigned: () => onCopyUnsigned(visible[index]),
+          ),
+        if (workflows.length > visible.length)
+          _MiniHint(
+            text: context.tr.bitcoinAdvancedHiddenPsbts(
+              workflows.length - visible.length,
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _ReadOnlyPsbtWorkflowRow extends StatelessWidget {
+  final PsbtWorkflowView workflow;
+  final bool showDivider;
+  final VoidCallback onCopyUnsigned;
+
+  const _ReadOnlyPsbtWorkflowRow({
+    required this.workflow,
+    required this.showDivider,
+    required this.onCopyUnsigned,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 10),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(color: KeroseneBrandTokens.borderSubtle),
+              )
+            : null,
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Row(
+            children: [
+              Expanded(
+                child: Text(
+                  _shortText(workflow.destinationAddress),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.inter(
+                    color: KeroseneBrandTokens.textPrimary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: 0,
+                  ),
+                ),
+              ),
+              const SizedBox(width: 8),
+              _Pill(text: _psbtStatusLabel(context, workflow.status)),
+            ],
+          ),
+          const SizedBox(height: 8),
+          _AccountDetailRows(
+            rows: [
+              _AccountDetail('Valor', _formatSats(workflow.amountSats)),
+              _AccountDetail('Taxa', _formatSats(workflow.estimatedFeeSats)),
+              if ((workflow.broadcastTxidRef ?? '').trim().isNotEmpty)
+                _AccountDetail(
+                  'Broadcast',
+                  workflow.broadcastTxidRef!,
+                  copyable: true,
+                ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Align(
+            alignment: Alignment.centerLeft,
+            child: OutlinedButton.icon(
+              style: _BitcoinAccountsColors.of(context)
+                  .outlinedButtonStyle(minHeight: 38),
+              onPressed: onCopyUnsigned,
+              icon: const Icon(KeroseneIcons.copy, size: 15),
+              label: Text(context.tr.bitcoinAdvancedCopyUnsignedAction),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _ReceiveMaterialDetails extends StatelessWidget {
+  final BitcoinAccount account;
+  final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+  final VoidCallback? onRotate;
+  final bool rotating;
+
+  const _ReceiveMaterialDetails({
+    required this.account,
+    required this.requestsAsync,
+    this.onRotate,
+    this.rotating = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (account.isWatchOnly) {
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          _AccountDetailRows(
+            rows: [
+              _AccountDetail(
+                'Fingerprint',
+                _screenDisplayValue(account.xpubFingerprint),
+                copyable: (account.xpubFingerprint ?? '').trim().isNotEmpty,
+              ),
+              _AccountDetail(
+                'Cold wallet',
+                _coldWalletIdForAccount(account),
+                copyable: true,
+              ),
+              _AccountDetail(
+                  'Status', _friendlyStatus(context, account.status)),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const _AccountOptionNote(
+            text: 'Carteiras watch-only não emitem endereço pelo app.',
+          ),
+        ],
+      );
+    }
+
+    return requestsAsync.when(
+      loading: () => const _InlineLoadingState(),
+      error: (_, __) => _MiniEmptyState(
+        text: context.tr.bitcoinReceiveRequestsLoadErrorMessage,
+      ),
+      data: (requests) {
+        final request = requests.isEmpty ? null : requests.first;
+        return Column(
+          crossAxisAlignment: CrossAxisAlignment.stretch,
+          children: [
+            _AccountDetailRows(
+              rows: [
+                _AccountDetail(
+                  'Endereço',
+                  _screenDisplayValue(request?.address),
+                  copyable: (request?.address ?? '').trim().isNotEmpty,
+                ),
+                _AccountDetail(
+                  'BIP21',
+                  _screenDisplayValue(request?.bip21),
+                  copyable: (request?.bip21 ?? '').trim().isNotEmpty,
+                ),
+                _AccountDetail(
+                  'Status',
+                  request == null
+                      ? _friendlyStatus(context, account.status)
+                      : _receiveStatusLabel(context, request.status),
+                ),
+                if (request?.amountSats != null)
+                  _AccountDetail('Valor', _formatSats(request!.amountSats!)),
+                if (request != null)
+                  _AccountDetail(
+                    'Expiração',
+                    request.expiry.isEmpty
+                        ? context.tr.bitcoinReceiveRequestsNoExpiry
+                        : request.expiry,
+                  ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            _AccountOptionActionButton(
+              label: 'Rotacionar endereço',
+              icon: KeroseneIcons.refresh,
+              busy: rotating,
+              onPressed: onRotate,
+            ),
+          ],
+        );
+      },
+    );
+  }
+}
+
+class _AccountOptionActionButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final VoidCallback? onPressed;
+  final bool busy;
+  final bool destructive;
+
+  const _AccountOptionActionButton({
+    required this.label,
+    required this.icon,
+    required this.onPressed,
+    this.busy = false,
+    this.destructive = false,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = _BitcoinAccountsColors.of(context);
+    return OutlinedButton.icon(
+      style: colors.outlinedButtonStyle(
+        minHeight: 42,
+        foregroundColor: destructive
+            ? KeroseneBrandTokens.error
+            : KeroseneBrandTokens.textPrimary,
+      ),
+      onPressed: busy ? null : onPressed,
+      icon: busy
+          ? const SizedBox(
+              width: 15,
+              height: 15,
+              child: CircularProgressIndicator(strokeWidth: 2),
+            )
+          : Icon(icon, size: 15),
+      label: Text(label),
+    );
+  }
+}
+
+class _AccountOptionNote extends StatelessWidget {
+  final String text;
+
+  const _AccountOptionNote({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: AppTypography.inter(
+        color: KeroseneBrandTokens.textMuted,
+        fontSize: 12,
+        height: 1.35,
+        letterSpacing: 0,
+      ),
+    );
+  }
+}
+
+Future<String?> _askWalletName(
+  BuildContext context,
+  BitcoinAccount account,
+) async {
+  return showDialog<String>(
+    context: context,
+    builder: (dialogContext) {
+      return _WalletNameDialog(initialName: account.label.trim());
+    },
+  );
+}
+
+class _WalletNameDialog extends StatefulWidget {
+  final String initialName;
+
+  const _WalletNameDialog({required this.initialName});
+
+  @override
+  State<_WalletNameDialog> createState() => _WalletNameDialogState();
+}
+
+class _WalletNameDialogState extends State<_WalletNameDialog> {
+  late final TextEditingController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = TextEditingController(text: widget.initialName);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  void _submit() {
+    final value = _controller.text.trim();
+    if (value.isEmpty) return;
+    Navigator.of(context).pop(value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return AlertDialog(
+      title: const Text('Trocar nome'),
+      content: TextField(
+        controller: _controller,
+        autofocus: true,
+        maxLength: 96,
+        textInputAction: TextInputAction.done,
+        decoration: const InputDecoration(labelText: 'Nome da carteira'),
+        onSubmitted: (_) => _submit(),
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(context).pop(),
+          child: Text(context.tr.cancel),
+        ),
+        FilledButton(
+          onPressed: _submit,
+          child: Text(context.tr.save),
+        ),
+      ],
+    );
+  }
+}
+
+Future<bool> _confirmWalletArchive(
+  BuildContext context,
+  BitcoinAccount account,
+) async {
+  final title = account.isWatchOnly
+      ? 'Arquivar acompanhamento'
+      : account.isCustodialOnchain
+          ? 'Bloquear carteira'
+          : 'Bloquear cartão';
+  final message = account.isWatchOnly
+      ? 'Esta carteira deixará de aparecer como acompanhamento ativo.'
+      : 'Esta carteira deixará de aparecer como ativa para movimentação.';
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) {
+      return AlertDialog(
+        title: Text(title),
+        content: Text(message),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.of(dialogContext).pop(false),
+            child: Text(context.tr.cancel),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.of(dialogContext).pop(true),
+            child: Text(context.tr.confirm),
+          ),
+        ],
+      );
+    },
+  );
+  return confirmed == true;
+}
+
+class _AccountExpansionItem extends StatelessWidget {
+  final String title;
+  final bool expanded;
+  final VoidCallback onTap;
+  final Widget child;
+
+  const _AccountExpansionItem({
+    required this.title,
+    required this.expanded,
+    required this.onTap,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: KeroseneMotion.medium,
+      curve: KeroseneMotion.standard,
+      margin: const EdgeInsets.only(bottom: 5),
+      decoration: BoxDecoration(
+        color: KeroseneBrandTokens.surfaceHigh,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+      ),
+      child: Column(
+        children: [
+          Material(
+            color: Colors.transparent,
+            child: InkWell(
+              borderRadius: BorderRadius.circular(14),
+              onTap: onTap,
+              child: Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 24,
+                  vertical: 20,
+                ),
+                child: Row(
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.inter(
+                          color: KeroseneBrandTokens.textSecondary,
+                          fontSize: 11,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0.6,
+                        ),
+                      ),
+                    ),
+                    AnimatedRotation(
+                      duration: KeroseneMotion.medium,
+                      turns: expanded ? 0.5 : 0,
+                      child: Icon(
+                        KeroseneIcons.chevronDown,
+                        color: KeroseneBrandTokens.textSecondary,
+                        size: 18,
+                      ),
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          AnimatedCrossFade(
+            duration: KeroseneMotion.medium,
+            crossFadeState:
+                expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
+            firstChild: const SizedBox(width: double.infinity),
+            secondChild: Padding(
+              padding: const EdgeInsets.fromLTRB(24, 0, 24, 20),
+              child: child,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AccountDetail {
+  final String label;
+  final String value;
+  final bool copyable;
+
+  const _AccountDetail(
+    this.label,
+    this.value, {
+    this.copyable = false,
+  });
+}
+
+class _AccountDetailRows extends StatelessWidget {
+  final List<_AccountDetail> rows;
+
+  const _AccountDetailRows({required this.rows});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        for (var index = 0; index < rows.length; index++)
+          _AccountDetailRow(
+            row: rows[index],
+            showDivider: index != rows.length - 1,
+          ),
+      ],
+    );
+  }
+}
+
+class _AccountDetailRow extends StatelessWidget {
+  final _AccountDetail row;
+  final bool showDivider;
+
+  const _AccountDetailRow({
+    required this.row,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 9),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(
+                  color: KeroseneBrandTokens.borderSubtle,
+                ),
+              )
+            : null,
+      ),
+      child: Row(
+        children: [
+          Expanded(
+            child: Text(
+              row.label,
+              style: AppTypography.inter(
+                color: KeroseneBrandTokens.textMuted,
+                fontSize: 12,
+                fontWeight: FontWeight.w500,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          const SizedBox(width: 12),
+          Flexible(
+            flex: 2,
+            child: Text(
+              row.value,
+              textAlign: TextAlign.right,
+              maxLines: 2,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.technicalMono(
+                textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                      color: KeroseneBrandTokens.textPrimary,
+                      fontSize: 12,
+                      fontWeight: FontWeight.w600,
+                      letterSpacing: 0,
+                    ),
+              ),
+            ),
+          ),
+          if (row.copyable) ...[
+            const SizedBox(width: 4),
+            _InlineCopyButton(
+              value: row.value,
+              semanticLabel: 'Copiar ${row.label}',
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _InlineLoadingState extends StatelessWidget {
+  const _InlineLoadingState();
+
+  @override
+  Widget build(BuildContext context) {
+    return const SizedBox(
+      height: 48,
+      child: Center(
+        child: SizedBox(
+          width: 18,
+          height: 18,
+          child: CircularProgressIndicator(strokeWidth: 2),
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusedAccountHistory extends StatelessWidget {
+  final BitcoinAccount account;
+  final AsyncValue<List<Transaction>> transactionsAsync;
+  final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+
+  const _FocusedAccountHistory({
+    required this.account,
+    required this.transactionsAsync,
+    required this.requestsAsync,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final requests =
+        requestsAsync.asData?.value ?? const <ReceivingRequestView>[];
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          context.tr.primaryNavHistory,
+          style: AppTypography.newsreader(
+            color: KeroseneBrandTokens.textPrimary,
+            fontSize: 28,
+            fontWeight: FontWeight.w500,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 18),
+        transactionsAsync.when(
+          loading: () => const _CompactLoadingPanel(),
+          error: (_, __) => _BareHistoryMessage(
+            text: context.tr.bitcoinAccountsErrorMessage,
+          ),
+          data: (transactions) {
+            final rows = _transactionsForAccount(
+              account: account,
+              transactions: transactions,
+              requests: requests,
+            ).take(8).toList(growable: false);
+
+            if (rows.isEmpty) {
+              return const _BareHistoryMessage(
+                text: 'Sem transações neste cartão.',
+              );
+            }
+
+            return Column(
+              children: [
+                for (var index = 0; index < rows.length; index++)
+                  _FocusedHistoryRow(
+                    transaction: rows[index],
+                    showDivider: index != rows.length - 1,
+                  ),
+              ],
+            );
+          },
+        ),
+      ],
+    );
+  }
+}
+
+class _BareHistoryMessage extends StatelessWidget {
+  final String text;
+
+  const _BareHistoryMessage({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 14),
+      child: Text(
+        text,
+        style: AppTypography.inter(
+          color: KeroseneBrandTokens.textMuted,
+          fontSize: 13,
+          height: 1.35,
+          letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+}
+
+class _FocusedHistoryRow extends StatelessWidget {
+  final Transaction transaction;
+  final bool showDivider;
+
+  const _FocusedHistoryRow({
+    required this.transaction,
+    required this.showDivider,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = transaction.description?.trim().isNotEmpty == true
+        ? transaction.description!.trim()
+        : _transactionTitle(transaction);
+    final detail = _screenHistoryDetail(transaction);
+
+    return Container(
+      padding: const EdgeInsets.symmetric(vertical: 18, horizontal: 20),
+      decoration: BoxDecoration(
+        border: showDivider
+            ? Border(
+                bottom: BorderSide(color: KeroseneBrandTokens.borderStrong),
+              )
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 50,
+            height: 50,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: KeroseneBrandTokens.textPrimary,
+            ),
+            child: Icon(
+              transaction.isInternal
+                  ? KeroseneIcons.wallet
+                  : KeroseneIcons.history,
+              color: KeroseneBrandTokens.background,
+              size: 22,
+            ),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Text(
+                        title,
+                        maxLines: 1,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppTypography.inter(
+                          color: KeroseneBrandTokens.textPrimary,
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 0,
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      _screenHistoryTimestampLabel(transaction.timestamp),
+                      textAlign: TextAlign.right,
+                      style: AppTypography.inter(
+                        color: KeroseneBrandTokens.textMuted,
+                        fontSize: 12,
+                        height: 1.2,
+                        letterSpacing: 0,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  detail,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.technicalMono(
+                    textStyle: Theme.of(context).textTheme.labelSmall?.copyWith(
+                          color: KeroseneBrandTokens.textSecondary,
+                          fontSize: 12,
+                          letterSpacing: 0,
+                        ),
+                  ),
+                ),
+                const SizedBox(height: 18),
+                Text(
+                  _signedSats(transaction),
+                  style: AppTypography.inter(
+                    color: KeroseneBrandTokens.textPrimary,
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    height: 1,
+                    letterSpacing: 0,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                _TransparentStatusPill(
+                  text: _screenTransactionStatusLabel(
+                      context, transaction.status),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _TransparentStatusPill extends StatelessWidget {
+  final String text;
+
+  const _TransparentStatusPill({required this.text});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: KeroseneBrandTokens.borderStrong),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+        child: Text(
+          text,
+          style: AppTypography.inter(
+            color: KeroseneBrandTokens.textSecondary,
+            fontSize: 11,
+            fontWeight: FontWeight.w700,
+            letterSpacing: 0,
+          ),
+        ),
+      ),
     );
   }
 }
@@ -901,7 +2304,7 @@ class _InternalWalletCard extends StatelessWidget {
               gradient: const LinearGradient(
                 begin: Alignment.topLeft,
                 end: Alignment.bottomRight,
-                colors: [Color(0xFF1E1B38), Color(0xFF141414)],
+                colors: [AppColors.hexFF1E1B38, AppColors.hexFF141414],
               ),
               boxShadow: [
                 BoxShadow(
@@ -921,7 +2324,7 @@ class _InternalWalletCard extends StatelessWidget {
                         label,
                         maxLines: 1,
                         overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.ibmPlexSerif(
+                        style: AppTypography.newsreader(
                           color: Colors.white.withValues(alpha: 0.92),
                           fontSize: 21,
                           fontWeight: FontWeight.w400,
@@ -931,7 +2334,7 @@ class _InternalWalletCard extends StatelessWidget {
                     ),
                     Text(
                       _cardExpiryLabel(account),
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: Colors.white.withValues(alpha: 0.70),
                         fontSize: 18,
                         letterSpacing: 0,
@@ -946,10 +2349,10 @@ class _InternalWalletCard extends StatelessWidget {
                 ),
                 const Spacer(),
                 Text(
-                  'Kerosene',
+                  _keroseneBrandLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.ibmPlexSerif(
+                  style: AppTypography.newsreader(
                     color: Colors.white,
                     fontSize: 30,
                     fontWeight: FontWeight.w400,
@@ -1025,7 +2428,7 @@ class _InternalBalanceSection extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.bitcoinAccountsAvailableBalance,
-                style: GoogleFonts.inter(
+                style: AppTypography.inter(
                   color: colors.text,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -1035,7 +2438,7 @@ class _InternalBalanceSection extends StatelessWidget {
             ),
             Text(
               _formatSats(available),
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: colors.text,
                 fontSize: 22,
                 fontWeight: FontWeight.w700,
@@ -1047,7 +2450,7 @@ class _InternalBalanceSection extends StatelessWidget {
         const SizedBox(height: 12),
         Text(
           context.tr.bitcoinAccountsKeroseneCardNote,
-          style: GoogleFonts.inter(
+          style: AppTypography.inter(
             color: colors.mutedText,
             fontSize: 13,
             height: 1.35,
@@ -1081,7 +2484,7 @@ class _ReceiveRequestsSection extends ConsumerWidget {
         ],
         error: (_, __) => [
           _DarkActionMessage(
-            icon: LucideIcons.alertTriangle,
+            icon: KeroseneIcons.error,
             title: isOnline
                 ? context.tr.bitcoinReceiveRequestsLoadErrorTitle
                 : context.tr.bitcoinReceiveRequestsOfflineTitle,
@@ -1096,7 +2499,7 @@ class _ReceiveRequestsSection extends ConsumerWidget {
           if (requests.isEmpty) {
             return [
               _DarkActionMessage(
-                icon: LucideIcons.inbox,
+                icon: KeroseneIcons.inbox,
                 title: context.tr.bitcoinReceiveRequestsEmptyTitle,
                 message: context.tr.bitcoinReceiveRequestsEmptyMessage,
               ),
@@ -1157,7 +2560,7 @@ class _ReceiveRequestRow extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.text,
                     fontSize: 15,
                     fontWeight: FontWeight.w600,
@@ -1257,7 +2660,7 @@ class _TransactionsPanel extends StatelessWidget {
       children: [
         Text(
           title,
-          style: GoogleFonts.ibmPlexSerif(
+          style: AppTypography.newsreader(
             color: colors.text,
             fontSize: 28,
             fontWeight: FontWeight.w600,
@@ -1317,7 +2720,7 @@ class _TransactionSummaryRow extends StatelessWidget {
                   title,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.text,
                     fontSize: 15,
                     fontWeight: FontWeight.w500,
@@ -1327,7 +2730,7 @@ class _TransactionSummaryRow extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   _relativeTransactionDate(transaction.timestamp),
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.mutedText,
                     fontSize: 13,
                     letterSpacing: 0,
@@ -1339,7 +2742,7 @@ class _TransactionSummaryRow extends StatelessWidget {
           const SizedBox(width: 12),
           Text(
             _signedSats(transaction),
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: colors.text,
               fontSize: 15,
               fontWeight: FontWeight.w700,
@@ -1365,7 +2768,7 @@ class _DarkListMessage extends StatelessWidget {
       padding: const EdgeInsets.all(16),
       child: Text(
         text,
-        style: GoogleFonts.inter(
+        style: AppTypography.inter(
           color: colors.mutedText,
           fontSize: 13,
           height: 1.35,
@@ -1408,7 +2811,7 @@ class _DarkActionMessage extends StatelessWidget {
               children: [
                 Text(
                   title,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
@@ -1418,7 +2821,7 @@ class _DarkActionMessage extends StatelessWidget {
                 const SizedBox(height: 5),
                 Text(
                   message,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.mutedText,
                     fontSize: 13,
                     height: 1.35,
@@ -1429,7 +2832,7 @@ class _DarkActionMessage extends StatelessWidget {
                   const SizedBox(height: 12),
                   OutlinedButton.icon(
                     onPressed: onAction,
-                    icon: const Icon(LucideIcons.refreshCw, size: 15),
+                    icon: const Icon(KeroseneIcons.refresh, size: 15),
                     label: Text(actionLabel!),
                   ),
                 ],
@@ -1478,12 +2881,8 @@ class _CompactLoadingPanel extends StatelessWidget {
 
 class _ColdWalletSection extends StatelessWidget {
   final List<BitcoinAccount> accounts;
-  final VoidCallback onCreateColdWallet;
 
-  const _ColdWalletSection({
-    required this.accounts,
-    required this.onCreateColdWallet,
-  });
+  const _ColdWalletSection({required this.accounts});
 
   @override
   Widget build(BuildContext context) {
@@ -1497,17 +2896,13 @@ class _ColdWalletSection extends StatelessWidget {
             Expanded(
               child: Text(
                 context.tr.bitcoinAccountsColdWalletSection,
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: colors.text,
                   fontSize: 26,
                   fontWeight: FontWeight.w600,
                   letterSpacing: 0,
                 ),
               ),
-            ),
-            IconButton(
-              onPressed: onCreateColdWallet,
-              icon: Icon(LucideIcons.plus, color: colors.text),
             ),
           ],
         ),
@@ -1516,8 +2911,6 @@ class _ColdWalletSection extends StatelessWidget {
           _MutedPanel(text: context.tr.bitcoinAccountsNoColdWallet)
         else ...[
           for (final account in accounts) _ColdWalletTile(account: account),
-          const SizedBox(height: 16),
-          const _TaxEventsSection(),
         ],
       ],
     );
@@ -1550,7 +2943,7 @@ class _ColdWalletTile extends StatelessWidget {
         children: [
           Row(
             children: [
-              Icon(LucideIcons.snowflake, color: colors.text, size: 22),
+              Icon(KeroseneIcons.coldWallet, color: colors.text, size: 22),
               const SizedBox(width: 14),
               Expanded(
                 child: Column(
@@ -1569,7 +2962,7 @@ class _ColdWalletTile extends StatelessWidget {
                       label,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: colors.text,
                         fontSize: 15,
                         fontWeight: FontWeight.w500,
@@ -1579,7 +2972,7 @@ class _ColdWalletTile extends StatelessWidget {
                     const SizedBox(height: 4),
                     Text(
                       context.tr.bitcoinAccountsObservedBalance,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: colors.mutedText,
                         fontSize: 12,
                         letterSpacing: 0,
@@ -1588,7 +2981,7 @@ class _ColdWalletTile extends StatelessWidget {
                     const SizedBox(height: 3),
                     Text(
                       _formatSats(account.observedBalanceSats),
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: colors.mutedText,
                         fontSize: 13,
                         letterSpacing: 0,
@@ -1599,7 +2992,7 @@ class _ColdWalletTile extends StatelessWidget {
                       context.tr.bitcoinAccountsColdWalletNote,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: colors.mutedText,
                         fontSize: 12,
                         height: 1.35,
@@ -1636,106 +3029,11 @@ class _ColdWalletAdvancedPanel extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final colors = _BitcoinAccountsColors.of(context);
-    final coldWalletId = _coldWalletIdForAccount(account);
-    final utxosAsync = ref.watch(bitcoinColdWalletUtxosProvider(coldWalletId));
-    final workflowsAsync = ref.watch(
-      bitcoinColdWalletPsbtsProvider(coldWalletId),
-    );
-
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
-      children: [
-        const SizedBox(height: 16),
-        Divider(color: colors.rowDivider, height: 1),
-        const SizedBox(height: 14),
-        Row(
-          children: [
-            Icon(LucideIcons.fileText, color: colors.text, size: 18),
-            const SizedBox(width: 10),
-            Expanded(
-              child: Text(
-                context.tr.bitcoinAdvancedTitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: GoogleFonts.inter(
-                  color: colors.text,
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 0,
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: [
-            OutlinedButton.icon(
-              style: colors.outlinedButtonStyle(minHeight: 42),
-              onPressed: () => _showCreatePsbtSheet(context, account),
-              icon: const Icon(LucideIcons.fileText, size: 16),
-              label: Text(context.tr.bitcoinAdvancedNewPsbtAction),
-            ),
-            OutlinedButton.icon(
-              style: colors.outlinedButtonStyle(minHeight: 42),
-              onPressed: () {
-                ref.invalidate(bitcoinColdWalletUtxosProvider(coldWalletId));
-                ref.invalidate(bitcoinColdWalletPsbtsProvider(coldWalletId));
-              },
-              icon: const Icon(LucideIcons.refreshCw, size: 16),
-              label: Text(context.tr.bitcoinAdvancedRefreshAction),
-            ),
-          ],
-        ),
-        const SizedBox(height: 16),
-        _AdvancedSubsection(
-          title: context.tr.bitcoinAdvancedUtxosTitle,
-          icon: LucideIcons.coins,
-          child: utxosAsync.when(
-            loading: () => const _MiniLoadingRows(),
-            error: (_, __) => _MiniActionState(
-              icon: LucideIcons.alertTriangle,
-              title: context.tr.bitcoinAdvancedUtxosUnavailableTitle,
-              message: context.tr.bitcoinAdvancedUtxosUnavailableMessage,
-              onRetry: () =>
-                  ref.invalidate(bitcoinColdWalletUtxosProvider(coldWalletId)),
-            ),
-            data: (utxos) => _UtxoPreviewList(utxos: utxos),
-          ),
-        ),
-        const SizedBox(height: 14),
-        _AdvancedSubsection(
-          title: context.tr.bitcoinAdvancedPsbtsTitle,
-          icon: LucideIcons.fileText,
-          child: workflowsAsync.when(
-            loading: () => const _MiniLoadingRows(),
-            error: (_, __) => _MiniActionState(
-              icon: LucideIcons.alertTriangle,
-              title: context.tr.bitcoinAdvancedPsbtsUnavailableTitle,
-              message: context.tr.bitcoinAdvancedPsbtsUnavailableMessage,
-              onRetry: () =>
-                  ref.invalidate(bitcoinColdWalletPsbtsProvider(coldWalletId)),
-            ),
-            data: (workflows) => _PsbtPreviewList(
-              workflows: workflows,
-              onSubmitSigned: (workflow) => _showSubmitPsbtSheet(
-                context,
-                account,
-                workflow,
-              ),
-              onCopyUnsigned: (workflow) => _copyText(
-                context,
-                workflow.unsignedPsbt,
-                title: context.tr.bitcoinAdvancedPsbtCopiedTitle,
-                message: context.tr.bitcoinAdvancedSignExternallyMessage,
-              ),
-            ),
-          ),
-        ),
-      ],
+    return Padding(
+      padding: const EdgeInsets.only(top: 16),
+      child: _MutedPanel(
+        text: context.tr.bitcoinAdvancedPsbtsUnavailableMessage,
+      ),
     );
   }
 }
@@ -1774,7 +3072,7 @@ class _AdvancedSubsection extends StatelessWidget {
                     title,
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTypography.inter(
                       color: colors.text,
                       fontSize: 13,
                       fontWeight: FontWeight.w700,
@@ -1848,6 +3146,7 @@ class _UtxoRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final colors = _BitcoinAccountsColors.of(context);
+    final outpointLabel = '${utxo.txidRef}:${utxo.vout}';
 
     return Container(
       padding: const EdgeInsets.symmetric(vertical: 9),
@@ -1864,7 +3163,7 @@ class _UtxoRow extends StatelessWidget {
         children: [
           Expanded(
             child: Text(
-              '${utxo.txidRef}:${utxo.vout}',
+              outpointLabel,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.technicalMono(
@@ -1879,7 +3178,7 @@ class _UtxoRow extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             _formatSats(utxo.amountSats),
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: colors.text,
               fontSize: 12,
               fontWeight: FontWeight.w700,
@@ -1975,7 +3274,7 @@ class _PsbtWorkflowRow extends StatelessWidget {
                   _shortText(workflow.destinationAddress),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.text,
                     fontSize: 13,
                     fontWeight: FontWeight.w700,
@@ -2009,14 +3308,14 @@ class _PsbtWorkflowRow extends StatelessWidget {
               OutlinedButton.icon(
                 style: colors.outlinedButtonStyle(minHeight: 38),
                 onPressed: onCopyUnsigned,
-                icon: const Icon(LucideIcons.copy, size: 15),
+                icon: const Icon(KeroseneIcons.copy, size: 15),
                 label: Text(context.tr.bitcoinAdvancedCopyUnsignedAction),
               ),
               if (onSubmitSigned != null)
                 OutlinedButton.icon(
                   style: colors.outlinedButtonStyle(minHeight: 38),
                   onPressed: onSubmitSigned,
-                  icon: const Icon(LucideIcons.send, size: 15),
+                  icon: const Icon(KeroseneIcons.send, size: 15),
                   label: Text(context.tr.bitcoinAdvancedSubmitSignatureAction),
                 ),
             ],
@@ -2032,7 +3331,7 @@ class _TaxEventsSection extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final eventsAsync = ref.watch(bitcoinTaxEventsProvider);
+    final eventsAsync = ref.watch(kfeTaxEventsProvider);
     return _TransactionsPanel(
       title: context.tr.bitcoinTaxReportsTitle,
       children: eventsAsync.when(
@@ -2042,18 +3341,18 @@ class _TaxEventsSection extends ConsumerWidget {
         ],
         error: (_, __) => [
           _DarkActionMessage(
-            icon: LucideIcons.alertTriangle,
-            title: context.tr.bitcoinTaxEventsUnavailableTitle,
-            message: context.tr.bitcoinTaxEventsUnavailableMessage,
+            icon: KeroseneIcons.error,
+            title: context.tr.taxEventsUnavailableTitle,
+            message: context.tr.taxEventsUnavailableMessage,
             actionLabel: context.tr.retry,
-            onAction: () => ref.invalidate(bitcoinTaxEventsProvider),
+            onAction: () => ref.invalidate(kfeTaxEventsProvider),
           ),
         ],
         data: (events) {
           if (events.isEmpty) {
             return [
               _DarkActionMessage(
-                icon: LucideIcons.receipt,
+                icon: KeroseneIcons.history,
                 title: context.tr.bitcoinTaxNoEventsTitle,
                 message: context.tr.bitcoinTaxNoEventsMessage,
               ),
@@ -2094,6 +3393,8 @@ class _TaxEventRow extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final colors = _BitcoinAccountsColors.of(context);
+    final transferLabel =
+        '${_formatSats(event.quantitySats)} | ${event.sourceRef.isEmpty ? event.asset : event.sourceRef}';
 
     return Container(
       padding: const EdgeInsets.all(16),
@@ -2109,7 +3410,7 @@ class _TaxEventRow extends ConsumerWidget {
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(LucideIcons.receipt, color: colors.mutedText, size: 18),
+          Icon(KeroseneIcons.history, color: colors.mutedText, size: 18),
           const SizedBox(width: 12),
           Expanded(
             child: Column(
@@ -2119,7 +3420,7 @@ class _TaxEventRow extends ConsumerWidget {
                   _taxEventTypeLabel(context, event.eventType),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: colors.text,
                     fontSize: 14,
                     fontWeight: FontWeight.w700,
@@ -2128,7 +3429,7 @@ class _TaxEventRow extends ConsumerWidget {
                 ),
                 const SizedBox(height: 5),
                 Text(
-                  '${_formatSats(event.quantitySats)} | ${event.sourceRef.isEmpty ? event.asset : event.sourceRef}',
+                  transferLabel,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.technicalMono(
@@ -2147,7 +3448,7 @@ class _TaxEventRow extends ConsumerWidget {
             tooltip: context.tr.bitcoinTaxClassifyTooltip,
             color: colors.surfaceRaised,
             icon: Icon(
-              LucideIcons.chevronDown,
+              KeroseneIcons.chevronDown,
               color: colors.text,
               size: 18,
             ),
@@ -2158,7 +3459,7 @@ class _TaxEventRow extends ConsumerWidget {
                   eventId: event.id,
                   classification: classification,
                 );
-                ref.invalidate(bitcoinTaxEventsProvider);
+                ref.invalidate(kfeTaxEventsProvider);
                 if (!context.mounted) return;
                 AppNotice.showSuccess(
                   context,
@@ -2214,12 +3515,12 @@ class _TaxExportActions extends ConsumerWidget {
         children: [
           OutlinedButton.icon(
             onPressed: () => _exportTaxEvents(context, ref, 'json'),
-            icon: const Icon(LucideIcons.download, size: 15),
+            icon: const Icon(KeroseneIcons.download, size: 15),
             label: Text(context.tr.bitcoinTaxExportJsonAction),
           ),
           OutlinedButton.icon(
             onPressed: () => _exportTaxEvents(context, ref, 'csv'),
-            icon: const Icon(LucideIcons.download, size: 15),
+            icon: const Icon(KeroseneIcons.download, size: 15),
             label: Text(context.tr.bitcoinTaxExportCsvAction),
           ),
         ],
@@ -2320,7 +3621,7 @@ class _MiniHint extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 6),
       child: Text(
         text,
-        style: GoogleFonts.inter(
+        style: AppTypography.inter(
           color: colors.mutedText,
           fontSize: 12,
           height: 1.35,
@@ -2349,7 +3650,7 @@ class _MiniMetricRow extends StatelessWidget {
         Expanded(
           child: Text(
             label,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: colors.mutedText,
               fontSize: 12,
               letterSpacing: 0,
@@ -2358,7 +3659,7 @@ class _MiniMetricRow extends StatelessWidget {
         ),
         Text(
           value,
-          style: GoogleFonts.inter(
+          style: AppTypography.inter(
             color: colors.text,
             fontSize: 12,
             fontWeight: FontWeight.w700,
@@ -2450,8 +3751,8 @@ class _ManagementItem extends StatelessWidget {
     final colors = _BitcoinAccountsColors.of(context);
 
     return AnimatedContainer(
-      duration: const Duration(milliseconds: 220),
-      curve: Curves.easeOutCubic,
+      duration: KeroseneMotion.medium,
+      curve: KeroseneMotion.standard,
       margin: const EdgeInsets.only(bottom: 10),
       decoration: BoxDecoration(
         color: colors.surfaceRaised,
@@ -2474,7 +3775,7 @@ class _ManagementItem extends StatelessWidget {
                     Expanded(
                       child: Text(
                         title,
-                        style: GoogleFonts.inter(
+                        style: AppTypography.inter(
                           color: colors.text,
                           fontSize: 15,
                           fontWeight: FontWeight.w500,
@@ -2483,7 +3784,7 @@ class _ManagementItem extends StatelessWidget {
                       ),
                     ),
                     AnimatedRotation(
-                      duration: const Duration(milliseconds: 220),
+                      duration: KeroseneMotion.medium,
                       turns: expanded ? 0.5 : 0,
                       child: Container(
                         width: 36,
@@ -2493,7 +3794,7 @@ class _ManagementItem extends StatelessWidget {
                           shape: BoxShape.circle,
                         ),
                         child: Icon(
-                          LucideIcons.chevronDown,
+                          KeroseneIcons.chevronDown,
                           color: colors.text,
                           size: 18,
                         ),
@@ -2519,7 +3820,7 @@ class _ManagementItem extends StatelessWidget {
                           Expanded(
                             child: Text(
                               row.$1,
-                              style: GoogleFonts.inter(
+                              style: AppTypography.inter(
                                 color: colors.mutedText,
                                 fontSize: 13,
                                 letterSpacing: 0,
@@ -2528,7 +3829,7 @@ class _ManagementItem extends StatelessWidget {
                           ),
                           Text(
                             row.$2,
-                            style: GoogleFonts.inter(
+                            style: AppTypography.inter(
                               color: colors.mutedText,
                               fontSize: 13,
                               fontWeight: FontWeight.w500,
@@ -2543,8 +3844,8 @@ class _ManagementItem extends StatelessWidget {
             ),
             crossFadeState:
                 expanded ? CrossFadeState.showSecond : CrossFadeState.showFirst,
-            duration: const Duration(milliseconds: 220),
-            sizeCurve: Curves.easeOutCubic,
+            duration: KeroseneMotion.medium,
+            sizeCurve: KeroseneMotion.standard,
           ),
         ],
       ),

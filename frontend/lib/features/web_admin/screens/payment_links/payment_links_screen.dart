@@ -9,6 +9,7 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class PaymentLinksScreen extends ConsumerWidget {
   const PaymentLinksScreen({super.key});
@@ -39,7 +40,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                   ref.invalidate(adminOperationalMetricsProvider);
                   ref.invalidate(paymentLinksProvider);
                 },
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(KeroseneIcons.refresh, size: 16),
                 label: Text(context.tr.adminActionRefresh),
               ),
             ),
@@ -52,7 +53,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                     '${kpis.linksPaid}',
                     '${kpis.linksPending}',
                   ),
-                  icon: Icons.qr_code_2_outlined,
+                  icon: KeroseneIcons.qr,
                 ),
                 AdminMetricCard(
                   label: context.tr.adminPaymentLinksObservedVolume,
@@ -60,7 +61,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                   subtitle: loadedLinks.isEmpty
                       ? context.tr.adminPaymentLinksWaitingList
                       : context.tr.adminLinksLoaded('${loadedLinks.length}'),
-                  icon: Icons.account_balance_wallet_outlined,
+                  icon: KeroseneIcons.wallet,
                   accentColor: AdminColors.accent,
                 ),
                 AdminMetricCard(
@@ -71,7 +72,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                     '${kpis.linksPaid}',
                     '${kpis.linksCreated}',
                   ),
-                  icon: Icons.trending_up,
+                  icon: KeroseneIcons.trendUp,
                   accentColor: kpis.linkConversionRate >= 0.8
                       ? AdminColors.positive
                       : AdminColors.warning,
@@ -80,7 +81,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                   label: context.tr.adminPaymentLinksFailures,
                   value: '${kpis.linksExpired}',
                   subtitle: context.tr.adminPaymentLinksExpiredCancelled,
-                  icon: Icons.warning_amber_outlined,
+                  icon: KeroseneIcons.warning,
                   accentColor: kpis.linksExpired == 0
                       ? AdminColors.positive
                       : AdminColors.warning,
@@ -90,7 +91,7 @@ class PaymentLinksScreen extends ConsumerWidget {
             const SizedBox(height: AdminTheme.spacingXl),
             AdminPanel(
               title: context.tr.adminPaymentLinksLatestEvents,
-              icon: Icons.receipt_long_outlined,
+              icon: KeroseneIcons.receipt,
               child: links.when(
                 loading: () => const _PaymentLinksSkeleton(),
                 error: (error, _) => AdminErrorState(
@@ -102,7 +103,7 @@ class PaymentLinksScreen extends ConsumerWidget {
                     return AdminEmptyState(
                       title: context.tr.adminPaymentLinksEmptyTitle,
                       subtitle: context.tr.adminPaymentLinksEmptySubtitle,
-                      icon: Icons.qr_code_2_outlined,
+                      icon: KeroseneIcons.qr,
                     );
                   }
 

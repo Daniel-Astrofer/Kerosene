@@ -1,16 +1,18 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 import '../../../../core/theme/app_colors.dart';
 import '../../../../core/theme/app_typography.dart';
 import '../../../../core/l10n/l10n_extension.dart';
 import '../../domain/entities/security_status.dart';
-import '../../domain/entities/treasury_overview.dart';
+import '../../domain/entities/kfe_reserve_overview.dart';
 import '../providers/security_provider.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class SovereigntyStatusScreen extends ConsumerStatefulWidget {
   const SovereigntyStatusScreen({super.key});
@@ -29,7 +31,7 @@ class _SovereigntyStatusScreenState
     super.initState();
     _refreshTimer = Timer.periodic(const Duration(seconds: 12), (_) {
       ref.invalidate(sovereigntyStatusProvider);
-      ref.invalidate(treasuryOverviewProvider);
+      ref.invalidate(kfeReserveOverviewProvider);
       ref.invalidate(auditStatsProvider);
     });
   }
@@ -58,9 +60,9 @@ class _SovereigntyStatusScreenState
   Future<void> _refreshStatus() async {
     HapticFeedback.selectionClick();
     ref.invalidate(sovereigntyStatusProvider);
-    ref.invalidate(treasuryOverviewProvider);
+    ref.invalidate(kfeReserveOverviewProvider);
     ref.invalidate(auditStatsProvider);
-    await Future<void>.delayed(const Duration(milliseconds: 300));
+    await Future<void>.delayed(KeroseneMotion.medium);
   }
 
   bool _allSignalsHealthy(SecurityStatus status) {
@@ -73,13 +75,13 @@ class _SovereigntyStatusScreenState
   @override
   Widget build(BuildContext context) {
     final statusAsync = ref.watch(sovereigntyStatusProvider);
-    final treasuryOverviewAsync = ref.watch(treasuryOverviewProvider);
+    final kfeReserveOverviewAsync = ref.watch(kfeReserveOverviewProvider);
     final auditStatsAsync = ref.watch(auditStatsProvider);
 
     return Scaffold(
-      backgroundColor: authenticatedSurfaceBackgroundColor,
+      backgroundColor: KeroseneBrandTokens.backgroundSoft,
       body: ColoredBox(
-        color: authenticatedSurfaceBackgroundColor,
+        color: KeroseneBrandTokens.backgroundSoft,
         child: SafeArea(
           child: Column(
             children: [
@@ -88,7 +90,7 @@ class _SovereigntyStatusScreenState
                 child: statusAsync.when(
                   data: (status) => _buildContent(
                     status,
-                    treasuryOverviewAsync,
+                    kfeReserveOverviewAsync,
                     auditStatsAsync,
                   ),
                   loading: _buildLoadingState,
@@ -122,7 +124,7 @@ class _SovereigntyStatusScreenState
                 ),
               ),
               child: Icon(
-                Icons.arrow_back_ios_new_rounded,
+                KeroseneIcons.back,
                 color: Theme.of(context).colorScheme.onPrimary,
                 size: 16,
               ),
@@ -171,7 +173,7 @@ class _SovereigntyStatusScreenState
                 mainAxisSize: MainAxisSize.min,
                 children: [
                   Icon(
-                    Icons.refresh_rounded,
+                    KeroseneIcons.refresh,
                     color: Theme.of(context).colorScheme.onPrimary,
                     size: 16,
                   ),
@@ -194,7 +196,7 @@ class _SovereigntyStatusScreenState
 
   Widget _buildContent(
     SecurityStatus status,
-    AsyncValue<TreasuryOverview> treasuryOverviewAsync,
+    AsyncValue<KfeReserveOverview> kfeReserveOverviewAsync,
     AsyncValue<Map<String, dynamic>> auditStatsAsync,
   ) {
     return RefreshIndicator(
@@ -211,9 +213,9 @@ class _SovereigntyStatusScreenState
           const SizedBox(height: 16),
           _buildSignalStrip(status),
           const SizedBox(height: 16),
-          _buildTreasuryOverviewCard(treasuryOverviewAsync),
+          _buildKfeReserveOverviewCard(kfeReserveOverviewAsync),
           const SizedBox(height: 16),
-          _buildTreasuryCard(status, auditStatsAsync),
+          _buildKfeReserveCard(status, auditStatsAsync),
           const SizedBox(height: 24),
           _buildTpmCard(status.hardwareAttestation),
           const SizedBox(height: 16),
@@ -259,9 +261,7 @@ class _SovereigntyStatusScreenState
                   borderRadius: BorderRadius.circular(16),
                 ),
                 child: Icon(
-                  allGood
-                      ? Icons.verified_rounded
-                      : Icons.warning_amber_rounded,
+                  allGood ? KeroseneIcons.verified : KeroseneIcons.warning,
                   color: primaryColor,
                   size: 24,
                 ),
@@ -440,7 +440,7 @@ class _SovereigntyStatusScreenState
     final chipValue = (tpm['chip'] ?? 'Generic TPM').toString();
 
     return _SecurityCard(
-      icon: Icons.memory_rounded,
+      icon: KeroseneIcons.database,
       title: context.tr.hardwareAttestation,
       subtitle: chipSubtitle,
       statusOk: verified,
@@ -476,16 +476,16 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildTreasuryCard(
+  Widget _buildKfeReserveCard(
     SecurityStatus status,
     AsyncValue<Map<String, dynamic>> auditStatsAsync,
   ) {
     return auditStatsAsync.when(
-      loading: _buildTreasuryLoadingCard,
-      error: (error, _) => _buildTreasuryUnavailableCard(error.toString()),
+      loading: _buildKfeReserveLoadingCard,
+      error: (error, _) => _buildKfeReserveUnavailableCard(error.toString()),
       data: (stats) {
         if (stats.isEmpty) {
-          return _buildTreasuryUnavailableCard(
+          return _buildKfeReserveUnavailableCard(
             _copy(
               pt: 'A auditoria financeira ainda não retornou métricas para esta leitura.',
               en: 'Financial audit has not returned metrics for this readout yet.',
@@ -493,12 +493,12 @@ class _SovereigntyStatusScreenState
             ),
           );
         }
-        return _buildTreasurySnapshot(status, stats);
+        return _buildKfeReserveSnapshot(status, stats);
       },
     );
   }
 
-  Widget _buildTreasuryLoadingCard() {
+  Widget _buildKfeReserveLoadingCard() {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -536,12 +536,12 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildTreasuryOverviewCard(
-    AsyncValue<TreasuryOverview> treasuryOverviewAsync,
+  Widget _buildKfeReserveOverviewCard(
+    AsyncValue<KfeReserveOverview> kfeReserveOverviewAsync,
   ) {
-    return treasuryOverviewAsync.when(
-      loading: _buildTreasuryLoadingCard,
-      error: (error, _) => _buildTreasuryUnavailableCard(error.toString()),
+    return kfeReserveOverviewAsync.when(
+      loading: _buildKfeReserveLoadingCard,
+      error: (error, _) => _buildKfeReserveUnavailableCard(error.toString()),
       data: (overview) {
         final liquidityHealthy = overview.lightningSendsAllowed;
         final liquidityColor = liquidityHealthy
@@ -573,7 +573,7 @@ class _SovereigntyStatusScreenState
                       borderRadius: BorderRadius.circular(14),
                     ),
                     child: Icon(
-                      Icons.account_balance_wallet_rounded,
+                      KeroseneIcons.wallet,
                       color: liquidityColor,
                       size: 20,
                     ),
@@ -765,7 +765,7 @@ class _SovereigntyStatusScreenState
               const SizedBox(height: 18),
               const Divider(color: AppColors.surfaceLight, height: 1),
               const SizedBox(height: 16),
-              _TreasuryDetailRow(
+              _KfeReserveDetailRow(
                 label: _copy(
                   pt: 'Reservado em saques on-chain',
                   en: 'Reserved in on-chain outflows',
@@ -774,7 +774,7 @@ class _SovereigntyStatusScreenState
                 value: _formatBtc(overview.reservedOnchainBtc),
               ),
               const SizedBox(height: 10),
-              _TreasuryDetailRow(
+              _KfeReserveDetailRow(
                 label: _copy(
                   pt: 'Reservado em pagamentos Lightning',
                   en: 'Reserved in Lightning payments',
@@ -783,7 +783,7 @@ class _SovereigntyStatusScreenState
                 value: _formatBtc(overview.reservedLightningBtc),
               ),
               const SizedBox(height: 10),
-              _TreasuryDetailRow(
+              _KfeReserveDetailRow(
                 label: _copy(
                   pt: 'Disponível on-chain',
                   en: 'Available on-chain',
@@ -793,7 +793,7 @@ class _SovereigntyStatusScreenState
                 highlight: overview.availableOnchainBtc > 0,
               ),
               const SizedBox(height: 10),
-              _TreasuryDetailRow(
+              _KfeReserveDetailRow(
                 label: _copy(
                   pt: 'Disponível Lightning',
                   en: 'Available Lightning',
@@ -809,7 +809,7 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildTreasuryUnavailableCard(String message) {
+  Widget _buildKfeReserveUnavailableCard(String message) {
     return Container(
       padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
@@ -831,7 +831,7 @@ class _SovereigntyStatusScreenState
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.account_balance_wallet_outlined,
+              KeroseneIcons.wallet,
               color: Theme.of(context).colorScheme.error,
               size: 18,
             ),
@@ -867,7 +867,7 @@ class _SovereigntyStatusScreenState
     );
   }
 
-  Widget _buildTreasurySnapshot(
+  Widget _buildKfeReserveSnapshot(
     SecurityStatus status,
     Map<String, dynamic> stats,
   ) {
@@ -946,7 +946,7 @@ class _SovereigntyStatusScreenState
                   borderRadius: BorderRadius.circular(14),
                 ),
                 child: Icon(
-                  Icons.account_balance_wallet_rounded,
+                  KeroseneIcons.wallet,
                   color: statusColor,
                   size: 20,
                 ),
@@ -1125,7 +1125,7 @@ class _SovereigntyStatusScreenState
           const SizedBox(height: 18),
           const Divider(color: AppColors.surfaceLight, height: 1),
           const SizedBox(height: 16),
-          _TreasuryDetailRow(
+          _KfeReserveDetailRow(
             label: _copy(
               pt: 'Carteiras frias acompanhadas',
               en: 'Watched cold wallets',
@@ -1134,7 +1134,7 @@ class _SovereigntyStatusScreenState
             value: _formatBtc(walletXpubBalance),
           ),
           const SizedBox(height: 10),
-          _TreasuryDetailRow(
+          _KfeReserveDetailRow(
             label: _copy(
               pt: 'Cofre principal acompanhado',
               en: 'Tracked main vault',
@@ -1143,7 +1143,7 @@ class _SovereigntyStatusScreenState
             value: _formatBtc(treasuryXpubBalance),
           ),
           const SizedBox(height: 10),
-          _TreasuryDetailRow(
+          _KfeReserveDetailRow(
             label: _copy(
               pt: 'Lucro segregado pendente',
               en: 'Pending segregated profit',
@@ -1152,7 +1152,7 @@ class _SovereigntyStatusScreenState
             value: _formatBtc(profitPending),
           ),
           const SizedBox(height: 10),
-          _TreasuryDetailRow(
+          _KfeReserveDetailRow(
             label: _copy(
               pt: 'Pressão operacional',
               en: 'Operational pressure',
@@ -1189,7 +1189,7 @@ class _SovereigntyStatusScreenState
         <String>[];
 
     return _SecurityCard(
-      icon: Icons.hub_rounded,
+      icon: KeroseneIcons.hub,
       title: context.tr.networkConsensus,
       subtitle:
           '$activeNodes/$totalNodes ${_copy(pt: 'confirmações ativas', en: 'active confirmations', es: 'confirmaciones activas')}',
@@ -1270,9 +1270,7 @@ class _SovereigntyStatusScreenState
                 child: Column(
                   children: [
                     Icon(
-                      active
-                          ? Icons.check_circle_rounded
-                          : Icons.cancel_rounded,
+                      active ? KeroseneIcons.success : KeroseneIcons.cancel,
                       color: active
                           ? AppColors.success
                           : Theme.of(context).colorScheme.error,
@@ -1301,7 +1299,7 @@ class _SovereigntyStatusScreenState
     final subtitle = 'Merkle Tree (SHA-256)';
 
     return _SecurityCard(
-      icon: Icons.account_tree_rounded,
+      icon: KeroseneIcons.network,
       title: context.tr.ledgerIntegrity,
       subtitle: subtitle,
       statusOk: status == 'VALID',
@@ -1341,7 +1339,7 @@ class _SovereigntyStatusScreenState
         _copy(pt: 'Mecanismo', en: 'Mechanism', es: 'Mecanismo');
 
     return _SecurityCard(
-      icon: Icons.lock_rounded,
+      icon: KeroseneIcons.lock,
       title: context.tr.memoryProtection,
       subtitle: subtitle,
       statusOk: status == 'LOCKED',
@@ -1400,7 +1398,7 @@ class _SovereigntyStatusScreenState
               borderRadius: BorderRadius.circular(12),
             ),
             child: Icon(
-              Icons.timer_outlined,
+              KeroseneIcons.schedule,
               color: Theme.of(context).colorScheme.onPrimary,
               size: 18,
             ),
@@ -1509,7 +1507,7 @@ class _SovereigntyStatusScreenState
             mainAxisSize: MainAxisSize.min,
             children: [
               Icon(
-                Icons.cloud_off_rounded,
+                KeroseneIcons.cloudOff,
                 color: Theme.of(context).colorScheme.error,
                 size: 36,
               ),
@@ -1649,7 +1647,7 @@ class _SovereigntyStatusScreenState
     }
   }
 
-  String _liquidityStateSummary(TreasuryOverview overview) {
+  String _liquidityStateSummary(KfeReserveOverview overview) {
     switch (overview.liquidityState.trim().toUpperCase()) {
       case 'HEALTHY':
         return _copy(
@@ -1797,12 +1795,12 @@ class _MetricCard extends StatelessWidget {
   }
 }
 
-class _TreasuryDetailRow extends StatelessWidget {
+class _KfeReserveDetailRow extends StatelessWidget {
   final String label;
   final String value;
   final bool highlight;
 
-  const _TreasuryDetailRow({
+  const _KfeReserveDetailRow({
     required this.label,
     required this.value,
     this.highlight = false,

@@ -1,11 +1,15 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/design_system/brand.dart';
 import '../navigation/admin_routes.dart';
 import '../theme/admin_colors.dart';
 import '../theme/admin_typography.dart';
+import '../theme/admin_copy.dart';
 import '../theme/admin_theme.dart';
 import '../providers/admin_providers.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// The main shell for the enterprise web admin panel.
 /// Contains sidebar navigation, top bar, and content area.
@@ -103,9 +107,9 @@ class _AdminSidebar extends ConsumerWidget {
                   ),
                   child: const Center(
                     child: Text(
-                      'K',
+                      AdminCopy.brandInitial,
                       style: TextStyle(
-                        fontFamily: 'IBMPlexSansHebrew',
+                        fontFamily: AdminTypography.fontFamily,
                         fontSize: 16,
                         fontWeight: FontWeight.w800,
                         color: Colors.white,
@@ -115,10 +119,10 @@ class _AdminSidebar extends ConsumerWidget {
                 ),
                 if (!collapsed) ...[
                   const SizedBox(width: AdminTheme.spacingMd),
-                  const Text(
-                    'KEROSENE',
+                  Text(
+                    KeroseneBrand.name.toUpperCase(),
                     style: TextStyle(
-                      fontFamily: 'IBMPlexSansHebrew',
+                      fontFamily: AdminTypography.fontFamily,
                       fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: AdminColors.textPrimary,
@@ -301,7 +305,7 @@ class _NavItemState extends State<_NavItem> {
       child: GestureDetector(
         onTap: widget.onTap,
         child: AnimatedContainer(
-          duration: const Duration(milliseconds: 120),
+          duration: KeroseneMotion.fast,
           margin: const EdgeInsets.symmetric(vertical: 1),
           padding: const EdgeInsets.symmetric(
             horizontal: AdminTheme.spacingMd,
@@ -360,7 +364,7 @@ class _NavItemState extends State<_NavItem> {
 
     return Tooltip(
       message: routeLabel,
-      waitDuration: const Duration(milliseconds: 350),
+      waitDuration: KeroseneMotion.medium,
       child: item,
     );
   }
@@ -407,7 +411,7 @@ class _AdminTopBar extends ConsumerWidget {
                       data: (prices) {
                         final usd = prices['btcUsd'] ?? 0;
                         return _TopBarPill(
-                          icon: Icons.currency_bitcoin,
+                          icon: KeroseneIcons.bitcoin,
                           label: 'BTC \$${_formatPrice(usd)}',
                           iconColor: AdminColors.warning,
                         );
@@ -418,7 +422,7 @@ class _AdminTopBar extends ConsumerWidget {
                     if (!compact) ...[
                       const SizedBox(width: AdminTheme.spacingLg),
                       _TopBarPill(
-                        icon: Icons.verified_outlined,
+                        icon: KeroseneIcons.verified,
                         label: context.tr.adminShellIntegrityOnly,
                         iconColor: AdminColors.positive,
                       ),
@@ -441,7 +445,7 @@ class _AdminTopBar extends ConsumerWidget {
               borderRadius: AdminTheme.borderRadiusXs,
             ),
             child: const Icon(
-              Icons.person_outline,
+              KeroseneIcons.user,
               size: 18,
               color: AdminColors.textTertiary,
             ),

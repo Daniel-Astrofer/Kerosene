@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class NotificationVisuals {
   final AppNotificationTone tone;
@@ -22,7 +23,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindSecurityLoginDetected:
       return NotificationVisuals(
         tone: AppNotificationTone.warning,
-        icon: Icons.shield_outlined,
+        icon: KeroseneIcons.shield,
         categoryLabel: _copy(
           context,
           pt: 'Segurança',
@@ -33,7 +34,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindSecurityAdminAccessAttempt:
       return NotificationVisuals(
         tone: AppNotificationTone.warning,
-        icon: Icons.admin_panel_settings_outlined,
+        icon: KeroseneIcons.admin,
         categoryLabel: _copy(
           context,
           pt: 'Segurança',
@@ -44,7 +45,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindSecurityRecoveryCompleted:
       return NotificationVisuals(
         tone: AppNotificationTone.warning,
-        icon: Icons.key_outlined,
+        icon: KeroseneIcons.key,
         categoryLabel: _copy(
           context,
           pt: 'Recuperação',
@@ -55,7 +56,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindAccountCreated:
       return NotificationVisuals(
         tone: _toneForSeverity(item.severity),
-        icon: Icons.person_add_alt_1_outlined,
+        icon: KeroseneIcons.personAdd,
         categoryLabel: _copy(
           context,
           pt: 'Conta',
@@ -66,7 +67,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindTransferReceived:
       return NotificationVisuals(
         tone: AppNotificationTone.success,
-        icon: Icons.south_west,
+        icon: KeroseneIcons.southWest,
         categoryLabel: _copy(
           context,
           pt: 'Recebido',
@@ -77,7 +78,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindTransferSent:
       return NotificationVisuals(
         tone: _toneForSeverity(item.severity),
-        icon: Icons.north_east,
+        icon: KeroseneIcons.northEast,
         categoryLabel: _copy(
           context,
           pt: 'Enviado',
@@ -88,7 +89,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindPaymentRequestCreated:
       return NotificationVisuals(
         tone: AppNotificationTone.info,
-        icon: Icons.receipt_long_outlined,
+        icon: KeroseneIcons.receipt,
         categoryLabel: _copy(
           context,
           pt: 'Link',
@@ -99,7 +100,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindPaymentRequestPaid:
       return NotificationVisuals(
         tone: AppNotificationTone.success,
-        icon: Icons.verified_outlined,
+        icon: KeroseneIcons.verified,
         categoryLabel: _copy(
           context,
           pt: 'Liquidado',
@@ -110,7 +111,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindDepositDetected:
       return NotificationVisuals(
         tone: AppNotificationTone.info,
-        icon: Icons.downloading_outlined,
+        icon: KeroseneIcons.download,
         categoryLabel: _copy(
           context,
           pt: 'Depósito',
@@ -121,7 +122,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindDepositConfirmed:
       return NotificationVisuals(
         tone: AppNotificationTone.success,
-        icon: Icons.account_balance_wallet_outlined,
+        icon: KeroseneIcons.wallet,
         categoryLabel: _copy(
           context,
           pt: 'Confirmado',
@@ -132,7 +133,7 @@ NotificationVisuals resolveNotificationVisuals(
     case SessionNotificationItem.kindPaymentSent:
       return NotificationVisuals(
         tone: _toneForSeverity(item.severity),
-        icon: Icons.send_outlined,
+        icon: KeroseneIcons.send,
         categoryLabel: _copy(
           context,
           pt: 'Pagamento',

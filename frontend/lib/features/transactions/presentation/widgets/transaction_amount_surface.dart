@@ -1,14 +1,16 @@
-import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
+import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
 enum TransactionAmountDirection { send, receive, neutral }
 
 enum TransactionKeypadMode { decimal, integer }
 
-Duration _surfaceDuration(bool disabled, int milliseconds) =>
-    disabled ? Duration.zero : Duration(milliseconds: milliseconds);
+Duration _surfaceDuration(bool disabled, Duration duration) =>
+    disabled ? Duration.zero : duration;
 
 class TransactionPartyData {
   final String prefix;
@@ -20,7 +22,7 @@ class TransactionPartyData {
     required this.prefix,
     required this.title,
     required this.subtitle,
-    this.icon = LucideIcons.user,
+    this.icon = KeroseneIcons.user,
   });
 }
 
@@ -54,6 +56,7 @@ class TransactionAmountSurface extends StatelessWidget {
   final String? title;
   final TransactionAmountDirection direction;
   final String? rail;
+  final String? connectionLabel;
   final List<TransactionPartyData> parties;
   final TransactionPartyData? sourceParty;
   final TransactionPartyData? destinationParty;
@@ -95,6 +98,7 @@ class TransactionAmountSurface extends StatelessWidget {
     this.title,
     this.direction = TransactionAmountDirection.neutral,
     this.rail,
+    this.connectionLabel,
     List<TransactionPartyData>? parties,
     this.sourceParty,
     this.destinationParty,
@@ -124,14 +128,14 @@ class TransactionAmountSurface extends StatelessWidget {
     this.padding = const EdgeInsets.fromLTRB(24, 12, 24, 28),
     this.maxWidth = 620,
     this.fillAvailableHeight = true,
-    this.backgroundColor = const Color(0xFF000000),
-    this.textColor = const Color(0xFFFFFFFF),
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.tertiaryTextColor = const Color(0xFF7D838A),
-    this.surfaceColor = const Color(0xFF111111),
-    this.borderColor = const Color(0xFF2C2C2E),
-    this.primaryButtonColor = const Color(0xFFFFFFFF),
-    this.primaryButtonTextColor = const Color(0xFF000000),
+    this.backgroundColor = AppColors.hexFF000000,
+    this.textColor = AppColors.hexFFFFFFFF,
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
+    this.surfaceColor = AppColors.hexFF111111,
+    this.borderColor = AppColors.hexFF2C2C2E,
+    this.primaryButtonColor = AppColors.hexFFFFFFFF,
+    this.primaryButtonTextColor = AppColors.hexFF000000,
   })  : parties = parties ?? const [],
         details = detailRows ?? details ?? const [],
         onCta = onContinue ?? onCta;
@@ -172,11 +176,17 @@ class TransactionAmountSurface extends StatelessWidget {
   }
 
   Widget _buildContent(BuildContext context, bool disableAnimations) {
+    final height = MediaQuery.sizeOf(context).height;
+    final compactHeight = height < 720;
+    final amountGap = compactHeight ? 24.0 : 34.0;
+    final detailGap = compactHeight ? 20.0 : 28.0;
+    final keypadGap = compactHeight ? 18.0 : 24.0;
     final resolvedParties = <TransactionPartyData>[
       if (sourceParty != null) sourceParty!,
       if (destinationParty != null) destinationParty!,
       ...parties,
     ];
+    final resolvedConnectionLabel = _resolvedConnectionLabel();
     final resolvedKeypad = keypadConfig;
     final effectiveOnKeyTap = resolvedKeypad?.onKeyTap ?? onKeyTap;
     final effectiveKeypadMode = resolvedKeypad?.mode ?? keypadMode;
@@ -212,7 +222,10 @@ class TransactionAmountSurface extends StatelessWidget {
       for (var index = 0; index < resolvedParties.length; index++) ...[
         _AnimatedEntrance(
           disabled: disableAnimations,
-          delay: Duration(milliseconds: 28 * index),
+          delay: KeroseneMotion.stagger(
+            index,
+            step: KeroseneMotion.surfaceStagger,
+          ),
           child: TransactionPartyRow(
             data: resolvedParties[index],
             textColor: textColor,
@@ -222,14 +235,32 @@ class TransactionAmountSurface extends StatelessWidget {
             borderColor: borderColor,
           ),
         ),
-        if (index != resolvedParties.length - 1) const SizedBox(height: 22),
+        if (index != resolvedParties.length - 1) ...[
+          const SizedBox(height: 10),
+          _AnimatedEntrance(
+            disabled: disableAnimations,
+            delay: KeroseneMotion.stagger(
+              index + 1,
+              step: KeroseneMotion.surfaceStagger,
+            ),
+            child: TransactionRailConnector(
+              label: resolvedConnectionLabel,
+              textColor: textColor,
+              mutedTextColor: mutedTextColor,
+              tertiaryTextColor: tertiaryTextColor,
+              surfaceColor: surfaceColor,
+              borderColor: borderColor,
+            ),
+          ),
+          const SizedBox(height: 10),
+        ],
       ],
       if (warnings.isNotEmpty || notices.isNotEmpty) ...[
         const SizedBox(height: 18),
         for (final warning in warnings) ...[
           TransactionNotice(
             text: warning,
-            icon: LucideIcons.alertTriangle,
+            icon: KeroseneIcons.error,
           ),
           const SizedBox(height: 10),
         ],
@@ -238,7 +269,7 @@ class TransactionAmountSurface extends StatelessWidget {
           const SizedBox(height: 10),
         ],
       ],
-      const SizedBox(height: 34),
+      SizedBox(height: amountGap),
       if (fillAvailableHeight) const Spacer(),
       TransactionAmountDisplay(
         amountLabel: amountLabel,
@@ -253,7 +284,7 @@ class TransactionAmountSurface extends StatelessWidget {
         disableAnimations: disableAnimations,
       ),
       if (hasDetails) ...[
-        const SizedBox(height: 28),
+        SizedBox(height: detailGap),
         TransactionDetailRows(
           details: details,
           loadingRows: loadingRows,
@@ -268,7 +299,7 @@ class TransactionAmountSurface extends StatelessWidget {
         bottomContent!,
       ],
       if (effectiveShowKeypad) ...[
-        const SizedBox(height: 24),
+        SizedBox(height: keypadGap),
         RepaintBoundary(
           child: TransactionKeypad(
             mode: effectiveKeypadMode,
@@ -298,6 +329,15 @@ class TransactionAmountSurface extends StatelessWidget {
       children: children,
     );
   }
+
+  String _resolvedConnectionLabel() {
+    final explicit = connectionLabel?.trim() ?? '';
+    if (explicit.isNotEmpty) {
+      return explicit;
+    }
+    final fallback = rail?.trim() ?? '';
+    return fallback.isEmpty ? 'Rede' : fallback;
+  }
 }
 
 class TransactionSurfaceHeader extends StatelessWidget {
@@ -315,9 +355,9 @@ class TransactionSurfaceHeader extends StatelessWidget {
     required this.direction,
     required this.rail,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.surfaceColor = const Color(0xFF111111),
-    this.borderColor = const Color(0xFF2C2C2E),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.surfaceColor = AppColors.hexFF111111,
+    this.borderColor = AppColors.hexFF2C2C2E,
   });
 
   @override
@@ -375,9 +415,9 @@ class TransactionSurfaceHeader extends StatelessWidget {
 
   IconData _iconForDirection() {
     return switch (direction) {
-      TransactionAmountDirection.send => LucideIcons.arrowUpRight,
-      TransactionAmountDirection.receive => LucideIcons.arrowDownLeft,
-      TransactionAmountDirection.neutral => LucideIcons.moveHorizontal,
+      TransactionAmountDirection.send => KeroseneIcons.send,
+      TransactionAmountDirection.receive => KeroseneIcons.receive,
+      TransactionAmountDirection.neutral => KeroseneIcons.moveHorizontal,
     };
   }
 }
@@ -394,10 +434,10 @@ class TransactionPartyRow extends StatelessWidget {
     super.key,
     required this.data,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.tertiaryTextColor = const Color(0xFF7D838A),
-    this.surfaceColor = const Color(0xFF111111),
-    this.borderColor = const Color(0xFF2C2C2E),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
+    this.surfaceColor = AppColors.hexFF111111,
+    this.borderColor = AppColors.hexFF2C2C2E,
   });
 
   @override
@@ -460,6 +500,111 @@ class TransactionPartyRow extends StatelessWidget {
   }
 }
 
+class TransactionRailConnector extends StatelessWidget {
+  final String label;
+  final Color textColor;
+  final Color mutedTextColor;
+  final Color tertiaryTextColor;
+  final Color surfaceColor;
+  final Color borderColor;
+
+  const TransactionRailConnector({
+    super.key,
+    required this.label,
+    this.textColor = Colors.white,
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
+    this.surfaceColor = AppColors.hexFF111111,
+    this.borderColor = AppColors.hexFF2C2C2E,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final resolvedLabel = label.trim().isEmpty ? 'Rede' : label.trim();
+
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        SizedBox(
+          width: 48,
+          child: Center(
+            child: Container(
+              width: 30,
+              height: 30,
+              decoration: BoxDecoration(
+                color: surfaceColor,
+                shape: BoxShape.circle,
+                border: Border.all(color: borderColor.withValues(alpha: 0.86)),
+              ),
+              child: Icon(
+                _iconForRail(resolvedLabel),
+                color: mutedTextColor,
+                size: 15,
+              ),
+            ),
+          ),
+        ),
+        const SizedBox(width: 16),
+        Expanded(
+          child: Container(
+            constraints: const BoxConstraints(minHeight: 34),
+            padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+            decoration: BoxDecoration(
+              color: surfaceColor.withValues(alpha: 0.62),
+              borderRadius: BorderRadius.circular(8),
+              border: Border.all(color: borderColor.withValues(alpha: 0.72)),
+            ),
+            child: Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    resolvedLabel,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.captionLarge.copyWith(
+                      color: textColor,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+                Container(
+                  width: 32,
+                  height: 1,
+                  color: tertiaryTextColor.withValues(alpha: 0.54),
+                ),
+                const SizedBox(width: 8),
+                Icon(
+                  KeroseneIcons.moveHorizontal,
+                  color: tertiaryTextColor,
+                  size: 14,
+                ),
+              ],
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+
+  IconData _iconForRail(String value) {
+    final normalized = value.toLowerCase();
+    if (normalized.contains('lightning')) {
+      return KeroseneIcons.lightning;
+    }
+    if (normalized.contains('chain') || normalized.contains('bitcoin')) {
+      return KeroseneIcons.onchain;
+    }
+    if (normalized.contains('kerosene') ||
+        normalized.contains('intern') ||
+        normalized.contains('interna')) {
+      return KeroseneIcons.internalTransfer;
+    }
+    return KeroseneIcons.route;
+  }
+}
+
 class TransactionAmountDisplay extends StatelessWidget {
   final String amountLabel;
   final String unitLabel;
@@ -479,8 +624,8 @@ class TransactionAmountDisplay extends StatelessWidget {
     this.fiatReference,
     this.muted = false,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.borderColor = const Color(0xFF2C2C2E),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.borderColor = AppColors.hexFF2C2C2E,
     this.onTap,
     this.onFiatReferenceTap,
     this.disableAnimations = false,
@@ -494,62 +639,52 @@ class TransactionAmountDisplay extends StatelessWidget {
       color: textColor,
     ).copyWith(
       fontSize: unitLabel.toLowerCase() == 'sats' ? 44 : 48,
-      fontWeight: FontWeight.w500,
-      height: 1,
+      fontWeight: FontWeight.w600,
+      height: 1.04,
+      letterSpacing: 0,
     );
 
     final content = Column(
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Flexible(
-                    child: AnimatedSwitcher(
-                      duration: _surfaceDuration(disableAnimations, 180),
-                      switchInCurve: Curves.easeOutCubic,
-                      switchOutCurve: Curves.easeInCubic,
-                      transitionBuilder: (child, animation) => FadeTransition(
-                        opacity: animation,
-                        child: SlideTransition(
-                          position: Tween<Offset>(
-                            begin: const Offset(0, 0.08),
-                            end: Offset.zero,
-                          ).animate(animation),
-                          child: child,
-                        ),
-                      ),
-                      child: FittedBox(
-                        key: ValueKey(amountLabel),
-                        fit: BoxFit.scaleDown,
-                        alignment: Alignment.centerLeft,
-                        child: Text(
-                          amountLabel,
-                          maxLines: 1,
-                          softWrap: false,
-                          style: amountStyle,
-                        ),
-                      ),
-                    ),
+        Align(
+          alignment: Alignment.centerRight,
+          child: SizedBox(
+            width: double.infinity,
+            height: 58,
+            child: AnimatedSwitcher(
+              duration:
+                  _surfaceDuration(disableAnimations, KeroseneMotion.pageIn),
+              switchInCurve: KeroseneMotion.standard,
+              switchOutCurve: KeroseneMotion.exit,
+              transitionBuilder: (child, animation) => FadeTransition(
+                opacity: animation,
+                child: SlideTransition(
+                  position: Tween<Offset>(
+                    begin: const Offset(0, 0.045),
+                    end: Offset.zero,
+                  ).animate(animation),
+                  child: child,
+                ),
+              ),
+              child: FittedBox(
+                key: ValueKey('$amountLabel $unitLabel'),
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerRight,
+                child: TransactionAmountLine(
+                  amountLabel: amountLabel,
+                  unitLabel: unitLabel,
+                  amountStyle: amountStyle,
+                  unitStyle: AppTypography.captionLarge.copyWith(
+                    color: mutedTextColor,
+                    fontSize: 17,
+                    fontWeight: FontWeight.w600,
+                    height: 1,
+                    letterSpacing: 0,
                   ),
-                  const SizedBox(width: 8),
-                  Text(
-                    unitLabel,
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: mutedTextColor,
-                          fontSize: 18,
-                          height: 1,
-                          letterSpacing: 0,
-                        ),
-                  ),
-                ],
+                ),
               ),
             ),
-          ],
+          ),
         ),
         const SizedBox(height: 12),
         if (reference != null && reference.isNotEmpty) ...[
@@ -561,26 +696,26 @@ class TransactionAmountDisplay extends StatelessWidget {
               onTap: onFiatReferenceTap,
               disableAnimations: disableAnimations,
               child: AnimatedSwitcher(
-                duration: _surfaceDuration(disableAnimations, 180),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
+                duration:
+                    _surfaceDuration(disableAnimations, KeroseneMotion.pageIn),
+                switchInCurve: KeroseneMotion.standard,
+                switchOutCurve: KeroseneMotion.exit,
                 child: Text(
                   reference,
                   key: ValueKey(reference),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: muted ? mutedTextColor : textColor,
-                        fontSize: 13,
-                        fontWeight: FontWeight.w500,
-                        height: 1.25,
-                        letterSpacing: 0,
-                        decoration: onFiatReferenceTap == null
-                            ? TextDecoration.none
-                            : TextDecoration.underline,
-                        decorationColor: textColor.withValues(alpha: 0.42),
-                      ),
+                  style: AppTypography.captionLarge.copyWith(
+                    color: muted ? mutedTextColor : textColor,
+                    fontWeight: FontWeight.w500,
+                    height: 1.25,
+                    letterSpacing: 0,
+                    decoration: onFiatReferenceTap == null
+                        ? TextDecoration.none
+                        : TextDecoration.underline,
+                    decorationColor: textColor.withValues(alpha: 0.42),
+                  ),
                 ),
               ),
             ),
@@ -588,7 +723,7 @@ class TransactionAmountDisplay extends StatelessWidget {
           const SizedBox(height: 10),
         ],
         AnimatedContainer(
-          duration: _surfaceDuration(disableAnimations, 180),
+          duration: _surfaceDuration(disableAnimations, KeroseneMotion.short),
           height: 1,
           color: muted
               ? borderColor.withValues(alpha: 0.78)
@@ -604,6 +739,48 @@ class TransactionAmountDisplay extends StatelessWidget {
       behavior: HitTestBehavior.opaque,
       onTap: onTap,
       child: content,
+    );
+  }
+}
+
+class TransactionAmountLine extends StatelessWidget {
+  final String amountLabel;
+  final String unitLabel;
+  final TextStyle amountStyle;
+  final TextStyle unitStyle;
+
+  const TransactionAmountLine({
+    super.key,
+    required this.amountLabel,
+    required this.unitLabel,
+    required this.amountStyle,
+    required this.unitStyle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.baseline,
+      textBaseline: TextBaseline.alphabetic,
+      children: [
+        Text(
+          amountLabel,
+          maxLines: 1,
+          softWrap: false,
+          style: amountStyle,
+        ),
+        const SizedBox(width: 8),
+        Padding(
+          padding: const EdgeInsets.only(bottom: 3),
+          child: Text(
+            unitLabel,
+            maxLines: 1,
+            softWrap: false,
+            style: unitStyle,
+          ),
+        ),
+      ],
     );
   }
 }
@@ -638,7 +815,7 @@ class _AmountReferenceAction extends StatelessWidget {
           behavior: HitTestBehavior.opaque,
           onTap: onTap,
           child: AnimatedContainer(
-            duration: _surfaceDuration(disableAnimations, 120),
+            duration: _surfaceDuration(disableAnimations, KeroseneMotion.fast),
             padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 3),
             child: child,
           ),
@@ -661,8 +838,8 @@ class TransactionDetailRows extends StatelessWidget {
     required this.details,
     this.loadingRows = 0,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.tertiaryTextColor = const Color(0xFF7D838A),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
     this.disableAnimations = false,
   });
 
@@ -705,8 +882,8 @@ class TransactionDetailRow extends StatelessWidget {
     super.key,
     required this.detail,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.tertiaryTextColor = const Color(0xFF7D838A),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
     this.disableAnimations = false,
   });
 
@@ -748,7 +925,8 @@ class TransactionDetailRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.end,
               children: [
                 AnimatedSwitcher(
-                  duration: _surfaceDuration(disableAnimations, 180),
+                  duration:
+                      _surfaceDuration(disableAnimations, KeroseneMotion.short),
                   child: detail.loading
                       ? const _TransactionSkeletonLine(
                           key: ValueKey('transaction-row-value-loading'),
@@ -767,7 +945,8 @@ class TransactionDetailRow extends StatelessWidget {
                 if (!detail.loading && detail.secondaryValue != null) ...[
                   const SizedBox(height: 3),
                   AnimatedSwitcher(
-                    duration: _surfaceDuration(disableAnimations, 180),
+                    duration: _surfaceDuration(
+                        disableAnimations, KeroseneMotion.short),
                     child: Text(
                       detail.secondaryValue!,
                       key: ValueKey('${detail.label}:${detail.secondaryValue}'),
@@ -798,8 +977,8 @@ class TransactionDetailSkeletonRow extends StatelessWidget {
 
   const TransactionDetailSkeletonRow({
     super.key,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.tertiaryTextColor = const Color(0xFF7D838A),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.tertiaryTextColor = AppColors.hexFF7D838A,
   });
 
   @override
@@ -839,7 +1018,7 @@ class _TransactionSkeletonLine extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: color ?? const Color(0xFF2C2C2E),
+        color: color ?? AppColors.hexFF2C2C2E,
         borderRadius: BorderRadius.circular(height / 2),
       ),
       child: SizedBox(width: width, height: height),
@@ -859,12 +1038,14 @@ class TransactionKeypad extends StatelessWidget {
     required this.mode,
     required this.onKeyTap,
     this.textColor = Colors.white,
-    this.mutedTextColor = const Color(0xFFB8BCC2),
-    this.pressedColor = const Color(0xFF111111),
+    this.mutedTextColor = AppColors.hexFFB8BCC2,
+    this.pressedColor = AppColors.hexFF111111,
   });
 
   @override
   Widget build(BuildContext context) {
+    final compactHeight = MediaQuery.sizeOf(context).height < 720;
+    final keyHeight = compactHeight ? 50.0 : 56.0;
     final rows = mode == TransactionKeypadMode.integer
         ? const [
             ['1', '2', '3'],
@@ -889,11 +1070,12 @@ class TransactionKeypad extends StatelessWidget {
                 children: [
                   for (final key in row)
                     key.isEmpty
-                        ? const Expanded(child: SizedBox(height: 56))
+                        ? Expanded(child: SizedBox(height: keyHeight))
                         : Expanded(
                             child: _TransactionKeyButton(
                               key: ValueKey('transaction-keypad-$key'),
                               keyValue: key,
+                              height: keyHeight,
                               textColor: textColor,
                               mutedTextColor: mutedTextColor,
                               pressedColor: pressedColor,
@@ -911,6 +1093,7 @@ class TransactionKeypad extends StatelessWidget {
 
 class _TransactionKeyButton extends StatelessWidget {
   final String keyValue;
+  final double height;
   final Color textColor;
   final Color mutedTextColor;
   final Color pressedColor;
@@ -919,6 +1102,7 @@ class _TransactionKeyButton extends StatelessWidget {
   const _TransactionKeyButton({
     super.key,
     required this.keyValue,
+    required this.height,
     required this.textColor,
     required this.mutedTextColor,
     required this.pressedColor,
@@ -937,11 +1121,12 @@ class _TransactionKeyButton extends StatelessWidget {
     return Padding(
       padding: const EdgeInsets.symmetric(horizontal: 2, vertical: 2),
       child: SizedBox(
-        height: 56,
+        height: height,
         child: TextButton(
           onPressed: () => onTap(keyValue),
           style: ButtonStyle(
-            animationDuration: _surfaceDuration(disableAnimations, 120),
+            animationDuration:
+                _surfaceDuration(disableAnimations, KeroseneMotion.fast),
             foregroundColor: WidgetStatePropertyAll(foregroundColor),
             overlayColor: WidgetStateProperty.resolveWith((states) {
               if (states.contains(WidgetState.pressed)) {
@@ -953,7 +1138,7 @@ class _TransactionKeyButton extends StatelessWidget {
               }
               return Colors.transparent;
             }),
-            minimumSize: const WidgetStatePropertyAll(Size.fromHeight(56)),
+            minimumSize: WidgetStatePropertyAll(Size.fromHeight(height)),
             padding: const WidgetStatePropertyAll(EdgeInsets.zero),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,
             shape: WidgetStatePropertyAll(
@@ -974,7 +1159,7 @@ class _TransactionKeyButton extends StatelessWidget {
                   message: backspaceTooltip,
                   child: ExcludeSemantics(
                     child: Icon(
-                      LucideIcons.delete,
+                      KeroseneIcons.backspace,
                       color: mutedTextColor,
                       size: 22,
                     ),
@@ -1012,10 +1197,10 @@ class TransactionPrimaryButton extends StatelessWidget {
     final onPressed = enabled && !isLoading ? onTap : null;
 
     return AnimatedOpacity(
-      duration: _surfaceDuration(disableAnimations, 180),
+      duration: _surfaceDuration(disableAnimations, KeroseneMotion.short),
       opacity: enabled ? 1 : 0.72,
       child: AnimatedContainer(
-        duration: _surfaceDuration(disableAnimations, 180),
+        duration: _surfaceDuration(disableAnimations, KeroseneMotion.short),
         width: double.infinity,
         height: 56,
         decoration: BoxDecoration(
@@ -1047,7 +1232,7 @@ class TransactionPrimaryButton extends StatelessWidget {
                 ),
           ),
           child: AnimatedSwitcher(
-            duration: _surfaceDuration(disableAnimations, 160),
+            duration: _surfaceDuration(disableAnimations, KeroseneMotion.short),
             child: isLoading
                 ? SizedBox(
                     key: const ValueKey('loading'),
@@ -1081,10 +1266,10 @@ class TransactionNotice extends StatelessWidget {
   const TransactionNotice({
     super.key,
     required this.text,
-    this.icon = LucideIcons.info,
-    this.textColor = const Color(0xFFFFE6B0),
-    this.borderColor = const Color(0xFF5A4217),
-    this.backgroundColor = const Color(0xFF211A0D),
+    this.icon = KeroseneIcons.info,
+    this.textColor = AppColors.hexFFFFE6B0,
+    this.borderColor = AppColors.hexFF5A4217,
+    this.backgroundColor = AppColors.hexFF211A0D,
   });
 
   @override
@@ -1134,8 +1319,8 @@ class _AnimatedEntrance extends StatelessWidget {
     if (disabled) return child;
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0, end: 1),
-      duration: Duration(milliseconds: 220 + delay.inMilliseconds),
-      curve: Curves.easeOutCubic,
+      duration: KeroseneMotion.medium + delay,
+      curve: KeroseneMotion.standard,
       builder: (context, value, child) {
         final delayed = delay == Duration.zero
             ? value

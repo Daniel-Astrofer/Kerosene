@@ -1,5 +1,7 @@
 import 'dart:ui' as ui;
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../core/providers/shader_provider.dart';
 
@@ -42,7 +44,7 @@ class _BrushedMetalContainerState extends ConsumerState<BrushedMetalContainer>
   void initState() {
     super.initState();
     _controller =
-        AnimationController(vsync: this, duration: const Duration(seconds: 20))
+        AnimationController(vsync: this, duration: KeroseneMotion.ambient)
           ..repeat();
     _initFallback();
   }
@@ -124,7 +126,11 @@ class _MetalFallback extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [Color(0xFFE2E8F0), Color(0xFF94A3B8), Color(0xFFCBD5E1)],
+          colors: [
+            KeroseneBrandTokens.surfaceElevated,
+            KeroseneBrandTokens.borderStrong,
+            KeroseneBrandTokens.surfaceHigh,
+          ],
           stops: [0.1, 0.5, 0.9],
         ),
       ),

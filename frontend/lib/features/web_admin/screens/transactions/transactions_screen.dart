@@ -5,6 +5,8 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 /// Integrity proofs module.
 ///
@@ -51,14 +53,14 @@ class TransactionsScreen extends ConsumerWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   const Icon(
-                    Icons.privacy_tip_outlined,
+                    KeroseneIcons.privacyTip,
                     color: AdminColors.warning,
                     size: 18,
                   ),
                   const SizedBox(width: AdminTheme.spacingMd),
                   Expanded(
                     child: Text(
-                      'Readable transaction rows are an ephemeral mobile sync buffer retained for up to 24h. This terminal exposes proofs and aggregate state, not user statements.',
+                      AdminCopy.readableRowsRetentionPolicy,
                       style: AdminTypography.bodySmall.copyWith(
                         color: AdminColors.warning,
                       ),
@@ -91,11 +93,12 @@ class _LatestRootCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ProofCard(
       title: 'Latest Merkle root',
-      icon: Icons.account_tree_outlined,
+      icon: KeroseneIcons.network,
       child: asyncValue.when(
         data: (root) {
           if (root.isEmpty) {
-            return Text('No root available', style: AdminTypography.bodyMedium);
+            return Text(AdminCopy.rootUnavailable,
+                style: AdminTypography.bodyMedium);
           }
           return Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -111,7 +114,7 @@ class _LatestRootCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load root: $error',
+          AdminCopy.merkleRootUnavailable,
           style: AdminTypography.caption,
         ),
       ),
@@ -128,7 +131,7 @@ class _SovereigntyIntegrityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ProofCard(
       title: 'Hash-chain state',
-      icon: Icons.fingerprint,
+      icon: KeroseneIcons.biometric,
       child: asyncValue.when(
         data: (data) {
           final ledgerIntegrity = data['ledgerIntegrity'];
@@ -137,7 +140,7 @@ class _SovereigntyIntegrityCard extends StatelessWidget {
               : <String, dynamic>{};
           if (integrity.isEmpty) {
             return Text(
-              'Integrity state unavailable',
+              AdminCopy.integrityStateUnavailable,
               style: AdminTypography.bodyMedium,
             );
           }
@@ -152,7 +155,7 @@ class _SovereigntyIntegrityCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load integrity state: $error',
+          AdminCopy.integrityStateUnavailable,
           style: AdminTypography.caption,
         ),
       ),
@@ -169,11 +172,11 @@ class _AuditRootsTimeline extends StatelessWidget {
   Widget build(BuildContext context) {
     return _ProofCard(
       title: 'Merkle audit roots',
-      icon: Icons.history_outlined,
+      icon: KeroseneIcons.history,
       child: asyncValue.when(
         data: (entries) {
           if (entries.isEmpty) {
-            return Text('No audit checkpoints found',
+            return Text(AdminCopy.noAuditCheckpoints,
                 style: AdminTypography.bodyMedium);
           }
           return Column(
@@ -190,7 +193,7 @@ class _AuditRootsTimeline extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     const Icon(
-                      Icons.account_tree_outlined,
+                      KeroseneIcons.network,
                       color: AdminColors.textTertiary,
                       size: 15,
                     ),
@@ -208,7 +211,8 @@ class _AuditRootsTimeline extends StatelessWidget {
                           ),
                           const SizedBox(height: 4),
                           Text(
-                            'created ${entry['createdAt'] ?? 'unknown'} | ledgers ${entry['ledgerCount'] ?? 0}',
+                            AdminCopy.auditRootTimelineEntry(
+                                entry['createdAt'], entry['ledgerCount']),
                             style: AdminTypography.caption,
                           ),
                         ],
@@ -224,7 +228,7 @@ class _AuditRootsTimeline extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load audit roots: $error',
+          AdminCopy.auditRootsUnavailable,
           style: AdminTypography.caption,
         ),
       ),

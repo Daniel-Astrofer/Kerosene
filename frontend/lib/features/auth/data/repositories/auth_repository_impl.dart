@@ -628,11 +628,15 @@ class AuthRepositoryImpl implements AuthRepository {
   }
 
   @override
-  Future<Either<Failure, User>> getCurrentUser() async {
+  Future<Either<Failure, User>> getCurrentUser({
+    bool forceRemote = false,
+  }) async {
     try {
       // 1. Try local cache
-      final cachedUser = await localDataSource.getUser();
-      if (cachedUser != null) return Right(cachedUser);
+      if (!forceRemote) {
+        final cachedUser = await localDataSource.getUser();
+        if (cachedUser != null) return Right(cachedUser);
+      }
 
       // 2. Try remote if not in cache (requires valid token in intercepted headers)
       final remoteUser = await remoteDataSource.getCurrentUser();
@@ -658,6 +662,23 @@ class AuthRepositoryImpl implements AuthRepository {
           data: e.data));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter usuário: $e'));
+    }
+  }
+
+  @override
+  Future<Either<Failure, void>> checkServerAvailability() async {
+    try {
+      await remoteDataSource.getPowChallenge();
+      return const Right(null);
+    } on AppException catch (e) {
+      return Left(ServerFailure(
+        message: e.message,
+        statusCode: e.statusCode,
+        errorCode: e.errorCode,
+        data: e.data,
+      ));
+    } catch (e) {
+      return Left(ServerFailure(message: e.toString()));
     }
   }
 

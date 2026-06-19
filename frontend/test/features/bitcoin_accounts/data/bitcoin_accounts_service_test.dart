@@ -2,6 +2,32 @@ import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_accounts_service
 import 'package:test/test.dart';
 
 void main() {
+  test('builds KFE create wallet payload with explicit label and custody', () {
+    expect(
+      RemoteBitcoinAccountsService.kfeCreateWalletPayload(
+        label: 'Reserva familiar',
+        custody: BitcoinAccountCustody.internal,
+      ),
+      {
+        'kind': 'INTERNAL',
+        'label': 'Reserva familiar',
+        'issueInitialAddress': false,
+      },
+    );
+
+    expect(
+      RemoteBitcoinAccountsService.kfeCreateWalletPayload(
+        label: 'Cofre on-chain',
+        custody: BitcoinAccountCustody.custodialOnchain,
+      ),
+      {
+        'kind': 'CUSTODIAL_ONCHAIN',
+        'label': 'Cofre on-chain',
+        'issueInitialAddress': false,
+      },
+    );
+  });
+
   test('maps KFE dashboard active address to receive request', () {
     final requests =
         RemoteBitcoinAccountsService.receiveRequestsFromKfeDashboard(

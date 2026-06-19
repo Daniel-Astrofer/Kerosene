@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Audit & Security module — logs, merkle proofs, and system integrity.
 class AuditScreen extends ConsumerWidget {
@@ -35,7 +37,7 @@ class AuditScreen extends ConsumerWidget {
                 return const AdminEmptyState(
                   title: 'Audit data unavailable',
                   subtitle: 'The audit service may not be configured yet',
-                  icon: Icons.security_outlined,
+                  icon: KeroseneIcons.security,
                 );
               }
               return Column(
@@ -48,7 +50,7 @@ class AuditScreen extends ConsumerWidget {
                             child: AdminMetricCard(
                               label: _formatKey(e.key),
                               value: _formatValue(e.value),
-                              icon: Icons.analytics_outlined,
+                              icon: KeroseneIcons.analytics,
                             ),
                           );
                         })
@@ -118,17 +120,18 @@ class _MerkleRootCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.verified_outlined,
+              const Icon(KeroseneIcons.verified,
                   size: 16, color: AdminColors.positive),
               const SizedBox(width: AdminTheme.spacingSm),
-              Text('LATEST MERKLE ROOT', style: AdminTypography.label),
+              Text(AdminCopy.latestMerkleRootTitle,
+                  style: AdminTypography.label),
             ],
           ),
           const SizedBox(height: AdminTheme.spacingLg),
           latestRootAsync.when(
             data: (root) {
               if (root.isEmpty) {
-                return Text('No root available',
+                return Text(AdminCopy.rootUnavailable,
                     style: AdminTypography.bodyMedium);
               }
               return Column(
@@ -162,7 +165,8 @@ class _MerkleRootCard extends StatelessWidget {
             loading: () => const Center(
                 child:
                     CircularProgressIndicator(color: AdminColors.textTertiary)),
-            error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
+            error: (e, _) =>
+                Text(AdminCopy.loadIssue, style: AdminTypography.caption),
           ),
         ],
       ),
@@ -188,17 +192,19 @@ class _SovereigntyCard extends StatelessWidget {
         children: [
           Row(
             children: [
-              const Icon(Icons.shield_outlined,
+              const Icon(KeroseneIcons.shield,
                   size: 16, color: AdminColors.info),
               const SizedBox(width: AdminTheme.spacingSm),
-              Text('SOVEREIGNTY STATUS', style: AdminTypography.label),
+              Text(AdminCopy.sovereigntyStatusTitle,
+                  style: AdminTypography.label),
             ],
           ),
           const SizedBox(height: AdminTheme.spacingLg),
           sovAsync.when(
             data: (data) {
               if (data.isEmpty) {
-                return Text('Not available', style: AdminTypography.bodyMedium);
+                return Text(AdminCopy.unavailable,
+                    style: AdminTypography.bodyMedium);
               }
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
@@ -234,7 +240,8 @@ class _SovereigntyCard extends StatelessWidget {
             loading: () => const Center(
                 child:
                     CircularProgressIndicator(color: AdminColors.textTertiary)),
-            error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
+            error: (e, _) =>
+                Text(AdminCopy.loadIssue, style: AdminTypography.caption),
           ),
         ],
       ),
@@ -258,12 +265,12 @@ class _AuditHistoryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('AUDIT HISTORY', style: AdminTypography.label),
+          Text(AdminCopy.auditHistoryTitle, style: AdminTypography.label),
           const SizedBox(height: AdminTheme.spacingLg),
           historyAsync.when(
             data: (entries) {
               if (entries.isEmpty) {
-                return Text('No audit entries found',
+                return Text(AdminCopy.auditEmpty,
                     style: AdminTypography.bodyMedium);
               }
               return Column(
@@ -281,7 +288,7 @@ class _AuditHistoryCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(Icons.history,
+                        const Icon(KeroseneIcons.history,
                             size: 14, color: AdminColors.textTertiary),
                         const SizedBox(width: AdminTheme.spacingSm),
                         Expanded(
@@ -306,7 +313,8 @@ class _AuditHistoryCard extends StatelessWidget {
             loading: () => const Center(
                 child:
                     CircularProgressIndicator(color: AdminColors.textTertiary)),
-            error: (e, _) => Text('Error: $e', style: AdminTypography.caption),
+            error: (e, _) =>
+                Text(AdminCopy.loadIssue, style: AdminTypography.caption),
           ),
         ],
       ),

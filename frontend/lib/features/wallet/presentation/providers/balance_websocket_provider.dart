@@ -4,6 +4,7 @@ import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/providers/alert_preferences_provider.dart';
+import 'package:kerosene/core/services/notification_service.dart';
 import 'package:kerosene/features/auth/controller/auth_local_provider.dart';
 import '../../../../core/services/balance_websocket_service.dart';
 import '../../../../core/providers/tor_providers.dart';
@@ -150,28 +151,43 @@ final balanceWebSocketServiceProvider =
           ref.invalidate(transactionHistoryProvider);
           ref.invalidate(pagedTransactionHistoryProvider);
 
-          // ── NOTIFICATIONS & FEEDBACK ──
-          // 1. Local Notification - DISABLED to avoid confusion with Backend Pushes
-          // NotificationService().showSubtleNotification(
-          //   id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          //   title: 'Payment Received',
-          //   body: 'You received ${receivedAmount.toStringAsFixed(8)} BTC',
-          // );
+          final eventId = _buildReceivedEventId(
+            update: update,
+            amount: receivedAmount,
+            sender: extractedSender,
+          );
 
-          // 2. In-App Dialog Trigger
-          ref
-              .read(receivedTxEventProvider.notifier)
-              .updateEvent(ReceivedTxEvent(
-                id: _buildReceivedEventId(
-                  update: update,
-                  amount: receivedAmount,
-                  sender: extractedSender,
-                ),
-                amount: receivedAmount,
-                walletName: update.walletName,
-                sender: extractedSender,
-                receiver: update.receiver,
-              ));
+          final notification = SessionNotificationItem(
+            id: eventId,
+            title: 'BTC recebido',
+            body:
+                'Você recebeu ${receivedAmount.toStringAsFixed(8)} BTC em ${update.walletName}.',
+            timestamp: DateTime.now(),
+            kind: SessionNotificationItem.kindTransferReceived,
+            severity: SessionNotificationItem.severitySuccess,
+            deeplink: '/home',
+            entityType: 'wallet',
+            entityId: update.walletId.toString(),
+            metadata: {
+              'amountBtc': receivedAmount.toStringAsFixed(8),
+              'walletName': update.walletName,
+              if (extractedSender != null) 'sender': extractedSender,
+              if (update.receiver != null) 'receiver': update.receiver!,
+            },
+          );
+
+          ref.read(sessionNotificationFeedProvider.notifier).add(notification);
+          ref.read(receivedTxEventProvider.notifier).consumeEvent(eventId);
+          unawaited(
+            NotificationService().showTransactionNotification(
+              id: _notificationIdFrom(eventId),
+              title: notification.title,
+              body: notification.body,
+              summary: update.walletName,
+              payload: notification.deeplink,
+              incoming: true,
+            ),
+          );
         }
       }
 
@@ -207,7 +223,18 @@ final balanceWebSocketServiceProvider =
       ref.invalidate(depositBalanceProvider);
       unawaited(ref.read(walletProvider.notifier).refresh());
 
-      if (alertPreferences.inAppBannersEnabled) {
+      if (_isTransactionNotification(notification)) {
+        unawaited(
+          NotificationService().showTransactionNotification(
+            id: _notificationIdFrom(notification.dedupeKey),
+            title: notification.title,
+            body: notification.body,
+            summary: 'Kerosene',
+            payload: notification.deeplink,
+            incoming: _isIncomingTransactionNotification(notification),
+          ),
+        );
+      } else if (alertPreferences.inAppBannersEnabled) {
         ref.read(notificationBannerProvider.notifier).show(notification);
       }
     },
@@ -320,4 +347,26 @@ bool _isTransactionNotification(SessionNotificationItem notification) {
     SessionNotificationItem.kindDepositConfirmed,
     SessionNotificationItem.kindPaymentSent,
   }.contains(notification.kind);
+}
+
+bool _isIncomingTransactionNotification(SessionNotificationItem notification) {
+  return {
+    SessionNotificationItem.kindTransferReceived,
+    SessionNotificationItem.kindPaymentRequestPaid,
+    SessionNotificationItem.kindDepositDetected,
+    SessionNotificationItem.kindDepositConfirmed,
+  }.contains(notification.kind);
+}
+
+int _notificationIdFrom(String value) {
+  var hash = 0;
+  for (final codeUnit in value.codeUnits) {
+    hash = 0x1fffffff & (hash + codeUnit);
+    hash = 0x1fffffff & (hash + ((0x0007ffff & hash) << 10));
+    hash ^= hash >> 6;
+  }
+  hash = 0x1fffffff & (hash + ((0x03ffffff & hash) << 3));
+  hash ^= hash >> 11;
+  hash = 0x1fffffff & (hash + ((0x00003fff & hash) << 15));
+  return hash == 0 ? DateTime.now().millisecondsSinceEpoch ~/ 1000 : hash;
 }

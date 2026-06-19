@@ -3,11 +3,14 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 // ignore: depend_on_referenced_packages
 import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
 import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/performance/kerosene_performance_boundary.dart';
 import 'package:kerosene/core/providers/tor_providers.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
 import 'package:kerosene/features/auth/presentation/screens/server_unavailable_screen.dart'
@@ -180,7 +183,7 @@ class _AdminAuthGate extends ConsumerWidget {
 
     if (authState is AuthInitial || authState is AuthLoading) {
       return const Scaffold(
-        backgroundColor: Color(0xFF0E0E10),
+        backgroundColor: KeroseneBrandTokens.backgroundSoft,
         body: Center(
           child: Column(
             mainAxisSize: MainAxisSize.min,
@@ -190,16 +193,16 @@ class _AdminAuthGate extends ConsumerWidget {
                 height: 24,
                 child: CircularProgressIndicator(
                   strokeWidth: 2,
-                  color: Color(0xFF6A6A74),
+                  color: KeroseneBrandTokens.textMuted,
                 ),
               ),
               SizedBox(height: 16),
               Text(
-                'Establishing secure connection...',
+                KeroseneUiCopy.secureConnectionLoading,
                 style: TextStyle(
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                   fontSize: 12,
-                  color: Color(0xFF6A6A74),
+                  color: KeroseneBrandTokens.textMuted,
                 ),
               ),
             ],

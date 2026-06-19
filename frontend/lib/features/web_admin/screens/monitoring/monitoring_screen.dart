@@ -4,9 +4,11 @@ import 'package:kerosene/core/l10n/l10n_extension.dart';
 import '../../data/admin_data_service.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class MonitoringScreen extends ConsumerWidget {
   const MonitoringScreen({super.key});
@@ -46,7 +48,7 @@ class MonitoringScreen extends ConsumerWidget {
                   asyncValue: health,
                   valueBuilder: (data) => '${data['status'] ?? 'UNKNOWN'}',
                   subtitleBuilder: (data) => '${data['service'] ?? 'kerosene'}',
-                  icon: Icons.dns_outlined,
+                  icon: KeroseneIcons.dns,
                 ),
                 _AsyncMetric(
                   title: 'Bitcoin Core',
@@ -57,7 +59,7 @@ class MonitoringScreen extends ConsumerWidget {
                     return context.tr
                         .adminHeightValue('${chain['height'] ?? 0}');
                   },
-                  icon: Icons.currency_bitcoin,
+                  icon: KeroseneIcons.bitcoin,
                 ),
                 _AsyncMetric(
                   title: 'Lightning LND',
@@ -69,7 +71,7 @@ class MonitoringScreen extends ConsumerWidget {
                       '${node['blockHeight'] ?? 0}',
                     );
                   },
-                  icon: Icons.flash_on_outlined,
+                  icon: KeroseneIcons.lightning,
                 ),
                 _AsyncMetric(
                   title: context.tr.adminMonitoringMetricVaultRaft,
@@ -79,7 +81,7 @@ class MonitoringScreen extends ConsumerWidget {
                     '${data['votingServers'] ?? 0}',
                     '${data['expectedServers'] ?? 3}',
                   ),
-                  icon: Icons.account_tree_outlined,
+                  icon: KeroseneIcons.network,
                 ),
                 _AsyncMetric(
                   title: context.tr.adminSettingsReleaseTitle,
@@ -89,7 +91,7 @@ class MonitoringScreen extends ConsumerWidget {
                       : context.tr.adminStatusBlocked,
                   subtitleBuilder: (data) =>
                       '${data['reason'] ?? context.tr.unknown}',
-                  icon: Icons.verified_user_outlined,
+                  icon: KeroseneIcons.security,
                 ),
               ],
             ),
@@ -185,7 +187,7 @@ class _BlockchainPanelState extends ConsumerState<_BlockchainPanel> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('Blockchain sync: $status')),
+          const SnackBar(content: Text(AdminCopy.blockchainSyncStarted)),
         );
       ref.invalidate(adminBlockchainMonitorProvider);
     } catch (e) {
@@ -199,7 +201,7 @@ class _BlockchainPanelState extends ConsumerState<_BlockchainPanel> {
       ScaffoldMessenger.of(context)
         ..hideCurrentSnackBar()
         ..showSnackBar(
-          SnackBar(content: Text('Blockchain sync failed: $message')),
+          const SnackBar(content: Text(AdminCopy.blockchainSyncIssue)),
         );
     } finally {
       if (mounted) {
@@ -281,7 +283,7 @@ class _BlockchainPanelState extends ConsumerState<_BlockchainPanel> {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text(context.tr.adminMonitoringBlockchainError('$e')),
+        error: (_, __) => const Text(AdminCopy.blockchainMonitorUnavailable),
       ),
     );
   }
@@ -321,7 +323,7 @@ class _BlockchainSyncAction extends StatelessWidget {
           Tooltip(
             message: error!,
             child: const Icon(
-              Icons.error_outline,
+              KeroseneIcons.error,
               color: AdminColors.negative,
               size: 16,
             ),
@@ -336,8 +338,8 @@ class _BlockchainSyncAction extends StatelessWidget {
                     color: AdminColors.textTertiary,
                   ),
                 )
-              : const Icon(Icons.sync, size: 16),
-          label: Text(isSyncing ? 'Syncing' : 'Sync now'),
+              : const Icon(KeroseneIcons.sync, size: 16),
+          label: Text(isSyncing ? AdminCopy.syncInProgress : AdminCopy.syncNow),
         ),
       ],
     );
@@ -414,7 +416,7 @@ class _LightningPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text(context.tr.adminMonitoringLightningError('$e')),
+        error: (_, __) => const Text(AdminCopy.lightningMonitorUnavailable),
       ),
     );
   }
@@ -463,7 +465,7 @@ class _ReleasePanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text(context.tr.adminMonitoringReleaseError('$e')),
+        error: (_, __) => const Text(AdminCopy.loadIssue),
       ),
     );
   }
@@ -499,7 +501,7 @@ class _HealthChecksPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text(context.tr.adminMonitoringHealthError('$e')),
+        error: (_, __) => const Text(AdminCopy.loadIssue),
       ),
     );
   }
@@ -544,7 +546,7 @@ class _LogsPanel extends StatelessWidget {
         loading: () => const LinearProgressIndicator(
           color: AdminColors.textTertiary,
         ),
-        error: (e, _) => Text(context.tr.adminMonitoringLogsError('$e')),
+        error: (_, __) => const Text(AdminCopy.loadIssue),
       ),
     );
   }
@@ -736,7 +738,9 @@ String _syncStatusFromResponse(Map<String, dynamic> response) {
 
 String _syncErrorMessage(Object error) {
   final message = error.toString().trim();
-  return message.isEmpty ? 'Unknown error' : message;
+  return message.isEmpty
+      ? AdminCopy.blockchainSyncIssue
+      : AdminCopy.blockchainSyncIssue;
 }
 
 Map<String, dynamic> _map(Object? value) {

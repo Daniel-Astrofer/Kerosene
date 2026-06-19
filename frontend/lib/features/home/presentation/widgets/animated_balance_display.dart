@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:intl/intl.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
 /// Displays a BTC balance with rolling digit animations.
 ///
@@ -57,13 +59,14 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     _refreshCharacterLayout();
     _flashController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: KeroseneMotion.ceremonial,
       value: 1.0,
     );
     _flashOpacity = Tween<double>(
       begin: 1.0,
       end: 0.0,
-    ).animate(CurvedAnimation(parent: _flashController, curve: Curves.easeOut));
+    ).animate(CurvedAnimation(
+        parent: _flashController, curve: KeroseneMotion.standard));
   }
 
   @override
@@ -74,8 +77,8 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
     }
     if (widget.enableFlash && widget.balance != oldWidget.balance) {
       _flashColor = widget.balance > oldWidget.balance
-          ? const Color(0xFF00FF94)
-          : const Color(0xFFFF0055);
+          ? AppColors.hexFF00FF94
+          : AppColors.hexFFFF0055;
       _flashController.forward(from: 0.0);
     }
   }
@@ -205,7 +208,7 @@ class _AnimatedBalanceDisplayState extends State<AnimatedBalanceDisplay>
           key: ValueKey('static_${character.index}'),
         );
       } else {
-        final delay = Duration(milliseconds: character.index * 50);
+        final delay = KeroseneMotion.stagger(character.index);
 
         child = _RollingDigit(
           key: ValueKey('rolling_${_visibleText.length - character.index}'),
@@ -331,14 +334,12 @@ class _RollingDigitState extends State<_RollingDigit>
 
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(
-        milliseconds: 3000,
-      ), // Slightly longer for the multi-spin
+      duration: KeroseneMotion.odometerInitial,
     );
 
     _animation = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOutQuart, // Smoother deceleration for odometer
+      curve: KeroseneMotion.entrance, // Smoother deceleration for odometer
     );
 
     if (widget.animateInitialValue) {
@@ -368,9 +369,7 @@ class _RollingDigitState extends State<_RollingDigit>
         _targetDigit = newDigit;
         _rotations = 0; // Simple transition for updates
       });
-      _controller.duration = const Duration(
-        milliseconds: 1000,
-      ); // Shorter for updates
+      _controller.duration = KeroseneMotion.odometerUpdate;
       _controller.forward(from: 0.0);
     }
   }
@@ -420,7 +419,8 @@ class _RollingDigitState extends State<_RollingDigit>
 
               final centerProgress =
                   (1 - (distance / _visibleExtent)).clamp(0.0, 1.0).toDouble();
-              final easedCenter = Curves.easeOutCubic.transform(centerProgress);
+              final easedCenter =
+                  KeroseneMotion.standard.transform(centerProgress);
               final opacity = _edgeOpacity + ((1 - _edgeOpacity) * easedCenter);
               final scale = _edgeScale + ((1 - _edgeScale) * easedCenter);
               final tilt = normalizedOffset * _maxTiltRadians;

@@ -5,10 +5,12 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 import 'package:kerosene/core/presentation/widgets/push_notification_card.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class SessionNotificationSidebar extends ConsumerWidget {
   final VoidCallback? onClose;
@@ -55,6 +57,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
       en: unreadCount == 1 ? 'unread' : 'unread',
       es: unreadCount == 1 ? 'sin leer' : 'sin leer',
     );
+    final unreadLabel = '$unreadCount $alertLabel';
     final responsive = context.responsive;
     final sidebarWidth = math.min(
       336.0,
@@ -65,7 +68,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
     return Container(
       width: sidebarWidth,
       decoration: BoxDecoration(
-        color: const Color(0xFF050607),
+        color: AppColors.hexFF050607,
         border: Border(
           left: BorderSide(color: Colors.white.withValues(alpha: 0.08)),
         ),
@@ -89,7 +92,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                         Text(
                           headerTitle,
                           style: AppTypography.bodyMedium.copyWith(
-                            color: const Color(0xFFF2F4F5),
+                            color: AppColors.hexFFF2F4F5,
                             fontWeight: FontWeight.w900,
                             fontSize: responsive.isTinyPhone ? 16 : 18,
                             letterSpacing: 0,
@@ -112,7 +115,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                   if (showCloseButton)
                     IconButton(
                       onPressed: onClose,
-                      icon: const Icon(Icons.close),
+                      icon: const Icon(KeroseneIcons.close),
                       color: Colors.white.withValues(alpha: 0.68),
                       iconSize: 17,
                       style: IconButton.styleFrom(
@@ -135,13 +138,13 @@ class SessionNotificationSidebar extends ConsumerWidget {
                       vertical: 6,
                     ),
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D1014),
+                      color: AppColors.hexFF0D1014,
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.10),
                       ),
                     ),
                     child: Text(
-                      '$unreadCount $alertLabel',
+                      unreadLabel,
                       style: AppTypography.bodySmall.copyWith(
                         color: Colors.white.withValues(alpha: 0.74),
                         fontWeight: FontWeight.w700,
@@ -279,7 +282,7 @@ class SessionNotificationSidebar extends ConsumerWidget {
                                     width: 9,
                                     height: 9,
                                     decoration: const BoxDecoration(
-                                      color: Color(0xFFF4C430),
+                                      color: AppColors.hexFFF4C430,
                                       shape: BoxShape.circle,
                                     ),
                                   ),

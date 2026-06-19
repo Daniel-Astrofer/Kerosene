@@ -90,7 +90,7 @@ class _HomeFloatingMenuButton extends StatelessWidget {
                 ],
               ),
               child: Icon(
-                LucideIcons.menu,
+                KeroseneIcons.menu,
                 color: Colors.white,
                 size: _homeSize(24),
               ),
@@ -186,7 +186,7 @@ class _HomeMenuDestinationTile extends StatelessWidget {
               ),
               if (selected)
                 Icon(
-                  LucideIcons.check,
+                  KeroseneIcons.check,
                   color: _homeAmberColor,
                   size: _homeSize(18),
                 ),

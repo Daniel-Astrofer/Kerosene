@@ -268,6 +268,9 @@ class AppLocalizationsEn extends AppLocalizations {
   String get goBack => 'Go Back';
 
   @override
+  String get goToHome => 'Go to home';
+
+  @override
   String get done => 'Done';
 
   @override
@@ -429,6 +432,10 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get settingsTitle => 'Settings';
+
+  @override
+  String get settingsScreenSubtitle =>
+      'Manage your account, security, and devices';
 
   @override
   String get currency => 'Currency';
@@ -1258,6 +1265,36 @@ class AppLocalizationsEn extends AppLocalizations {
   }
 
   @override
+  String get passkeyVerificationUserNotFound => 'User not found';
+
+  @override
+  String get passkeyVerificationNoLocal => 'No local passkey on this device';
+
+  @override
+  String get passkeyVerificationCancelled => 'Verification cancelled';
+
+  @override
+  String get passkeyVerificationChallengeExpired => 'Time expired';
+
+  @override
+  String get passkeyVerificationRejected => 'Passkey rejected';
+
+  @override
+  String get passkeyVerificationFailed => 'Could not validate passkey';
+
+  @override
+  String get passkeyVerificationBodyPreparing =>
+      'Starting secure confirmation.';
+
+  @override
+  String get passkeyVerificationBodySending =>
+      'Waiting for approval from this device.';
+
+  @override
+  String get passkeyVerificationBodySuccess =>
+      'Credential accepted. Continuing automatically.';
+
+  @override
   String get passkeyLoadingInitBiom => 'Initializing Biometrics...';
 
   @override
@@ -2041,10 +2078,10 @@ class AppLocalizationsEn extends AppLocalizations {
   String get bitcoinTaxReportsTitle => 'Tax reports';
 
   @override
-  String get bitcoinTaxEventsUnavailableTitle => 'Events unavailable';
+  String get taxEventsUnavailableTitle => 'Events unavailable';
 
   @override
-  String get bitcoinTaxEventsUnavailableMessage =>
+  String get taxEventsUnavailableMessage =>
       'We could not load temporary events.';
 
   @override
@@ -2767,126 +2804,6 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get bitcoinReceiveRequestsNoExpiry => 'no expiry';
-
-  @override
-  String get paymentIntentScreenTitle => 'Payment intent';
-
-  @override
-  String get paymentIntentScreenSubtitle => 'Quote, confirmation, and status';
-
-  @override
-  String get paymentIntentRecipientHint => 'username, email, or address';
-
-  @override
-  String get paymentIntentSearchAction => 'Search';
-
-  @override
-  String get paymentIntentAmountFeeTitle => 'Amount and fee';
-
-  @override
-  String get paymentIntentGenerateQuoteAction => 'Generate quote';
-
-  @override
-  String get paymentIntentQuoteTitle => 'Quote';
-
-  @override
-  String get paymentIntentMetricReceiver => 'Receiver';
-
-  @override
-  String get paymentIntentMetricRoute => 'Route';
-
-  @override
-  String get paymentIntentMetricReceives => 'Receives';
-
-  @override
-  String get paymentIntentMetricNetworkFee => 'Network fee';
-
-  @override
-  String get paymentIntentMetricKeroseneFee => 'Kerosene fee';
-
-  @override
-  String get paymentIntentMetricTotalDebit => 'Total debited';
-
-  @override
-  String get paymentIntentConfirmPaymentAction => 'Confirm payment';
-
-  @override
-  String get paymentIntentStatusTitle => 'Status';
-
-  @override
-  String get paymentIntentNotCompleted => 'Payment not completed.';
-
-  @override
-  String get paymentIntentReviewTitle => 'Review send';
-
-  @override
-  String paymentIntentReviewDebitMessage(Object total, Object receiver) {
-    return '$total will be debited to $receiver.';
-  }
-
-  @override
-  String get paymentIntentAuthorizeAction => 'Authorize';
-
-  @override
-  String get paymentIntentValidationRecipientRequired => 'Enter the recipient.';
-
-  @override
-  String get paymentIntentValidationAmountRequired => 'Enter the amount.';
-
-  @override
-  String get paymentIntentRailInternal => 'Kerosene';
-
-  @override
-  String get paymentIntentRailLightning => 'Lightning';
-
-  @override
-  String get paymentIntentRailOnchain => 'On-chain';
-
-  @override
-  String get paymentIntentFeeSenderPays => 'Sender pays';
-
-  @override
-  String get paymentIntentFeeRecipientPays => 'Recipient pays';
-
-  @override
-  String get paymentIntentSpeedEconomy => 'Economy';
-
-  @override
-  String get paymentIntentSpeedNormal => 'Normal';
-
-  @override
-  String get paymentIntentSpeedFast => 'Fast';
-
-  @override
-  String get paymentIntentStatusCreated => 'Created';
-
-  @override
-  String get paymentIntentStatusQuoted => 'Quoted';
-
-  @override
-  String get paymentIntentStatusConfirmed => 'Confirmed';
-
-  @override
-  String get paymentIntentStatusProcessing => 'Processing';
-
-  @override
-  String get paymentIntentStatusAcceptedByProvider => 'Accepted by provider';
-
-  @override
-  String get paymentIntentStatusRequiresReconciliation =>
-      'Requires reconciliation';
-
-  @override
-  String get paymentIntentStatusSettled => 'Settled';
-
-  @override
-  String get paymentIntentStatusFailed => 'Failed';
-
-  @override
-  String get paymentIntentStatusCanceled => 'Canceled';
-
-  @override
-  String get paymentIntentStatusExpired => 'Expired';
 
   @override
   String get bitcoinReceiveStatusDetected => 'Detected';
@@ -6614,6 +6531,82 @@ class AppLocalizationsEn extends AppLocalizations {
   String get sendMoneyPaymentRequestLoaded => 'Payment request loaded.';
 
   @override
+  String get authReasonTransactionConfirm =>
+      'Confirm on this device to authorize the transaction.';
+
+  @override
+  String get transactionAuthVaultTitle => 'Vault confirmation';
+
+  @override
+  String get transactionAuthOperationTitle => 'Operation confirmation';
+
+  @override
+  String get transactionAuthPassphraseLabel => 'Passphrase';
+
+  @override
+  String get transactionAuthConfirmationPassphraseLabel =>
+      'Confirmation passphrase';
+
+  @override
+  String get transactionAuthEnterPassphrase =>
+      'Enter your passphrase to continue.';
+
+  @override
+  String get transactionAuthTotpCodeLabel => 'TOTP code';
+
+  @override
+  String get transactionAuthEnterAuthenticatorDigits =>
+      'Enter the 6 digits from your authenticator.';
+
+  @override
+  String get transactionAuthContinue => 'Continue';
+
+  @override
+  String get transactionAuthProfileSubtitleMultisigFull =>
+      'This policy uses passphrase, TOTP, and passkey to release critical operations.';
+
+  @override
+  String get transactionAuthProfileSubtitleMultisigStandard =>
+      'This policy uses passphrase and TOTP to release critical operations.';
+
+  @override
+  String get transactionAuthProfileSubtitlePasskeyOnly =>
+      'Final confirmation will be requested with your passkey.';
+
+  @override
+  String get transactionAuthProfileSubtitleDefault =>
+      'Confirm the required factors to complete this operation.';
+
+  @override
+  String transactionAuthShamirRecoveryError(int threshold) {
+    return 'Enter $threshold full shares to reconstruct the passphrase.';
+  }
+
+  @override
+  String get transactionAuthShamirReconstructFailed =>
+      'The passphrase could not be reconstructed. Review the shares and try again.';
+
+  @override
+  String get transactionAuthShamirTitle => 'Shamir authorization';
+
+  @override
+  String transactionAuthShamirSubtitle(int threshold, int totalShares) {
+    return 'Reconstruct the passphrase with $threshold of $totalShares shares before releasing the operation.';
+  }
+
+  @override
+  String transactionAuthShareLabel(int index) {
+    return 'Share $index';
+  }
+
+  @override
+  String get transactionAuthReconstructAndContinue =>
+      'Reconstruct and continue';
+
+  @override
+  String get transactionAuthShareHint => 'Paste the full share here';
+
+  @override
   String get walletConfigAddressCopiedMessage =>
       'Wallet address copied successfully.';
 
@@ -7254,6 +7247,27 @@ class AppLocalizationsEn extends AppLocalizations {
 
   @override
   String get landingStatusManifest => 'Manifest';
+
+  @override
+  String get landingNetworkStatusLabel => 'NETWORK STATUS';
+
+  @override
+  String get landingNetworkOnlineDetail => '100% On-chain & Tor';
+
+  @override
+  String get landingNetworkFallbackDetail => 'On-chain & Tor';
+
+  @override
+  String get landingApiAccessTitle => 'API ACCESS';
+
+  @override
+  String get landingApiAccessBody =>
+      'Technical documentation is available through the developer portal on the Onion network.';
+
+  @override
+  String landingStatusLine(String label, String status) {
+    return '$label: $status';
+  }
 
   @override
   String get homeFundsDistributionTitle => 'Fund Distribution';

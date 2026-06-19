@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 /// The top navigation bar for the Lightning transaction flow.
 ///
@@ -40,7 +40,7 @@ class LightningTopBar extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: onBack,
-              icon: const Icon(LucideIcons.arrowLeft, size: 22),
+              icon: const Icon(KeroseneIcons.back, size: 22),
               tooltip: context.tr.authBackAction,
               style: IconButton.styleFrom(
                 foregroundColor: textColor,
@@ -54,7 +54,7 @@ class LightningTopBar extends StatelessWidget {
           Text(
             context.tr.send,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: textColor,
               fontSize: 24,
               fontWeight: FontWeight.w500,

@@ -74,17 +74,38 @@ class WalletRepositoryImpl implements WalletRepository {
         return Left(AuthFailure(message: 'Usuário não autenticado'));
       }
 
+      final normalizedMode = walletMode.trim().toUpperCase();
+      final normalizedXpub = xpub?.trim();
+
+      if (normalizedMode == 'SELF_CUSTODY' &&
+          (normalizedXpub == null || normalizedXpub.isEmpty)) {
+        await walletSecurityService.saveMnemonic(passphrase);
+        String? address;
+        try {
+          address = await walletSecurityService.getAddressFromMnemonic(passphrase);
+        } catch (_) {}
+        final now = DateTime.now();
+        return Right(
+          Wallet(
+            id: const Uuid().v4(),
+            name: name,
+            address: address ?? '',
+            walletMode: 'SELF_CUSTODY',
+            balance: 0.0,
+            derivationPath: "m/84'/0'/0'/0/0",
+            type: WalletType.nativeSegwit,
+            createdAt: now,
+            updatedAt: now,
+            accountSecurity: accountSecurity,
+          ),
+        );
+      }
+
       final result = await remoteDataSource.createWallet(
         name: name,
-        passphrase: passphrase,
-        accountSecurity: accountSecurity,
-        xpub: xpub,
+        xpub: normalizedXpub,
         walletMode: walletMode,
       );
-
-      if (walletMode.trim().toUpperCase() != 'SELF_CUSTODY') {
-        await walletSecurityService.saveMnemonic(passphrase);
-      }
 
       return Right(Wallet.fromJson(result));
     } on AppException catch (e) {
@@ -202,11 +223,8 @@ class WalletRepositoryImpl implements WalletRepository {
     try {
       await walletSecurityService.saveMnemonic(mnemonic);
 
-      try {
-        await remoteDataSource.createWallet(name: name, passphrase: mnemonic);
-      } catch (e) {
-        debugPrint('Import wallet on backend warning: $e');
-      }
+      // Imported self-custody wallets remain local because KFE wallet creation
+      // expects public material or custodial/internal wallet kinds, not a seed.
 
       String? address;
       try {
@@ -353,44 +371,6 @@ class WalletRepositoryImpl implements WalletRepository {
       return Left(_failureFromException(e));
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao buscar carteira: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String>> updateWallet({
-    required String name,
-    required String newName,
-    required String passphrase,
-  }) async {
-    try {
-      final result = await remoteDataSource.updateWallet(
-        name: name,
-        newName: newName,
-        passphrase: passphrase,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(_failureFromException(e));
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao atualizar carteira: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, String>> deleteWallet({
-    required String name,
-    required String passphrase,
-  }) async {
-    try {
-      final result = await remoteDataSource.deleteWallet(
-        name: name,
-        passphrase: passphrase,
-      );
-      return Right(result);
-    } on AppException catch (e) {
-      return Left(_failureFromException(e));
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao deletar carteira: $e'));
     }
   }
 

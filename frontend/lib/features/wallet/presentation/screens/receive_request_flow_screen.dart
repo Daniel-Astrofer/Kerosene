@@ -1,13 +1,16 @@
+import 'package:kerosene/core/theme/app_colors.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/qr_payment_parser.dart';
@@ -21,17 +24,17 @@ import 'package:kerosene/features/wallet/presentation/screens/receive_method.dar
 
 enum ReceiveRequestStage { qr, confirmations, identified }
 
-const _receiveBackground = Color(0xFF050505);
-const _receiveSurface = Color(0xFF121212);
-const _receiveSurfaceLowest = Color(0xFF0E0E0E);
-const _receiveSurfaceLow = Color(0xFF1C1B1B);
-const _receiveSurfaceHigh = Color(0xFF2A2A2A);
-const _receiveBorder = Color(0xFF2A2A2A);
-const _receiveText = Color(0xFFFFFFFF);
-const _receiveMuted = Color(0xFFA3A3A3);
-const _receiveBody = Color(0xFFC4C7C8);
-const _receiveSuccess = Color(0xFF4ADE80);
-const _receiveWarning = Color(0xFFF59E0B);
+const _receiveBackground = AppColors.hexFF050505;
+const _receiveSurface = AppColors.hexFF121212;
+const _receiveSurfaceLowest = AppColors.hexFF0E0E0E;
+const _receiveSurfaceLow = AppColors.hexFF1C1B1B;
+const _receiveSurfaceHigh = AppColors.hexFF2A2A2A;
+const _receiveBorder = AppColors.hexFF2A2A2A;
+const _receiveText = AppColors.hexFFFFFFFF;
+const _receiveMuted = AppColors.hexFFA3A3A3;
+const _receiveBody = AppColors.hexFFC4C7C8;
+const _receiveSuccess = AppColors.hexFF4ADE80;
+const _receiveWarning = AppColors.hexFFF59E0B;
 
 class ReceiveRequestFlowScreen extends ConsumerStatefulWidget {
   final Wallet wallet;
@@ -92,7 +95,7 @@ class _ReceiveRequestFlowScreenState
     super.initState();
     _scanController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: KeroseneMotion.ceremonial,
     )..repeat();
     _stage = widget.initialStage ?? ReceiveRequestStage.qr;
     _identifiedAt = widget.identifiedAt ?? DateTime.now();
@@ -190,7 +193,7 @@ class _ReceiveRequestFlowScreenState
     if (transferId.isEmpty) return;
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(
-      const Duration(seconds: 6),
+      KeroseneMotion.notificationLongHold,
       (_) => _refreshObservedTransfer(),
     );
   }
@@ -272,7 +275,7 @@ class _ReceiveRequestFlowScreenState
   void _startPaymentLinkPolling() {
     _statusTimer?.cancel();
     _statusTimer = Timer.periodic(
-      const Duration(seconds: 6),
+      KeroseneMotion.notificationLongHold,
       (_) => _refreshPaymentLink(),
     );
   }
@@ -474,9 +477,9 @@ class _ReceiveRequestFlowScreenState
             child: Stack(
               children: [
                 AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 260),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
+                  duration: KeroseneMotion.medium,
+                  switchInCurve: KeroseneMotion.standard,
+                  switchOutCurve: KeroseneMotion.exit,
                   child: KeyedSubtree(key: ValueKey(_stage), child: child),
                 ),
                 if (_isLoadingRequest) _buildLoadingOverlay(),
@@ -489,11 +492,15 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildQrScreen(BuildContext context) {
+    final receiveTitle =
+        widget.onChainWallet ? 'Receber Bitcoin' : 'Receber na Kerosene';
+    const receiveSubtitle =
+        'Mostre este código para receber fundos em sua carteira';
     return Column(
       children: [
         _ReceiveContextHeader(
           title: 'Transação',
-          icon: LucideIcons.x,
+          icon: KeroseneIcons.close,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         Expanded(
@@ -503,11 +510,9 @@ class _ReceiveRequestFlowScreenState
             child: Column(
               children: [
                 Text(
-                  widget.onChainWallet
-                      ? 'Receber Bitcoin'
-                      : 'Receber na Kerosene',
+                  receiveTitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.ibmPlexSerif(
+                  style: AppTypography.newsreader(
                     color: _receiveText,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
@@ -517,9 +522,9 @@ class _ReceiveRequestFlowScreenState
                 ),
                 const SizedBox(height: 8),
                 Text(
-                  'Mostre este código para receber fundos em sua carteira',
+                  receiveSubtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: _receiveMuted,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -555,7 +560,7 @@ class _ReceiveRequestFlowScreenState
             children: [
               Expanded(
                 child: _ReceiveActionButton(
-                  icon: LucideIcons.copy,
+                  icon: KeroseneIcons.copy,
                   label: context.tr.copy,
                   onTap: _copyPaymentValue,
                 ),
@@ -563,7 +568,7 @@ class _ReceiveRequestFlowScreenState
               const SizedBox(width: 16),
               Expanded(
                 child: _ReceiveActionButton(
-                  icon: LucideIcons.share2,
+                  icon: KeroseneIcons.share,
                   label: context.tr.share,
                   onTap: _sharePaymentValue,
                 ),
@@ -581,25 +586,27 @@ class _ReceiveRequestFlowScreenState
       child: Column(
         children: [
           _ReceiveDetailLine(
-            icon: LucideIcons.wallet,
+            icon: KeroseneIcons.wallet,
             label: 'Carteira',
             value: widget.wallet.name,
           ),
           const _ReceiveDivider(),
           _ReceiveDetailLine(
-            icon: widget.onChainWallet ? LucideIcons.bitcoin : LucideIcons.zap,
+            icon: widget.onChainWallet
+                ? KeroseneIcons.bitcoin
+                : KeroseneIcons.lightning,
             label: 'Rede',
             value: _networkLabel,
           ),
           const _ReceiveDivider(),
           _ReceiveDetailLine(
-            icon: LucideIcons.receipt,
+            icon: KeroseneIcons.history,
             label: 'Solicitado',
             value: _amountLabel,
           ),
           const _ReceiveDivider(),
           _ReceiveDetailLine(
-            icon: LucideIcons.mapPin,
+            icon: KeroseneIcons.location,
             label: widget.onChainWallet ? 'Endereço' : 'Destino',
             value: _shortenAddress(_addressValue, head: 14, tail: 8),
             monospace: true,
@@ -610,6 +617,9 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildConfirmationsScreen(BuildContext context) {
+    final receiveTitle =
+        widget.onChainWallet ? 'Receber Bitcoin' : 'Receber na Kerosene';
+    const scanSubtitle = 'Escaneie para iniciar a transferência';
     return Column(
       children: [
         const _ReceiveShellHeader(),
@@ -620,11 +630,9 @@ class _ReceiveRequestFlowScreenState
             child: Column(
               children: [
                 Text(
-                  widget.onChainWallet
-                      ? 'Receber Bitcoin'
-                      : 'Receber na Kerosene',
+                  receiveTitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.ibmPlexSerif(
+                  style: AppTypography.newsreader(
                     color: _receiveText,
                     fontSize: 20,
                     fontWeight: FontWeight.w500,
@@ -634,9 +642,9 @@ class _ReceiveRequestFlowScreenState
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'Escaneie para iniciar a transferência',
+                  scanSubtitle,
                   textAlign: TextAlign.center,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: _receiveMuted,
                     fontSize: 14,
                     fontWeight: FontWeight.w400,
@@ -663,7 +671,7 @@ class _ReceiveRequestFlowScreenState
                   children: [
                     Expanded(
                       child: _ReceiveActionButton(
-                        icon: LucideIcons.copy,
+                        icon: KeroseneIcons.copy,
                         label: context.tr.copy,
                         onTap: _copyPaymentValue,
                       ),
@@ -671,7 +679,7 @@ class _ReceiveRequestFlowScreenState
                     const SizedBox(width: 16),
                     Expanded(
                       child: _ReceiveActionButton(
-                        icon: LucideIcons.share2,
+                        icon: KeroseneIcons.share,
                         label: context.tr.share,
                         primary: true,
                         onTap: _sharePaymentValue,
@@ -688,6 +696,7 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildIdentifiedScreen(BuildContext context) {
+    const identifiedLabel = 'Pagamento\nIdentificado!';
     return Stack(
       children: [
         Column(
@@ -701,9 +710,9 @@ class _ReceiveRequestFlowScreenState
                     _buildSuccessGraphic(),
                     const SizedBox(height: 32),
                     Text(
-                      'Pagamento\nIdentificado!',
+                      identifiedLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: _receiveText,
                         fontSize: 48,
                         fontWeight: FontWeight.w400,
@@ -715,7 +724,7 @@ class _ReceiveRequestFlowScreenState
                     Text(
                       _amountLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: _receiveText,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -727,7 +736,7 @@ class _ReceiveRequestFlowScreenState
                     Text(
                       _fiatLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: _receiveMuted,
                         fontSize: 14,
                         fontWeight: FontWeight.w400,
@@ -769,18 +778,18 @@ class _ReceiveRequestFlowScreenState
                   onPressed: _goHome,
                   style: TextButton.styleFrom(
                     backgroundColor: _receiveText,
-                    foregroundColor: const Color(0xFF2F3131),
+                    foregroundColor: AppColors.hexFF2F3131,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(4),
                     ),
-                    textStyle: GoogleFonts.inter(
+                    textStyle: AppTypography.inter(
                       fontSize: 12,
                       fontWeight: FontWeight.w600,
                       letterSpacing: 1.2,
                       height: 1.2,
                     ),
                   ),
-                  child: const Text('VOLTAR AO INÍCIO'),
+                  child: Text(context.tr.goToHome.toUpperCase()),
                 ),
               ),
             ),
@@ -855,6 +864,7 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildQrAmount() {
+    const btcSuffix = ' BTC';
     return Column(
       children: [
         RichText(
@@ -863,7 +873,7 @@ class _ReceiveRequestFlowScreenState
             children: [
               TextSpan(
                 text: widget.amountBtc.toStringAsFixed(6),
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: _receiveText,
                   fontSize: 40,
                   fontWeight: FontWeight.w400,
@@ -872,8 +882,8 @@ class _ReceiveRequestFlowScreenState
                 ),
               ),
               TextSpan(
-                text: ' BTC',
-                style: GoogleFonts.ibmPlexSerif(
+                text: btcSuffix,
+                style: AppTypography.newsreader(
                   color: _receiveMuted,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -915,7 +925,7 @@ class _ReceiveRequestFlowScreenState
                     textAlign: TextAlign.center,
                     maxLines: 2,
                     overflow: TextOverflow.ellipsis,
-                    style: GoogleFonts.inter(
+                    style: AppTypography.inter(
                       color: _receiveMuted,
                       fontSize: 12,
                       fontWeight: FontWeight.w400,
@@ -926,7 +936,7 @@ class _ReceiveRequestFlowScreenState
                 ),
                 const SizedBox(width: 10),
                 Icon(
-                  LucideIcons.copy,
+                  KeroseneIcons.copy,
                   color: _receiveMuted,
                   size: 16,
                 ),
@@ -939,6 +949,7 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildExpectedAmountBlock() {
+    const btcLabel = 'BTC';
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 12),
       child: Column(
@@ -952,7 +963,7 @@ class _ReceiveRequestFlowScreenState
             children: [
               Text(
                 widget.amountBtc.toStringAsFixed(8),
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: _receiveText,
                   fontSize: 20,
                   fontWeight: FontWeight.w500,
@@ -962,8 +973,8 @@ class _ReceiveRequestFlowScreenState
               ),
               const SizedBox(width: 8),
               Text(
-                'BTC',
-                style: GoogleFonts.inter(
+                btcLabel,
+                style: AppTypography.inter(
                   color: _receiveMuted,
                   fontSize: 14,
                   fontWeight: FontWeight.w400,
@@ -997,7 +1008,7 @@ class _ReceiveRequestFlowScreenState
               textAlign: TextAlign.center,
               maxLines: 3,
               overflow: TextOverflow.ellipsis,
-              style: GoogleFonts.ibmPlexSansHebrew(
+              style: AppTypography.ibmPlexMono(
                 color: _receiveText,
                 fontSize: 12,
                 fontWeight: FontWeight.w400,
@@ -1020,8 +1031,8 @@ class _ReceiveRequestFlowScreenState
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       decoration: BoxDecoration(
-        color: const Color(0xFF0A0A0A),
-        border: Border.all(color: const Color(0xFF222222)),
+        color: AppColors.hexFF0A0A0A,
+        border: Border.all(color: AppColors.hexFF222222),
         borderRadius: BorderRadius.circular(8),
       ),
       child: Row(
@@ -1044,7 +1055,7 @@ class _ReceiveRequestFlowScreenState
           Expanded(
             child: Text(
               widget.onChainWallet ? 'Status da Rede' : 'Status Kerosene',
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: _receiveText,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -1058,7 +1069,7 @@ class _ReceiveRequestFlowScreenState
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               textAlign: TextAlign.right,
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: _receiveMuted,
                 fontSize: 14,
                 fontWeight: FontWeight.w400,
@@ -1110,7 +1121,7 @@ class _ReceiveRequestFlowScreenState
                   ],
                 ),
                 child: const Icon(
-                  LucideIcons.checkCircle2,
+                  KeroseneIcons.success,
                   color: _receiveSuccess,
                   size: 48,
                 ),
@@ -1123,6 +1134,7 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildLoadingOverlay() {
+    const preparingLabel = 'Preparando recebimento';
     return Positioned.fill(
       child: ColoredBox(
         color: Colors.black.withValues(alpha: 0.72),
@@ -1147,8 +1159,8 @@ class _ReceiveRequestFlowScreenState
                 ),
                 const SizedBox(height: 14),
                 Text(
-                  'Preparando recebimento',
-                  style: GoogleFonts.inter(
+                  preparingLabel,
+                  style: AppTypography.inter(
                     color: _receiveText,
                     fontSize: 14,
                     fontWeight: FontWeight.w500,
@@ -1198,7 +1210,7 @@ class _ReceiveContextHeader extends StatelessWidget {
             ),
             Text(
               title.toUpperCase(),
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: _receiveMuted,
                 fontSize: 12,
                 fontWeight: FontWeight.w600,
@@ -1222,6 +1234,8 @@ class _ReceiveShellHeader extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const brandLabel = 'KEROSENE';
+    const avatarLabel = 'K';
     return Container(
       height: 64,
       padding: const EdgeInsets.symmetric(horizontal: 24),
@@ -1231,11 +1245,11 @@ class _ReceiveShellHeader extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.menu, color: _receiveText, size: 22),
+          const Icon(KeroseneIcons.menu, color: _receiveText, size: 22),
           const Spacer(),
           Text(
-            'KEROSENE',
-            style: GoogleFonts.ibmPlexSerif(
+            brandLabel,
+            style: AppTypography.newsreader(
               color: _receiveText,
               fontSize: 24,
               fontWeight: FontWeight.w400,
@@ -1254,8 +1268,8 @@ class _ReceiveShellHeader extends StatelessWidget {
             ),
             child: Center(
               child: Text(
-                'K',
-                style: GoogleFonts.inter(
+                avatarLabel,
+                style: AppTypography.inter(
                   color: _receiveText,
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
@@ -1289,7 +1303,7 @@ class _VaultCard extends StatelessWidget {
         gradient: const LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [Color(0xFF1A1A1A), _receiveSurface],
+          colors: [AppColors.hexFF1A1A1A, _receiveSurface],
         ),
         boxShadow: [
           BoxShadow(
@@ -1324,7 +1338,7 @@ class _QrFrame extends StatelessWidget {
             gradient: const LinearGradient(
               begin: Alignment.topCenter,
               end: Alignment.bottomCenter,
-              colors: [Color(0xFF1A1A1A), _receiveSurface],
+              colors: [AppColors.hexFF1A1A1A, _receiveSurface],
             ),
           ),
           child: Stack(
@@ -1408,7 +1422,7 @@ class _ReceiveActionButton extends StatelessWidget {
               color: primary ? _receiveText : _receiveBorder,
             ),
           ),
-          textStyle: GoogleFonts.inter(
+          textStyle: AppTypography.inter(
             fontSize: 12,
             fontWeight: FontWeight.w600,
             height: 1.2,
@@ -1436,7 +1450,7 @@ class _ReceiveDetailLine extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final valueStyle =
-        (monospace ? GoogleFonts.ibmPlexSansHebrew() : GoogleFonts.inter())
+        (monospace ? AppTypography.ibmPlexMono() : AppTypography.inter())
             .copyWith(
       color: _receiveText,
       fontSize: 13,
@@ -1453,7 +1467,7 @@ class _ReceiveDetailLine extends StatelessWidget {
           const SizedBox(width: 10),
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _receiveMuted,
               fontSize: 12,
               fontWeight: FontWeight.w500,
@@ -1512,8 +1526,8 @@ class _StatusChip extends StatelessWidget {
           const SizedBox(width: 8),
           Text(
             label,
-            style: GoogleFonts.inter(
-              color: const Color(0xFFE5E2E1),
+            style: AppTypography.inter(
+              color: AppColors.hexFFE5E2E1,
               fontSize: 12,
               fontWeight: FontWeight.w400,
               height: 1.2,
@@ -1544,7 +1558,7 @@ class _DetailRow extends StatelessWidget {
         children: [
           Text(
             label,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _receiveMuted,
               fontSize: 14,
               fontWeight: FontWeight.w400,
@@ -1559,8 +1573,8 @@ class _DetailRow extends StatelessWidget {
               maxLines: 2,
               overflow: TextOverflow.ellipsis,
               style: (monospace
-                      ? GoogleFonts.ibmPlexSansHebrew()
-                      : GoogleFonts.inter())
+                      ? AppTypography.ibmPlexMono()
+                      : AppTypography.inter())
                   .copyWith(
                 color: _receiveText,
                 fontSize: 14,
@@ -1599,7 +1613,7 @@ class _SectionLabel extends StatelessWidget {
     return Text(
       label,
       textAlign: TextAlign.center,
-      style: GoogleFonts.inter(
+      style: AppTypography.inter(
         color: _receiveMuted,
         fontSize: 12,
         fontWeight: FontWeight.w600,
@@ -1627,12 +1641,12 @@ class _InlineNotice extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(LucideIcons.alertCircle, color: _receiveWarning, size: 18),
+          const Icon(KeroseneIcons.warning, color: _receiveWarning, size: 18),
           const SizedBox(width: 10),
           Expanded(
             child: Text(
               message,
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: _receiveBody,
                 fontSize: 13,
                 height: 1.35,

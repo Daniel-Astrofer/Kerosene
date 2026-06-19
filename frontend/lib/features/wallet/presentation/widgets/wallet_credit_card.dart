@@ -1,10 +1,12 @@
+import 'package:kerosene/core/theme/app_colors.dart';
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
-import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';
@@ -166,7 +168,7 @@ class _PhysicalCreditCardFace extends StatelessWidget {
                   _CardChip(palette: palette),
                   const SizedBox(width: 14),
                   Icon(
-                    Icons.contactless,
+                    KeroseneIcons.contactless,
                     color: palette.inkPrimary.withValues(alpha: 0.72),
                     size: 24,
                   ),
@@ -185,7 +187,7 @@ class _PhysicalCreditCardFace extends StatelessWidget {
                 overflow: TextOverflow.ellipsis,
                 style: AppTypography.bodyMedium.copyWith(
                   color: palette.inkPrimary,
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                   fontSize: 18,
                   fontWeight: FontWeight.w700,
                   letterSpacing: 1.8,
@@ -302,7 +304,7 @@ class _EmptyCreditCardFace extends StatelessWidget {
                   ),
                 ),
                 child: Icon(
-                  LucideIcons.plus,
+                  KeroseneIcons.plus,
                   color: palette.inkPrimary,
                   size: 20,
                 ),
@@ -342,11 +344,13 @@ class _CardBrandBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final brandLabel = 'KEROSENE';
+    final tierLabel = '$tier CARD';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Text(
-          'KEROSENE',
+          brandLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.bodyMedium.copyWith(
@@ -359,7 +363,7 @@ class _CardBrandBlock extends StatelessWidget {
         ),
         const SizedBox(height: 5),
         Text(
-          '$tier CARD',
+          tierLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: AppTypography.caption.copyWith(
@@ -383,13 +387,14 @@ class _BalanceBlock extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const balanceLabel = 'BALANCE';
     return ConstrainedBox(
       constraints: const BoxConstraints(maxWidth: 126),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.end,
         children: [
           Text(
-            'BALANCE',
+            balanceLabel,
             style: AppTypography.caption.copyWith(
               color: palette.inkSecondary,
               fontSize: 9,
@@ -407,7 +412,7 @@ class _BalanceBlock extends StatelessWidget {
               maxLines: 1,
               style: AppTypography.bodySmall.copyWith(
                 color: palette.inkPrimary,
-                fontFamily: 'IBMPlexSansHebrew',
+                fontFamily: AppTypography.financialFontFamily,
                 fontSize: 12,
                 fontWeight: FontWeight.w800,
                 letterSpacing: 0,
@@ -511,7 +516,7 @@ class _SecurityHashButton extends StatelessWidget {
             ),
           ),
           child: Icon(
-            LucideIcons.copy,
+            KeroseneIcons.copy,
             size: 13,
             color: palette.inkPrimary.withValues(alpha: 0.82),
           ),
@@ -740,32 +745,56 @@ class _CreditCardPalette {
   }
 
   static const _blue = _CreditCardPalette(
-    gradient: [Color(0xFF191919), Color(0xFF0D0D0D), Color(0xFF161616)],
-    chipGradient: [Color(0xFFE7E7E1), Color(0xFFA8A8A0), Color(0xFF686862)],
-    border: Color(0xFF3A3A3A),
-    line: Color(0xFFA0A09B),
-    inkPrimary: Color(0xFFF1F1ED),
-    inkSecondary: Color(0xFFA0A09B),
+    gradient: [
+      AppColors.hexFF191919,
+      AppColors.hexFF0D0D0D,
+      AppColors.hexFF161616
+    ],
+    chipGradient: [
+      AppColors.hexFFE7E7E1,
+      AppColors.hexFFA8A8A0,
+      AppColors.hexFF686862
+    ],
+    border: AppColors.hexFF3A3A3A,
+    line: AppColors.hexFFA0A09B,
+    inkPrimary: AppColors.hexFFF1F1ED,
+    inkSecondary: AppColors.hexFFA0A09B,
     isLight: false,
   );
 
   static const _silver = _CreditCardPalette(
-    gradient: [Color(0xFFF1F1EC), Color(0xFFD2D2CC), Color(0xFF9A9A94)],
-    chipGradient: [Color(0xFFF7F7F1), Color(0xFFC8C8C0), Color(0xFF85857E)],
-    border: Color(0xFFF1F1EC),
-    line: Color(0xFF555550),
-    inkPrimary: Color(0xFF090909),
-    inkSecondary: Color(0xFF555550),
+    gradient: [
+      AppColors.hexFFF1F1EC,
+      AppColors.hexFFD2D2CC,
+      AppColors.hexFF9A9A94
+    ],
+    chipGradient: [
+      AppColors.hexFFF7F7F1,
+      AppColors.hexFFC8C8C0,
+      AppColors.hexFF85857E
+    ],
+    border: AppColors.hexFFF1F1EC,
+    line: AppColors.hexFF555550,
+    inkPrimary: AppColors.hexFF090909,
+    inkSecondary: AppColors.hexFF555550,
     isLight: true,
   );
 
   static const _black = _CreditCardPalette(
-    gradient: [Color(0xFF030303), Color(0xFF080808), Color(0xFF151515)],
-    chipGradient: [Color(0xFFE2E2DC), Color(0xFF9A9A94), Color(0xFF5D5D58)],
-    border: Color(0xFF2A2A2A),
-    line: Color(0xFF6B6B66),
-    inkPrimary: Color(0xFFF1F1ED),
-    inkSecondary: Color(0xFFA0A09B),
+    gradient: [
+      AppColors.hexFF030303,
+      AppColors.hexFF080808,
+      AppColors.hexFF151515
+    ],
+    chipGradient: [
+      AppColors.hexFFE2E2DC,
+      AppColors.hexFF9A9A94,
+      AppColors.hexFF5D5D58
+    ],
+    border: AppColors.hexFF2A2A2A,
+    line: AppColors.hexFF6B6B66,
+    inkPrimary: AppColors.hexFFF1F1ED,
+    inkSecondary: AppColors.hexFFA0A09B,
     isLight: false,
   );
 

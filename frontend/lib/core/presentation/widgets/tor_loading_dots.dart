@@ -30,7 +30,7 @@ class _TorLoadingDotsState extends State<TorLoadingDots>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 900),
+      duration: KeroseneMotion.calm,
     )..repeat();
   }
 

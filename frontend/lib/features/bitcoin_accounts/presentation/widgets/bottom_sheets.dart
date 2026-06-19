@@ -1,4 +1,9 @@
+// ignore_for_file: unused_element
+
 part of '../bitcoin_accounts_screen.dart';
+
+/*
+Roadmap-only PSBT submission UI intentionally removed from the active app graph.
 
 class _SubmitPsbtSheet extends ConsumerStatefulWidget {
   final BitcoinAccount account;
@@ -99,7 +104,7 @@ class _SubmitPsbtSheetState extends ConsumerState<_SubmitPsbtSheet> {
                   height: 18,
                   child: CircularProgressIndicator(strokeWidth: 2),
                 )
-              : const Icon(LucideIcons.shieldCheck, size: 18),
+              : const Icon(KeroseneIcons.security, size: 18),
           label: Text(
             _busy
                 ? context.tr.bitcoinAdvancedValidatingPsbtAction
@@ -180,6 +185,7 @@ class _SubmitPsbtSheetState extends ConsumerState<_SubmitPsbtSheet> {
     }
   }
 }
+*/
 
 class _SheetScaffold extends StatelessWidget {
   final String title;
@@ -647,4 +653,95 @@ String _taxClassificationLabel(BuildContext context, String classification) {
 String _formatSats(int sats) {
   final btc = sats / 100000000;
   return '${btc.toStringAsFixed(8)} BTC';
+}
+
+String _accountCardIdentifier(BitcoinAccount account) {
+  final candidates = [
+    if (account.isWatchOnly) account.xpubFingerprint,
+    if (account.isWatchOnly) account.coldWalletId,
+    account.cardId,
+    account.xpubFingerprint,
+    account.coldWalletId,
+    account.id,
+  ];
+  for (final candidate in candidates) {
+    final value = candidate?.trim() ?? '';
+    if (value.isNotEmpty) return value;
+  }
+  return '';
+}
+
+String _accountCustodyLabel(BuildContext context, BitcoinAccount account) {
+  if (account.isWatchOnly) return context.tr.bitcoinAccountsColdWalletBadge;
+  if (account.isCustodialOnchain) {
+    return context.tr.bitcoinAccountsCustodyOnchainTitle;
+  }
+  return context.tr.bitcoinAccountsKeroseneCardBadge;
+}
+
+String _accountTypeLabel(BuildContext context, BitcoinAccount account) {
+  final description = account.walletTypeDescription.trim();
+  if (description.isNotEmpty) return description;
+  if (account.isWatchOnly) {
+    return context.tr.bitcoinAccountsCustodyWatchOnlyTitle;
+  }
+  if (account.isCustodialOnchain) {
+    return context.tr.bitcoinAccountsCustodyOnchainTitle;
+  }
+  return context.tr.bitcoinAccountsCustodyInternalTitle;
+}
+
+int _accountVisibleBalance(BitcoinAccount account) {
+  if (account.isWatchOnly) return account.observedBalanceSats;
+  return account.totalSats;
+}
+
+bool _hasPublicMaterial(BitcoinAccount account) {
+  return account.isWatchOnly ||
+      account.isCustodialOnchain ||
+      (account.xpubFingerprint ?? '').trim().isNotEmpty ||
+      (account.derivationPath ?? '').trim().isNotEmpty ||
+      (account.scriptPolicy ?? '').trim().isNotEmpty;
+}
+
+String _displayValue(String? value) {
+  final trimmed = value?.trim() ?? '';
+  return trimmed.isEmpty ? 'Não informado' : trimmed;
+}
+
+String _historyDetail(Transaction transaction) {
+  final candidates = [
+    transaction.blockchainTxid,
+    transaction.externalReference,
+    transaction.isDebit ? transaction.toAddress : transaction.fromAddress,
+    transaction.invoiceId,
+    transaction.paymentHash,
+    transaction.id,
+  ];
+  for (final candidate in candidates) {
+    final value = candidate?.trim() ?? '';
+    if (value.isNotEmpty) return _shortText(value);
+  }
+  return 'Movimento Bitcoin';
+}
+
+String _historyTimestampLabel(DateTime timestamp) {
+  final local = timestamp.toLocal();
+  final day = local.day.toString().padLeft(2, '0');
+  final month = local.month.toString().padLeft(2, '0');
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$day/$month/${local.year}\n$hour:$minute';
+}
+
+String _transactionStatusLabel(
+  BuildContext context,
+  TransactionStatus status,
+) {
+  return switch (status) {
+    TransactionStatus.pending => context.tr.bitcoinReceiveStatusWaiting,
+    TransactionStatus.confirming => context.tr.bitcoinReceiveStatusConfirming,
+    TransactionStatus.confirmed => context.tr.bitcoinReceiveStatusPaid,
+    TransactionStatus.failed => context.tr.bitcoinReceiveStatusProtected,
+  };
 }

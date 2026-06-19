@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
-
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import '../../controller/auth_controller.dart';
 
 class _AuthColors {
@@ -37,30 +37,30 @@ class _AuthColors {
     if (isLight) {
       return const _AuthColors(
         isLight: true,
-        background: Color(0xFFF7F7F5),
-        surface: Color(0xFFFFFFFF),
-        field: Color(0xFFF0F1EE),
-        border: Color(0xFFDDE0D8),
-        borderSoft: Color(0xFFE2E4DE),
-        text: Color(0xFF181A17),
-        muted: Color(0xFF62675F),
-        dim: Color(0xFF8B9087),
-        success: Color(0xFF16A34A),
-        errorText: Color(0xFFDC2626),
+        background: AppColors.hexFFF7F7F5,
+        surface: AppColors.hexFFFFFFFF,
+        field: AppColors.hexFFF0F1EE,
+        border: AppColors.hexFFDDE0D8,
+        borderSoft: AppColors.hexFFE2E4DE,
+        text: AppColors.hexFF181A17,
+        muted: AppColors.hexFF62675F,
+        dim: AppColors.hexFF8B9087,
+        success: AppColors.hexFF16A34A,
+        errorText: AppColors.hexFFDC2626,
       );
     }
     return const _AuthColors(
       isLight: false,
-      background: Color(0xFF000000),
-      surface: Color(0xFF0A0A0A),
-      field: Color(0xFF1A1A1A),
-      border: Color(0xFF333333),
-      borderSoft: Color(0xFF27272A),
-      text: Color(0xFFFFFFFF),
-      muted: Color(0xFFA1A1AA),
-      dim: Color(0xFF71717A),
-      success: Color(0xFF4ADE80),
-      errorText: Color(0xFFF4C7C7),
+      background: AppColors.hexFF000000,
+      surface: AppColors.hexFF0A0A0A,
+      field: AppColors.hexFF1A1A1A,
+      border: AppColors.hexFF333333,
+      borderSoft: AppColors.hexFF27272A,
+      text: AppColors.hexFFFFFFFF,
+      muted: AppColors.hexFFA1A1AA,
+      dim: AppColors.hexFF71717A,
+      success: AppColors.hexFF4ADE80,
+      errorText: AppColors.hexFFF4C7C7,
     );
   }
 
@@ -89,6 +89,9 @@ class _WelcomeScreenState extends ConsumerState<WelcomeScreen> {
   @override
   Widget build(BuildContext context) {
     ref.listen<AuthState>(authControllerProvider, (_, next) {
+      if (ModalRoute.of(context)?.isCurrent == false) {
+        return;
+      }
       if (next is AuthAuthenticated && mounted) {
         Navigator.pushNamedAndRemoveUntil(
           context,
@@ -162,7 +165,7 @@ class _WelcomeHeader extends StatelessWidget {
               TextSpan(text: context.tr.welcomeHeaderTitleCustody),
               TextSpan(
                 text: context.tr.welcomeHeaderTitleSimplicity,
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: colors.muted,
                   fontSize: 40,
                   fontWeight: FontWeight.w500,
@@ -173,7 +176,7 @@ class _WelcomeHeader extends StatelessWidget {
             ],
           ),
           textAlign: TextAlign.center,
-          style: GoogleFonts.ibmPlexSerif(
+          style: AppTypography.newsreader(
             color: colors.text,
             fontSize: 40,
             fontWeight: FontWeight.w500,
@@ -185,7 +188,7 @@ class _WelcomeHeader extends StatelessWidget {
         Text(
           context.tr.welcomeHeaderSubtitle,
           textAlign: TextAlign.center,
-          style: GoogleFonts.inter(
+          style: AppTypography.inter(
             color: colors.muted,
             fontSize: 14,
             fontWeight: FontWeight.w400,
@@ -322,7 +325,7 @@ class _WelcomeButton extends StatelessWidget {
             ),
           ),
           textStyle: WidgetStateProperty.all(
-            GoogleFonts.inter(
+            AppTypography.inter(
               fontSize: 18,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,

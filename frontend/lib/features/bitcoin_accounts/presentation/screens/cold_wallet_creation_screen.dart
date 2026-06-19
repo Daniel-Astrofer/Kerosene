@@ -12,23 +12,22 @@ class ColdWalletCreationScreen extends ConsumerStatefulWidget {
 
 class _ColdWalletCreationScreenState
     extends ConsumerState<ColdWalletCreationScreen> {
+  final TextEditingController _walletNameController = TextEditingController();
   final TextEditingController _extraWordController = TextEditingController();
   final List<TextEditingController> _verificationControllers = [];
   final _deriver = const ColdWalletPublicMaterialDeriver();
 
   _ColdWalletLevel _level = _ColdWalletLevel.recommended;
   late _ColdWalletStep _step;
-  _WalletPurpose? _purpose;
 
   @override
   void initState() {
     super.initState();
     if (widget.initialStepName == 'prepare') {
       _step = _ColdWalletStep.prepare;
-      _purpose = _walletPurposeOptions.first;
+      _walletNameController.text = 'Carteira fria';
     } else {
       _step = _ColdWalletStep.purpose;
-      _purpose = null;
     }
   }
 
@@ -43,19 +42,27 @@ class _ColdWalletCreationScreenState
   bool _busy = false;
 
   bool get _canGenerate =>
-      _purpose != null &&
+      _walletNameController.text.trim().isNotEmpty &&
       _paperReady &&
       _privatePlace &&
       _offlineReady &&
       _noPhotos;
 
-  String get _walletLabel => _purpose?.label ?? 'Cold Wallet';
+  String get _walletLabel {
+    final typed = _walletNameController.text.trim();
+    return typed.isEmpty ? 'Cold Wallet' : typed;
+  }
+
+  bool _hasActiveColdWalletFrom(List<BitcoinAccount> accounts) {
+    return accounts.any((account) => account.isActive && account.isWatchOnly);
+  }
 
   List<String> get _words =>
       _mnemonic.trim().isEmpty ? const [] : _mnemonic.split(' ');
 
   @override
   void dispose() {
+    _walletNameController.dispose();
     _extraWordController.dispose();
     for (final controller in _verificationControllers) {
       controller.dispose();
@@ -85,11 +92,21 @@ class _ColdWalletCreationScreenState
 
   void _continueFromPurpose() {
     if (_busy) return;
-    if (_purpose == null) {
+    final accounts = ref.read(bitcoinAccountsProvider).asData?.value ??
+        const <BitcoinAccount>[];
+    if (_hasActiveColdWalletFrom(accounts)) {
       AppNotice.showWarning(
         context,
-        title: 'Selecione a finalidade',
-        message: 'Escolha para que essa carteira on-chain será usada.',
+        title: 'Carteira fria indisponivel',
+        message: 'Ja existe uma carteira ativa para este metodo de custodia.',
+      );
+      return;
+    }
+    if (_walletNameController.text.trim().isEmpty) {
+      AppNotice.showWarning(
+        context,
+        title: context.tr.createWalletNameRequired,
+        message: 'Digite o nome que essa carteira fria deve receber.',
       );
       return;
     }
@@ -239,7 +256,7 @@ class _ColdWalletCreationScreenState
                   IconButton(
                     onPressed: _busy ? null : _goBack,
                     icon: Icon(
-                      LucideIcons.chevronLeft,
+                      KeroseneIcons.chevronLeft,
                       color: colors.text,
                       size: 18,
                     ),
@@ -294,6 +311,12 @@ class _ColdWalletCreationScreenState
 
   Widget _buildPurposeScaffold() {
     final colors = _BitcoinAccountsColors.of(context);
+    final accounts = ref.watch(bitcoinAccountsProvider).asData?.value ??
+        const <BitcoinAccount>[];
+    final hasActiveColdWallet = _hasActiveColdWalletFrom(accounts);
+    const introLabel =
+        'A Kerosene guardara apenas o material publico para acompanhar saldo e UTXOs.';
+    const title = 'Nomeie sua carteira fria';
 
     return Scaffold(
       resizeToAvoidBottomInset: false,
@@ -310,7 +333,7 @@ class _ColdWalletCreationScreenState
                   visualDensity: VisualDensity.compact,
                   onPressed: _goBack,
                   icon: Icon(
-                    LucideIcons.arrowLeft,
+                    KeroseneIcons.back,
                     color: colors.text,
                     size: 24,
                   ),
@@ -323,25 +346,60 @@ class _ColdWalletCreationScreenState
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    _CreationTitle(
-                      'Para Que Finalidade\nDeseja Derivar essa\nCarteira?',
-                    ),
-                    const SizedBox(height: 40),
-                    DecoratedBox(
-                      decoration: BoxDecoration(
-                        border: Border.symmetric(
-                          horizontal: BorderSide(color: colors.divider),
-                        ),
+                    _CreationTitle(title),
+                    const SizedBox(height: 16),
+                    Text(
+                      introLabel,
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontFamily,
+                        color: colors.mutedText,
+                        fontSize: 15,
+                        fontWeight: FontWeight.w400,
+                        height: 1.45,
+                        letterSpacing: 0,
                       ),
-                      child: Column(
-                        children: [
-                          for (final purpose in _walletPurposeOptions)
-                            _PurposeTile(
-                              purpose: purpose,
-                              selected: _purpose == purpose,
-                              onTap: () => setState(() => _purpose = purpose),
-                            ),
-                        ],
+                    ),
+                    const SizedBox(height: 32),
+                    TextField(
+                      controller: _walletNameController,
+                      textInputAction: TextInputAction.done,
+                      onSubmitted: (_) => _continueFromPurpose(),
+                      style: TextStyle(
+                        fontFamily: AppTypography.fontFamily,
+                        color: colors.text,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                        letterSpacing: 0,
+                      ),
+                      decoration: InputDecoration(
+                        labelText: 'Nome da carteira',
+                        hintText: context.tr.coldWalletNameLabel,
+                        filled: true,
+                        fillColor: colors.surfaceAlt,
+                        labelStyle: TextStyle(
+                          fontFamily: AppTypography.fontFamily,
+                          color: colors.mutedText,
+                          fontSize: 14,
+                          letterSpacing: 0,
+                        ),
+                        hintStyle: TextStyle(
+                          fontFamily: AppTypography.fontFamily,
+                          color: colors.faintText,
+                          fontSize: 15,
+                          letterSpacing: 0,
+                        ),
+                        enabledBorder: OutlineInputBorder(
+                          borderRadius: colors.controlRadius,
+                          borderSide: BorderSide(color: colors.border),
+                        ),
+                        focusedBorder: OutlineInputBorder(
+                          borderRadius: colors.controlRadius,
+                          borderSide: BorderSide(color: colors.text),
+                        ),
+                        contentPadding: const EdgeInsets.symmetric(
+                          horizontal: 16,
+                          vertical: 18,
+                        ),
                       ),
                     ),
                   ],
@@ -356,8 +414,8 @@ class _ColdWalletCreationScreenState
                 MediaQuery.viewInsetsOf(context).bottom > 0 ? 20 : 40,
               ),
               child: _CreationPrimaryButton(
-                label: 'Gerar Carteira',
-                onPressed: _purpose == null ? null : _continueFromPurpose,
+                label: 'Continuar',
+                onPressed: hasActiveColdWallet ? null : _continueFromPurpose,
               ),
             ),
           ],
@@ -419,7 +477,7 @@ class _ColdWalletCreationScreenState
         FilledButton.icon(
           style: colors.filledButtonStyle(),
           onPressed: _canGenerate ? _generateColdWallet : null,
-          icon: const Icon(LucideIcons.keyRound, size: 18),
+          icon: const Icon(KeroseneIcons.passkey, size: 18),
           label: Text(context.tr.coldWalletGenerateAction),
         ),
       ],
@@ -448,8 +506,9 @@ class _ColdWalletCreationScreenState
                 Row(
                   children: [
                     _IconFrame(
-                        icon:
-                            _showWords ? LucideIcons.eye : LucideIcons.eyeOff),
+                        icon: _showWords
+                            ? KeroseneIcons.eye
+                            : KeroseneIcons.eyeOff),
                     const SizedBox(width: AppSpacing.md),
                     Expanded(
                       child: Column(
@@ -498,7 +557,8 @@ class _ColdWalletCreationScreenState
                 OutlinedButton.icon(
                   style: colors.outlinedButtonStyle(),
                   onPressed: () => setState(() => _showWords = !_showWords),
-                  icon: Icon(_showWords ? LucideIcons.eyeOff : LucideIcons.eye),
+                  icon: Icon(
+                      _showWords ? KeroseneIcons.eyeOff : KeroseneIcons.eye),
                   label: Text(
                     _showWords
                         ? context.tr.coldWalletHideWords
@@ -513,7 +573,7 @@ class _ColdWalletCreationScreenState
         FilledButton.icon(
           style: colors.filledButtonStyle(),
           onPressed: _showWords ? _startVerification : null,
-          icon: const Icon(LucideIcons.checkCircle, size: 18),
+          icon: const Icon(KeroseneIcons.success, size: 18),
           label: Text(context.tr.coldWalletBackupDoneAction),
         ),
       ],
@@ -555,7 +615,7 @@ class _ColdWalletCreationScreenState
                       height: 18,
                       child: CircularProgressIndicator(strokeWidth: 2),
                     )
-                  : const Icon(LucideIcons.shieldCheck, size: 18),
+                  : const Icon(KeroseneIcons.security, size: 18),
               label: Text(
                 _busy
                     ? context.tr.coldWalletImportingAction
@@ -605,7 +665,7 @@ class _ColdWalletLevelTile extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Icon(
-                  selected ? LucideIcons.checkCircle : LucideIcons.circle,
+                  selected ? KeroseneIcons.success : KeroseneIcons.circle,
                   color: selected ? colors.text : colors.mutedText,
                   size: 18,
                 ),

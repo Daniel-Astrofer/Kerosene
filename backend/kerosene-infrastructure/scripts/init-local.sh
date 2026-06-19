@@ -261,19 +261,19 @@ ensure_local_env() {
   ensure_env_value WEB_ADMIN_PORT "3000" && changed=1 || true
   ensure_env_value PROMETHEUS_PORT "19090" && changed=1 || true
 
-  ensure_env_value BITCOIN_NETWORK "mainnet" && changed=1 || true
-  ensure_env_value BITCOIN_CHAIN "mainnet" && changed=1 || true
+  ensure_env_value BITCOIN_NETWORK "regtest" && changed=1 || true
+  ensure_env_value BITCOIN_CHAIN "regtest" && changed=1 || true
   ensure_env_value BITCOIN_CORE_IMAGE "bitcoin/bitcoin:27.1" && changed=1 || true
   if [[ "$(env_value BITCOIN_CORE_IMAGE || true)" == ruimarinho/bitcoin-core* ]]; then
     set_env_value BITCOIN_CORE_IMAGE "bitcoin/bitcoin:27.1"
     changed=1
   fi
-  if [[ "$(env_value BITCOIN_NETWORK || true)" == "testnet" ]]; then
-    set_env_value BITCOIN_NETWORK "mainnet"
+  if [[ "$(env_value BITCOIN_NETWORK || true)" == "mainnet" ]]; then
+    set_env_value BITCOIN_NETWORK "regtest"
     changed=1
   fi
-  if [[ "$(env_value BITCOIN_CHAIN || true)" == "regtest" ]]; then
-    set_env_value BITCOIN_CHAIN "mainnet"
+  if [[ "$(env_value BITCOIN_CHAIN || true)" == "mainnet" ]]; then
+    set_env_value BITCOIN_CHAIN "regtest"
     changed=1
   fi
   ensure_env_value BITCOIN_PRUNE_MB "5500" && changed=1 || true
@@ -361,9 +361,9 @@ ensure_local_env() {
   ensure_env_value LIGHTNING_LND_TLS_EXTRA_DOMAINS "lnd-bitcoind,lnd-neutrino,localhost" && changed=1 || true
   ensure_env_value LIGHTNING_LND_TLS_EXTRA_IPS "127.0.0.1" && changed=1 || true
   ensure_env_value LIGHTNING_LND_TLS_CERT_PATH "/lnd/tls.cert" && changed=1 || true
-  ensure_env_value LIGHTNING_LND_MACAROON_PATH "/lnd/data/chain/bitcoin/mainnet/admin.macaroon" && changed=1 || true
-  if [[ "$(env_value LIGHTNING_LND_MACAROON_PATH || true)" == "/lnd/data/chain/bitcoin/testnet/admin.macaroon" ]]; then
-    set_env_value LIGHTNING_LND_MACAROON_PATH "/lnd/data/chain/bitcoin/mainnet/admin.macaroon"
+  ensure_env_value LIGHTNING_LND_MACAROON_PATH "/lnd/data/chain/bitcoin/regtest/admin.macaroon" && changed=1 || true
+  if [[ "$(env_value LIGHTNING_LND_MACAROON_PATH || true)" == "/lnd/data/chain/bitcoin/mainnet/admin.macaroon" ]]; then
+    set_env_value LIGHTNING_LND_MACAROON_PATH "/lnd/data/chain/bitcoin/regtest/admin.macaroon"
     changed=1
   fi
   ensure_env_value LIGHTNING_LND_PROVIDER_NAME "LND_BITCOIND_PRUNED" && changed=1 || true

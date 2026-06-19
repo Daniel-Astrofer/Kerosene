@@ -1,29 +1,30 @@
 import 'dart:async';
 import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_riverpod/legacy.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:kerosene/core/providers/shared_preferences_provider.dart';
-import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
-import 'package:kerosene/core/presentation/widgets/app_notice.dart';
-import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:kerosene/core/navigation/deferred_page.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
-import 'package:kerosene/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/core/navigation/deferred_page.dart';
+import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
+import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
-import 'package:kerosene/core/widgets/state_feedback_view.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/qr_payment_parser.dart';
-import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/widgets/state_feedback_view.dart';
 import 'package:kerosene/shared/widgets/bitcoin_refresh_indicator.dart';
 import 'package:kerosene/shared/widgets/bouncing_button_wrapper.dart';
 
@@ -35,7 +36,8 @@ import '../../../transactions/presentation/screens/deposits_screen.dart'
     deferred as deposits;
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../../transactions/presentation/widgets/statement_transaction_card.dart';
-import '../../../wallet/presentation/providers/wallet_provider.dart';
+import '../../../wallet/presentation/providers/wallet_provider.dart'
+    hide transactionRepositoryProvider;
 import '../../../wallet/presentation/providers/balance_websocket_provider.dart';
 import '../../../wallet/presentation/providers/balance_settings_provider.dart';
 import '../../../wallet/presentation/state/wallet_state.dart';
@@ -71,20 +73,22 @@ final _homeLedgerBalanceViewProvider = StateProvider<_HomeLedgerBalanceView>((
   return _HomeLedgerBalanceView.total;
 });
 
+final _homeLedgerBalancePageProvider = StateProvider<int>((ref) => 0);
+
 final _homeActivityFilterProvider = StateProvider<_HomeActivityFilter>((ref) {
   return _HomeActivityFilter.onChain;
 });
 
 final _homeRouteActiveProvider = StateProvider<bool>((ref) => true);
 
-const Color _homeBackgroundColor = Color(0xFF000000);
-const Color _homeCardColor = Color(0xFF141517);
-const Color _homePanelTopColor = Color(0xFF1A1A1A);
-const Color _homePanelBottomColor = Color(0xFF121212);
-const Color _homePanelBorderColor = Color(0xFF2A2A2A);
-const Color _homeMutedTextColor = Color(0xFFA3A3A3);
-const Color _homeAmberColor = Color(0xFFF59E0B);
-const Color _homePositiveColor = Color(0xFF4ADE80);
+const Color _homeBackgroundColor = AppColors.hexFF000000;
+const Color _homeCardColor = AppColors.hexFF141517;
+const Color _homePanelTopColor = AppColors.hexFF1A1A1A;
+const Color _homePanelBottomColor = AppColors.hexFF121212;
+const Color _homePanelBorderColor = AppColors.hexFF2A2A2A;
+const Color _homeMutedTextColor = AppColors.hexFFA3A3A3;
+const Color _homeAmberColor = AppColors.hexFFF59E0B;
+const Color _homePositiveColor = AppColors.hexFF4ADE80;
 const double _homeDensityScale = 1.0;
 
 double _homeSize(double value) => value * _homeDensityScale;
@@ -164,30 +168,18 @@ class HomeScreen extends ConsumerStatefulWidget {
 class _HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void>? _refreshHomeFuture;
   String? _firstUseActionPanelUserId;
-  late final ProviderSubscription<ReceivedTxEvent?> _receivedTxSubscription;
+  late final StateController<bool> _homeRouteActiveController;
 
   @override
   void initState() {
     super.initState();
-    ref.read(_homeRouteActiveProvider.notifier).state = true;
-    _receivedTxSubscription = ref.listenManual<ReceivedTxEvent?>(
-      receivedTxEventProvider,
-      (previous, next) {
-        if (next == null || !mounted) {
-          return;
-        }
-
-        ref.read(receivedTxEventProvider.notifier).consumeEvent(next.id);
-
-        ref.invalidate(transactionHistoryProvider);
-      },
-    );
+    _homeRouteActiveController = ref.read(_homeRouteActiveProvider.notifier);
+    _homeRouteActiveController.state = true;
   }
 
   @override
   void dispose() {
-    _receivedTxSubscription.close();
-    ref.read(_homeRouteActiveProvider.notifier).state = false;
+    _homeRouteActiveController.state = false;
     super.dispose();
   }
 
@@ -572,10 +564,10 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         SizedBox(height: _homeSize(18)),
                                         _HomeSetupNotice(
                                           icon: !hasWallet
-                                              ? LucideIcons.wallet
+                                              ? KeroseneIcons.wallet
                                               : !hasBalance
-                                                  ? LucideIcons.download
-                                                  : LucideIcons.arrowUpRight,
+                                                  ? KeroseneIcons.download
+                                                  : KeroseneIcons.send,
                                           title: !hasWallet
                                               ? context
                                                   .l10n.homePrimaryNoWalletTitle
@@ -605,7 +597,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                               : !hasBalance
                                                   ? () =>
                                                       _openDeposit(walletState)
-                                                  : () => _openSend(walletState),
+                                                  : () =>
+                                                      _openSend(walletState),
                                         ),
                                       ],
                                       SizedBox(height: _homeSize(24)),

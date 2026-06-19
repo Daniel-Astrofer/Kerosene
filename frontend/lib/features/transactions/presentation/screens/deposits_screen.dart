@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
@@ -58,8 +60,8 @@ Route<void> _transactionStatementRoute({
 }) {
   return PageRouteBuilder<void>(
     opaque: true,
-    transitionDuration: const Duration(milliseconds: 460),
-    reverseTransitionDuration: const Duration(milliseconds: 280),
+    transitionDuration: KeroseneMotion.long,
+    reverseTransitionDuration: KeroseneMotion.medium,
     pageBuilder: (context, animation, secondaryAnimation) {
       return TransactionStatementScreen(
         initialTransactionId: initialTransactionId,
@@ -70,8 +72,8 @@ Route<void> _transactionStatementRoute({
           MediaQuery.maybeOf(context)?.disableAnimations ?? false;
       final curved = CurvedAnimation(
         parent: animation,
-        curve: Curves.easeOutCubic,
-        reverseCurve: Curves.easeInCubic,
+        curve: KeroseneMotion.standard,
+        reverseCurve: KeroseneMotion.exit,
       );
       if (reduceMotion) {
         return FadeTransition(opacity: curved, child: child);
@@ -88,7 +90,7 @@ Route<void> _transactionStatementRoute({
           final opacity = const Interval(
             0.10,
             0.78,
-            curve: Curves.easeOutCubic,
+            curve: KeroseneMotion.standard,
           ).transform(curved.value);
 
           return ClipPath(
@@ -127,16 +129,14 @@ class _CircularRevealClipper extends CustomClipper<Path> {
   }
 }
 
-const _receiveBackground = Color(0xFF0D0D0D);
-const _receiveSurfaceHigh = Color(0xFF2A2A2A);
-const _receiveTextColor = Color(0xFFFFFFFF);
-const _receiveMutedTextColor = Color(0xFFA3A3A3);
-const _receiveBodyTextColor = Color(0xFFC4C7C8);
-const _receiveSubtleTextColor = Color(0xFF737373);
+const _receiveBackground = AppColors.hexFF0D0D0D;
+const _receiveSurfaceHigh = AppColors.hexFF2A2A2A;
+const _receiveTextColor = AppColors.hexFFFFFFFF;
+const _receiveMutedTextColor = AppColors.hexFFA3A3A3;
+const _receiveBodyTextColor = AppColors.hexFFC4C7C8;
+const _receiveSubtleTextColor = AppColors.hexFF737373;
 
-enum _ReceivePanel { wallet, methods }
-
-enum _ReceiveRail { kerosene, onChain }
+enum _ReceiveWalletKind { internal, custodialOnchain, coldWallet }
 
 class DepositsScreen extends ConsumerStatefulWidget {
   final Wallet? initialWallet;
@@ -151,87 +151,29 @@ class DepositsScreen extends ConsumerStatefulWidget {
 }
 
 class _DepositsScreenState extends ConsumerState<DepositsScreen> {
-  _ReceivePanel _panel = _ReceivePanel.wallet;
-  _ReceiveRail? _selectedRail;
-  Wallet? _selectedWallet;
+  _ReceiveWalletKind _walletKind(Wallet wallet) {
+    final mode = wallet.walletMode.trim().toUpperCase();
+    if (wallet.isSelfCustody || mode.contains('COLD')) {
+      return _ReceiveWalletKind.coldWallet;
+    }
+    if (mode.contains('ONCHAIN') || mode.contains('ON_CHAIN')) {
+      return _ReceiveWalletKind.custodialOnchain;
+    }
+    return _ReceiveWalletKind.internal;
+  }
 
   bool _isOnChainWallet(Wallet wallet) {
-    final mode = wallet.walletMode.trim().toUpperCase();
-    return wallet.isSelfCustody ||
-        mode.contains('COLD') ||
-        mode.contains('ONCHAIN') ||
-        mode.contains('ON_CHAIN');
-  }
-
-  bool _walletMatchesRail(Wallet wallet, _ReceiveRail rail) {
-    if (!wallet.isActive) {
-      return false;
-    }
-    return switch (rail) {
-      _ReceiveRail.kerosene => !_isOnChainWallet(wallet),
-      _ReceiveRail.onChain => _isOnChainWallet(wallet),
-    };
-  }
-
-  Wallet? _resolveWallet(WalletState walletState, _ReceiveRail rail) {
-    if (widget.initialWallet != null &&
-        _walletMatchesRail(widget.initialWallet!, rail)) {
-      return widget.initialWallet;
-    }
-
-    if (walletState is WalletLoaded && walletState.wallets.isNotEmpty) {
-      final selectedWallet = walletState.selectedWallet;
-      if (selectedWallet != null && _walletMatchesRail(selectedWallet, rail)) {
-        return selectedWallet;
-      }
-      for (final wallet in walletState.wallets) {
-        if (_walletMatchesRail(wallet, rail)) {
-          return wallet;
-        }
-      }
-    }
-
-    return null;
+    return _walletKind(wallet) != _ReceiveWalletKind.internal;
   }
 
   Route<T> _flowRoute<T>(WidgetBuilder builder) {
     return keroseneHorizontalRoute<T>(builder: builder);
   }
 
-  void _handleBack() {
-    if (_panel == _ReceivePanel.methods) {
-      HapticFeedback.selectionClick();
-      setState(() {
-        _panel = _ReceivePanel.wallet;
-        _selectedRail = null;
-        _selectedWallet = null;
-      });
-      return;
-    }
-    Navigator.maybePop(context);
-  }
-
-  void _selectRail(_ReceiveRail rail) {
-    final wallet = _resolveWallet(ref.read(walletProvider), rail);
-    if (wallet == null) {
-      _showWalletRequiredNotice(rail);
-      return;
-    }
-
-    HapticFeedback.selectionClick();
-    setState(() {
-      _selectedRail = rail;
-      _selectedWallet = wallet;
-      _panel = _ReceivePanel.methods;
-    });
-  }
-
   void _openReceive(ReceiveAmountMethod method) {
-    final rail = _selectedRail;
-    final wallet = _selectedWallet ??
-        (rail == null ? null : _resolveWallet(ref.read(walletProvider), rail));
+    final wallet = _resolveWallet(ref.read(walletProvider));
     if (wallet == null) {
-      _showWalletRequiredNotice(rail);
+      _showWalletRequiredNotice();
       return;
     }
 
@@ -241,18 +183,16 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         (_) => ReceiveAmountScreen(
           wallet: wallet,
           method: method,
-          onChainWallet: rail == _ReceiveRail.onChain,
+          onChainWallet: _isOnChainWallet(wallet),
         ),
       ),
     );
   }
 
   void _openGatewayProviders() {
-    final rail = _selectedRail;
-    final wallet = _selectedWallet ??
-        (rail == null ? null : _resolveWallet(ref.read(walletProvider), rail));
+    final wallet = _resolveWallet(ref.read(walletProvider));
     if (wallet == null) {
-      _showWalletRequiredNotice(rail);
+      _showWalletRequiredNotice();
       return;
     }
 
@@ -262,19 +202,15 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     );
   }
 
-  void _showWalletRequiredNotice([_ReceiveRail? rail]) {
+  void _showWalletRequiredNotice() {
     HapticFeedback.selectionClick();
-    final message = switch (rail) {
-      _ReceiveRail.kerosene => context.tr.receiveWalletInternalUnavailable,
-      _ReceiveRail.onChain => context.tr.receiveWalletOnchainUnavailable,
-      null => context.tr.receiveHubNoWalletMessage,
-    };
-    SnackbarHelper.showInfo(message);
+    SnackbarHelper.showInfo(context.tr.receiveHubNoWalletMessage);
   }
 
   @override
   Widget build(BuildContext context) {
-    ref.watch(walletProvider);
+    final walletState = ref.watch(walletProvider);
+    final selectedWallet = _resolveWallet(walletState);
 
     return Scaffold(
       backgroundColor: _receiveBackground,
@@ -284,15 +220,13 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
             constraints: const BoxConstraints(maxWidth: 400),
             child: Column(
               children: [
-                _ReceiveTopBar(onBack: _handleBack),
+                _ReceiveTopBar(onBack: () => Navigator.maybePop(context)),
                 Expanded(
                   child: AnimatedSwitcher(
-                    duration: const Duration(milliseconds: 220),
-                    switchInCurve: Curves.easeOutCubic,
-                    switchOutCurve: Curves.easeInCubic,
-                    child: _panel == _ReceivePanel.wallet
-                        ? _buildWalletSelection()
-                        : _buildMethodSelection(),
+                    duration: KeroseneMotion.medium,
+                    switchInCurve: KeroseneMotion.standard,
+                    switchOutCurve: KeroseneMotion.exit,
+                    child: _buildMethodSelection(selectedWallet),
                   ),
                 ),
               ],
@@ -303,110 +237,22 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
     );
   }
 
-  Widget _buildWalletSelection() {
-    final walletState = ref.watch(walletProvider);
-    final activeWallets = walletState is WalletLoaded
-        ? walletState.wallets.where((wallet) => wallet.isActive).toList()
-        : const <Wallet>[];
-    final hasKerosene = activeWallets
-        .any((wallet) => _walletMatchesRail(wallet, _ReceiveRail.kerosene));
-    final hasOnChain = activeWallets
-        .any((wallet) => _walletMatchesRail(wallet, _ReceiveRail.onChain));
-
-    return LayoutBuilder(
-      key: const ValueKey('receive-wallet'),
-      builder: (context, constraints) {
-        final minHeight = math.max(0.0, constraints.maxHeight - 48);
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(
-            parent: AlwaysScrollableScrollPhysics(),
-          ),
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 24),
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: minHeight),
-            child: Center(
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    context.tr.receiveWalletSelectionTitle,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.ibmPlexSerif(
-                      color: _receiveTextColor,
-                      fontSize: 40,
-                      fontWeight: FontWeight.w600,
-                      height: 1.08,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 16),
-                  Text(
-                    context.tr.receiveWalletSelectionSubtitle,
-                    textAlign: TextAlign.center,
-                    style: GoogleFonts.inter(
-                      color: _receiveMutedTextColor,
-                      fontSize: 16,
-                      fontWeight: FontWeight.w400,
-                      height: 1.5,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 42),
-                  if (!hasKerosene && !hasOnChain)
-                    Text(
-                      context.tr.receiveHubNoWalletMessage,
-                      textAlign: TextAlign.center,
-                      style: GoogleFonts.inter(
-                        color: _receiveMutedTextColor,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w400,
-                        height: 1.45,
-                        letterSpacing: 0,
-                      ),
-                    )
-                  else
-                    _ReceiveActionList(
-                      children: [
-                        if (hasKerosene)
-                          _ReceiveActionTile(
-                            icon: LucideIcons.arrowLeftRight,
-                            title: context.tr.receiveWalletKeroseneTitle,
-                            subtitle: context.tr.receiveWalletKeroseneSubtitle,
-                            onTap: () => _selectRail(_ReceiveRail.kerosene),
-                            showDivider: hasOnChain,
-                          ),
-                        if (hasOnChain)
-                          _ReceiveActionTile(
-                            icon: LucideIcons.bitcoin,
-                            title: context.tr.receiveWalletOnchainTitle,
-                            subtitle: context.tr.receiveWalletOnchainSubtitle,
-                            onTap: () => _selectRail(_ReceiveRail.onChain),
-                            showDivider: false,
-                          ),
-                      ],
-                    ),
-                ],
-              ),
-            ),
-          ),
-        );
-      },
-    );
-  }
-
-  Widget _buildMethodSelection() {
-    final rail = _selectedRail ?? _ReceiveRail.kerosene;
-    final isOnChain = rail == _ReceiveRail.onChain;
-    final title = isOnChain
-        ? context.tr.receiveMethodOnchainTitle
-        : context.tr.receiveMethodKeroseneTitle;
-    final subtitle = isOnChain
-        ? context.tr.receiveMethodOnchainSubtitle
-        : context.tr.receiveMethodKeroseneSubtitle;
+  Widget _buildMethodSelection(Wallet? wallet) {
+    final kind =
+        wallet == null ? _ReceiveWalletKind.internal : _walletKind(wallet);
+    final isInternal = kind == _ReceiveWalletKind.internal;
+    const receiveMethodLabel = 'Como deseja receber';
+    final subtitle = switch (kind) {
+      _ReceiveWalletKind.internal =>
+        'Escolha NFC, P2P, link, QR Code ou gateway para receber na plataforma.',
+      _ReceiveWalletKind.custodialOnchain =>
+        'Escolha QR Code ou link de pagamento para receber on-chain.',
+      _ReceiveWalletKind.coldWallet =>
+        'Escolha QR Code ou link de pagamento para receber na cold wallet.',
+    };
 
     return SingleChildScrollView(
-      key: ValueKey('receive-method-${rail.name}'),
+      key: ValueKey('receive-method-${wallet?.id ?? kind.name}'),
       physics: const BouncingScrollPhysics(
         parent: AlwaysScrollableScrollPhysics(),
       ),
@@ -415,19 +261,19 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            title,
-            style: GoogleFonts.ibmPlexSerif(
+            receiveMethodLabel,
+            style: AppTypography.newsreader(
               color: _receiveTextColor,
-              fontSize: 48,
-              fontWeight: FontWeight.w400,
-              height: 1.1,
+              fontSize: 40,
+              fontWeight: FontWeight.w600,
+              height: 1.08,
               letterSpacing: 0,
             ),
           ),
           const SizedBox(height: 8),
           Text(
             subtitle,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _receiveBodyTextColor,
               fontSize: 16,
               fontWeight: FontWeight.w400,
@@ -438,41 +284,65 @@ class _DepositsScreenState extends ConsumerState<DepositsScreen> {
           const SizedBox(height: 38),
           _ReceiveActionList(
             children: [
-              if (!isOnChain)
+              if (isInternal)
                 _ReceiveActionTile(
-                  icon: LucideIcons.creditCard,
+                  icon: KeroseneIcons.creditCard,
                   title: context.tr.receiveMethodGatewayTitle,
                   subtitle: context.tr.receiveMethodGatewaySubtitle,
                   onTap: _openGatewayProviders,
                   verticalPadding: 24,
                 ),
+              if (isInternal)
+                _ReceiveActionTile(
+                  icon: KeroseneIcons.internalTransfer,
+                  title: 'P2P',
+                  subtitle: 'Receber por transferencia de usuario interno',
+                  onTap: () => _openReceive(ReceiveAmountMethod.p2p),
+                  verticalPadding: 24,
+                ),
               _ReceiveActionTile(
-                icon: LucideIcons.qrCode,
+                icon: KeroseneIcons.qr,
                 title: context.tr.receiveMethodQrTitle,
                 subtitle: context.tr.receiveMethodQrSubtitle,
                 onTap: () => _openReceive(ReceiveAmountMethod.qrCode),
                 verticalPadding: 24,
               ),
               _ReceiveActionTile(
-                icon: LucideIcons.link2,
+                icon: KeroseneIcons.onchain,
                 title: context.tr.receiveMethodPaymentLinkTitle,
                 subtitle: context.tr.receiveMethodPaymentLinkSubtitle,
                 onTap: () => _openReceive(ReceiveAmountMethod.paymentLink),
                 verticalPadding: 24,
               ),
-              _ReceiveActionTile(
-                icon: LucideIcons.nfc,
-                title: context.tr.receiveMethodNfcTitle,
-                subtitle: context.tr.receiveMethodNfcSubtitle,
-                onTap: () => _openReceive(ReceiveAmountMethod.nfc),
-                showDivider: false,
-                verticalPadding: 24,
-              ),
+              if (isInternal)
+                _ReceiveActionTile(
+                  icon: KeroseneIcons.nfc,
+                  title: context.tr.receiveMethodNfcTitle,
+                  subtitle: context.tr.receiveMethodNfcSubtitle,
+                  onTap: () => _openReceive(ReceiveAmountMethod.nfc),
+                  showDivider: false,
+                  verticalPadding: 24,
+                ),
             ],
           ),
         ],
       ),
     );
+  }
+
+  Wallet? _resolveWallet(WalletState walletState) {
+    if (widget.initialWallet != null) {
+      return widget.initialWallet!;
+    }
+    if (walletState is! WalletLoaded) {
+      return null;
+    }
+    for (final wallet in walletState.wallets) {
+      if (wallet.isActive) {
+        return wallet;
+      }
+    }
+    return walletState.wallets.isNotEmpty ? walletState.wallets.first : null;
   }
 }
 
@@ -493,19 +363,9 @@ class _ReceiveTopBar extends StatelessWidget {
             Align(
               alignment: Alignment.centerLeft,
               child: _ReceiveRoundButton(
-                icon: LucideIcons.chevronLeft,
+                icon: KeroseneIcons.back,
                 onPressed: onBack,
                 tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-              ),
-            ),
-            Text(
-              context.tr.receive,
-              style: GoogleFonts.inter(
-                color: _receiveTextColor,
-                fontSize: 15,
-                fontWeight: FontWeight.w700,
-                height: 1.2,
-                letterSpacing: 0,
               ),
             ),
             const Align(
@@ -622,7 +482,7 @@ class _ReceiveActionTile extends StatelessWidget {
                       title,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: _receiveTextColor,
                         fontSize: 16,
                         fontWeight: FontWeight.w700,
@@ -635,7 +495,7 @@ class _ReceiveActionTile extends StatelessWidget {
                       subtitle,
                       maxLines: 2,
                       overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.inter(
+                      style: AppTypography.inter(
                         color: _receiveMutedTextColor,
                         fontSize: 12,
                         fontWeight: FontWeight.w400,
@@ -648,7 +508,7 @@ class _ReceiveActionTile extends StatelessWidget {
               ),
               const SizedBox(width: 12),
               Icon(
-                LucideIcons.chevronRight,
+                KeroseneIcons.chevronRight,
                 color: _receiveMutedTextColor.withValues(alpha: 0.76),
                 size: 20,
               ),
@@ -678,28 +538,28 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
             name: 'MoonPay',
             methods: tr.receiveGatewayMoonPayMethods,
             fees: tr.receiveGatewayMoonPayFees,
-            icon: LucideIcons.creditCard,
+            icon: KeroseneIcons.creditCard,
             aliases: const ['moonpay'],
           ),
           _GatewayProvider(
             name: 'Banxa',
             methods: tr.receiveGatewayBanxaMethods,
             fees: tr.receiveGatewayBanxaFees,
-            icon: LucideIcons.circleDollarSign,
+            icon: KeroseneIcons.fiat,
             aliases: const ['banxa'],
           ),
           _GatewayProvider(
             name: 'Mercuryo',
             methods: tr.receiveGatewayMercuryoMethods,
             fees: tr.receiveGatewayMercuryoFees,
-            icon: LucideIcons.smartphone,
+            icon: KeroseneIcons.device,
             aliases: const ['mercuryo'],
           ),
           _GatewayProvider(
             name: 'Ramp Network',
             methods: tr.receiveGatewayRampMethods,
             fees: tr.receiveGatewayRampFees,
-            icon: LucideIcons.trendingUp,
+            icon: KeroseneIcons.trendUp,
             aliases: const ['ramp', 'ramp_network', 'rampnetwork'],
           ),
         ],
@@ -711,7 +571,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
             name: 'Stripe Crypto Onramp',
             methods: tr.receiveGatewayStripeMethods,
             fees: tr.receiveGatewayStripeFees,
-            icon: LucideIcons.building2,
+            icon: KeroseneIcons.business,
             badge: tr.receiveGatewayInstitutionalBadge,
             aliases: const [
               'stripe',
@@ -723,7 +583,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
             name: 'Coinbase Onramp',
             methods: tr.receiveGatewayCoinbaseMethods,
             fees: tr.receiveGatewayCoinbaseFees,
-            icon: LucideIcons.database,
+            icon: KeroseneIcons.database,
             badge: tr.receiveGatewayInstitutionalBadge,
             aliases: const ['coinbase', 'coinbase_onramp'],
           ),
@@ -736,7 +596,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
             name: 'Onramper',
             methods: tr.receiveGatewayOnramperMethods,
             fees: tr.receiveGatewayOnramperFees,
-            icon: LucideIcons.boxes,
+            icon: KeroseneIcons.stack,
             aliases: const ['onramper'],
           ),
         ],
@@ -748,21 +608,21 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
             name: 'Transak',
             methods: tr.receiveGatewayTransakMethods,
             fees: tr.receiveGatewayTransakFees,
-            icon: LucideIcons.arrowLeftRight,
+            icon: KeroseneIcons.internalTransfer,
             aliases: const ['transak'],
           ),
           _GatewayProvider(
             name: 'Wert',
             methods: tr.receiveGatewayWertMethods,
             fees: tr.receiveGatewayWertFees,
-            icon: LucideIcons.zap,
+            icon: KeroseneIcons.lightning,
             aliases: const ['wert'],
           ),
           _GatewayProvider(
             name: 'GateFi / Unlimit',
             methods: tr.receiveGatewayGateFiMethods,
             fees: tr.receiveGatewayGateFiFees,
-            icon: LucideIcons.globe2,
+            icon: KeroseneIcons.globe,
             aliases: const ['gatefi', 'unlimit', 'gatefi_unlimit'],
           ),
         ],
@@ -791,7 +651,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
                     children: [
                       IconButton(
                         onPressed: () => Navigator.of(context).maybePop(),
-                        icon: const Icon(LucideIcons.arrowLeft, size: 24),
+                        icon: const Icon(KeroseneIcons.back, size: 24),
                         color: _receiveTextColor,
                         tooltip:
                             MaterialLocalizations.of(context).backButtonTooltip,
@@ -803,7 +663,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
                       const SizedBox(height: 24),
                       Text(
                         context.tr.receiveGatewayProvidersTitle,
-                        style: GoogleFonts.ibmPlexSerif(
+                        style: AppTypography.newsreader(
                           color: _receiveTextColor,
                           fontSize: 40,
                           fontWeight: FontWeight.w700,
@@ -952,7 +812,7 @@ class _GatewayProviderTile extends StatelessWidget {
               height: 40,
               decoration: const BoxDecoration(
                 shape: BoxShape.circle,
-                color: Color(0xFF1E1E1E),
+                color: AppColors.hexFF1E1E1E,
               ),
               child: Icon(
                 provider.icon,
@@ -1045,8 +905,8 @@ class _GatewayProviderTile extends StatelessWidget {
             ),
             const SizedBox(width: 12),
             const Icon(
-              LucideIcons.chevronRight,
-              color: Color(0xFF525252),
+              KeroseneIcons.chevronRight,
+              color: AppColors.hexFF525252,
               size: 18,
             ),
           ],
@@ -1178,8 +1038,8 @@ class _TransactionStatementScreenState
     if (!_scrollController.hasClients) return;
     _scrollController.animateTo(
       0,
-      duration: const Duration(milliseconds: 180),
-      curve: Curves.easeOutCubic,
+      duration: KeroseneMotion.short,
+      curve: KeroseneMotion.standard,
     );
   }
 
@@ -1199,7 +1059,7 @@ class _TransactionStatementScreenState
                 child: RefreshIndicator(
                   onRefresh: _refreshData,
                   color: Colors.white,
-                  backgroundColor: const Color(0xFF1C1C1E),
+                  backgroundColor: AppColors.hexFF1C1C1E,
                   child: CustomScrollView(
                     controller: _scrollController,
                     physics: const BouncingScrollPhysics(
@@ -1221,7 +1081,7 @@ class _TransactionStatementScreenState
                           padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
                           child: Text(
                             context.tr.financialStatementTitle,
-                            style: GoogleFonts.ibmPlexSerif(
+                            style: AppTypography.newsreader(
                               color: Colors.white,
                               fontSize: 34,
                               fontWeight: FontWeight.w400,
@@ -1253,7 +1113,7 @@ class _TransactionStatementScreenState
                         error: (error, _) => SliverFillRemaining(
                           hasScrollBody: false,
                           child: _StatementMessage(
-                            icon: LucideIcons.alertCircle,
+                            icon: KeroseneIcons.warning,
                             title: context.tr.financialStatementLoadErrorTitle,
                             message: ErrorTranslator.translate(
                               context.tr,
@@ -1272,8 +1132,8 @@ class _TransactionStatementScreenState
                               hasScrollBody: false,
                               child: _StatementMessage(
                                 icon: hasActiveNarrowing
-                                    ? LucideIcons.searchX
-                                    : LucideIcons.receipt,
+                                    ? KeroseneIcons.searchUnavailable
+                                    : KeroseneIcons.history,
                                 title: hasActiveNarrowing
                                     ? context
                                         .tr.financialStatementNoResultsTitle
@@ -1419,7 +1279,7 @@ class _TransactionStatementScreenState
         .fadeIn(
           duration: 300.ms,
           delay: (80 + index * 45).ms,
-          curve: Curves.easeOutCubic,
+          curve: KeroseneMotion.standard,
           begin: 0.16,
         )
         .slideY(
@@ -1427,7 +1287,7 @@ class _TransactionStatementScreenState
           end: 0,
           duration: 340.ms,
           delay: (80 + index * 45).ms,
-          curve: Curves.easeOutCubic,
+          curve: KeroseneMotion.standard,
         );
   }
 
@@ -1549,10 +1409,10 @@ String _normalizeStatementSearchText(String value) {
 }
 
 enum _StatementMenuDestination {
-  home('/home', LucideIcons.home),
-  card('/card', LucideIcons.walletCards),
-  history('/history', LucideIcons.receipt),
-  settings('/settings', LucideIcons.settings);
+  home('/home', KeroseneIcons.home),
+  card('/card', KeroseneIcons.wallet),
+  history('/history', KeroseneIcons.history),
+  settings('/settings', KeroseneIcons.settings);
 
   final String route;
   final IconData icon;
@@ -1634,7 +1494,7 @@ class _StatementFloatingMenuButton extends StatelessWidget {
             height: 56,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: const Color(0xFF101010),
+              color: AppColors.hexFF101010,
               border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
               boxShadow: [
                 BoxShadow(
@@ -1644,7 +1504,8 @@ class _StatementFloatingMenuButton extends StatelessWidget {
                 ),
               ],
             ),
-            child: const Icon(LucideIcons.menu, color: Colors.white, size: 24),
+            child:
+                const Icon(KeroseneIcons.menu, color: Colors.white, size: 24),
           ),
         ),
       ),
@@ -1663,7 +1524,7 @@ class _StatementFloatingMenuButton extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
             child: Container(
               decoration: BoxDecoration(
-                color: const Color(0xFF101010).withValues(alpha: 0.96),
+                color: AppColors.hexFF101010.withValues(alpha: 0.96),
                 borderRadius: BorderRadius.circular(18),
                 border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
               ),
@@ -1697,7 +1558,7 @@ class _StatementMenuDestinationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final color = selected ? const Color(0xFFFCE353) : Colors.white;
+    final color = selected ? AppColors.hexFFFCE353 : Colors.white;
 
     return Material(
       color: Colors.transparent,
@@ -1723,7 +1584,7 @@ class _StatementMenuDestinationTile extends StatelessWidget {
                   destination.label(context),
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: GoogleFonts.inter(
+                  style: AppTypography.inter(
                     color: color,
                     fontSize: 15,
                     fontWeight: FontWeight.w400,
@@ -1733,8 +1594,8 @@ class _StatementMenuDestinationTile extends StatelessWidget {
               ),
               if (selected)
                 const Icon(
-                  LucideIcons.check,
-                  color: Color(0xFFFCE353),
+                  KeroseneIcons.check,
+                  color: AppColors.hexFFFCE353,
                   size: 18,
                 ),
             ],
@@ -1806,7 +1667,7 @@ class _StatementTopBarState extends State<_StatementTopBar> {
       return Row(
         children: [
           _RoundIconButton(
-            icon: LucideIcons.chevronLeft,
+            icon: KeroseneIcons.chevronLeft,
             onPressed: _closeSearch,
           ),
           const SizedBox(width: 10),
@@ -1815,17 +1676,17 @@ class _StatementTopBarState extends State<_StatementTopBar> {
               controller: _controller,
               autofocus: true,
               onChanged: _handleSearchChanged,
-              style: GoogleFonts.inter(color: Colors.white, fontSize: 14),
+              style: AppTypography.inter(color: Colors.white, fontSize: 14),
               cursorColor: Colors.white,
               decoration: InputDecoration(
                 isDense: true,
                 hintText: context.tr.financialStatementSearchHint,
-                hintStyle: GoogleFonts.inter(
-                  color: const Color(0xFF8A8A8E),
+                hintStyle: AppTypography.inter(
+                  color: AppColors.hexFF8A8A8E,
                   fontSize: 14,
                 ),
                 filled: true,
-                fillColor: const Color(0xFF1C1C1E),
+                fillColor: AppColors.hexFF1C1C1E,
                 suffixIcon: _searchText.isEmpty
                     ? null
                     : IconButton(
@@ -1833,8 +1694,8 @@ class _StatementTopBarState extends State<_StatementTopBar> {
                             .deleteButtonTooltip,
                         onPressed: _clearSearchText,
                         icon: const Icon(
-                          LucideIcons.x,
-                          color: Color(0xFFB8B8BC),
+                          KeroseneIcons.close,
+                          color: AppColors.hexFFB8B8BC,
                           size: 16,
                         ),
                         padding: EdgeInsets.zero,
@@ -1862,10 +1723,9 @@ class _StatementTopBarState extends State<_StatementTopBar> {
     return Row(
       mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
+        _RoundIconButton(icon: KeroseneIcons.back, onPressed: widget.onBack),
         _RoundIconButton(
-            icon: LucideIcons.chevronLeft, onPressed: widget.onBack),
-        _RoundIconButton(
-          icon: LucideIcons.search,
+          icon: KeroseneIcons.search,
           onPressed: () => setState(() => _searching = true),
         ),
       ],
@@ -1888,7 +1748,7 @@ class _RoundIconButton extends StatelessWidget {
         onPressed: onPressed,
         icon: Icon(icon, color: Colors.white, size: 20),
         style: IconButton.styleFrom(
-          backgroundColor: const Color(0xFF1C1C1E),
+          backgroundColor: AppColors.hexFF1C1C1E,
           shape: const CircleBorder(),
         ),
       ),
@@ -1907,7 +1767,7 @@ class _StatementTabs extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
-        color: const Color(0xFF1C1C1E),
+        color: AppColors.hexFF1C1C1E,
         borderRadius: BorderRadius.circular(999),
       ),
       child: SingleChildScrollView(
@@ -1963,12 +1823,12 @@ class _StatementTab extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        curve: Curves.easeOutCubic,
+        duration: KeroseneMotion.short,
+        curve: KeroseneMotion.standard,
         constraints: const BoxConstraints(minWidth: 76),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF2C2C2E) : Colors.transparent,
+          color: selected ? AppColors.hexFF2C2C2E : Colors.transparent,
           borderRadius: BorderRadius.circular(999),
         ),
         alignment: Alignment.center,
@@ -1976,8 +1836,8 @@ class _StatementTab extends StatelessWidget {
           label,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
-          style: GoogleFonts.inter(
-            color: selected ? Colors.white : const Color(0xFF8A8A8E),
+          style: AppTypography.inter(
+            color: selected ? Colors.white : AppColors.hexFF8A8A8E,
             fontSize: 13,
             fontWeight: FontWeight.w600,
             letterSpacing: 0,
@@ -2016,7 +1876,7 @@ class _StatementMessage extends StatelessWidget {
             Text(
               title,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
+              style: AppTypography.inter(
                 color: Colors.white,
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
@@ -2027,8 +1887,8 @@ class _StatementMessage extends StatelessWidget {
             Text(
               message,
               textAlign: TextAlign.center,
-              style: GoogleFonts.inter(
-                color: const Color(0xFF8A8A8E),
+              style: AppTypography.inter(
+                color: AppColors.hexFF8A8A8E,
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 height: 1.35,
@@ -2039,7 +1899,7 @@ class _StatementMessage extends StatelessWidget {
               const SizedBox(height: 18),
               TextButton.icon(
                 onPressed: onAction,
-                icon: const Icon(LucideIcons.xCircle, size: 16),
+                icon: const Icon(KeroseneIcons.closeCircle, size: 16),
                 label: Text(actionLabel!),
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white,
@@ -2053,7 +1913,7 @@ class _StatementMessage extends StatelessWidget {
                       color: Colors.white.withValues(alpha: 0.14),
                     ),
                   ),
-                  textStyle: GoogleFonts.inter(
+                  textStyle: AppTypography.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
                     letterSpacing: 0,

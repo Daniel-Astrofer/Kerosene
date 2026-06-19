@@ -66,6 +66,7 @@
   "retry": "Reintentar",
   "cancel": "Cancelar",
   "goBack": "Volver",
+  "goToHome": "Ir al inicio",
   "done": "Hecho",
   "save": "Guardar",
   "invalidAmount": "Cantidad inválida",
@@ -118,6 +119,7 @@
   "passphrase": "Frase de contraseña",
   "required": "Requerido",
   "settingsTitle": "Configuración",
+  "settingsScreenSubtitle": "Administra tu cuenta, seguridad y dispositivos",
   "currency": "Moneda",
   "selectLanguage": "Seleccionar Idioma",
   "selectCurrency": "Seleccionar Moneda",
@@ -302,6 +304,15 @@
   "passkeyErrorFinishing": "Error al finalizar el registro: {message}",
   "passkeyAuthFailed": "Autenticación cancelada o fallida.",
   "passkeyUnexpectedError": "Error inesperado: {error}",
+  "passkeyVerificationUserNotFound": "Usuario no encontrado",
+  "passkeyVerificationNoLocal": "Sin passkey en este dispositivo",
+  "passkeyVerificationCancelled": "Verificación cancelada",
+  "passkeyVerificationChallengeExpired": "Tiempo expirado",
+  "passkeyVerificationRejected": "Passkey rechazada",
+  "passkeyVerificationFailed": "No fue posible validar la passkey",
+  "passkeyVerificationBodyPreparing": "Iniciando confirmación segura.",
+  "passkeyVerificationBodySending": "Esperando aprobación en este dispositivo.",
+  "passkeyVerificationBodySuccess": "Credencial aceptada. Continuando automáticamente.",
   "passkeyLoadingInitBiom": "Inicializando Biometría...",
   "passkeyLoadingSecuring": "Asegurando Dispositivo...",
   "passkeyLoadingRegistering": "Registrando Passkey...",
@@ -570,8 +581,8 @@
   "bitcoinAdvancedPsbtRejectedTitle": "PSBT rechazada",
   "bitcoinAdvancedPsbtRejectedMessage": "La firma no pasó las validaciones de seguridad.",
   "bitcoinTaxReportsTitle": "Informes fiscales",
-  "bitcoinTaxEventsUnavailableTitle": "Eventos no disponibles",
-  "bitcoinTaxEventsUnavailableMessage": "No se pudieron cargar los eventos temporales.",
+  "taxEventsUnavailableTitle": "Eventos no disponibles",
+  "taxEventsUnavailableMessage": "No se pudieron cargar los eventos temporales.",
   "bitcoinTaxNoEventsTitle": "Ningún evento temporal.",
   "bitcoinTaxNoEventsMessage": "Depósitos, envíos y comisiones recientes aparecerán aquí temporalmente.",
   "bitcoinTaxHiddenEvents": "+{count} eventos ocultos.",
@@ -926,51 +937,6 @@
   "bitcoinReceiveRequestsEmptyMessage": "Las solicitudes Bitcoin generadas aparecerán aquí.",
   "bitcoinReceiveRequestsFlexibleAmount": "Monto flexible",
   "bitcoinReceiveRequestsNoExpiry": "sin expiración",
-  "paymentIntentScreenTitle": "Intención de pago",
-  "paymentIntentScreenSubtitle": "Cotización, confirmación y estado",
-  "paymentIntentRecipientHint": "username, email o dirección",
-  "paymentIntentSearchAction": "Buscar",
-  "paymentIntentAmountFeeTitle": "Monto y comisión",
-  "paymentIntentGenerateQuoteAction": "Generar cotización",
-  "paymentIntentQuoteTitle": "Cotización",
-  "paymentIntentMetricReceiver": "Receptor",
-  "paymentIntentMetricRoute": "Ruta",
-  "paymentIntentMetricReceives": "Recibe",
-  "paymentIntentMetricNetworkFee": "Comisión de red",
-  "paymentIntentMetricKeroseneFee": "Comisión Kerosene",
-  "paymentIntentMetricTotalDebit": "Total debitado",
-  "paymentIntentConfirmPaymentAction": "Confirmar pago",
-  "paymentIntentStatusTitle": "Estado",
-  "paymentIntentNotCompleted": "Pago no completado.",
-  "paymentIntentReviewTitle": "Revisar envío",
-  "paymentIntentReviewDebitMessage": "{total} se debitarán para {receiver}.",
-  "@paymentIntentReviewDebitMessage": {
-    "placeholders": {
-      "total": {},
-      "receiver": {}
-    }
-  },
-  "paymentIntentAuthorizeAction": "Autorizar",
-  "paymentIntentValidationRecipientRequired": "Ingresa el receptor.",
-  "paymentIntentValidationAmountRequired": "Ingresa el monto.",
-  "paymentIntentRailInternal": "Kerosene",
-  "paymentIntentRailLightning": "Lightning",
-  "paymentIntentRailOnchain": "On-chain",
-  "paymentIntentFeeSenderPays": "Paga el remitente",
-  "paymentIntentFeeRecipientPays": "Paga el receptor",
-  "paymentIntentSpeedEconomy": "Económica",
-  "paymentIntentSpeedNormal": "Normal",
-  "paymentIntentSpeedFast": "Rápida",
-  "paymentIntentStatusCreated": "Creado",
-  "paymentIntentStatusQuoted": "Cotizado",
-  "paymentIntentStatusConfirmed": "Confirmado",
-  "paymentIntentStatusProcessing": "Procesando",
-  "paymentIntentStatusAcceptedByProvider": "Aceptado por el proveedor",
-  "paymentIntentStatusRequiresReconciliation": "Requiere conciliación",
-  "paymentIntentStatusSettled": "Liquidado",
-  "paymentIntentStatusFailed": "Falló",
-  "paymentIntentStatusCanceled": "Cancelado",
-  "paymentIntentStatusExpired": "Expirado",
   "bitcoinReceiveStatusDetected": "Detectado",
   "bitcoinReceiveStatusConfirming": "Confirmando",
   "bitcoinReceiveStatusPaid": "Pagado",
@@ -2426,6 +2392,50 @@
   "sendMoneyRequestExpired": "Esta solicitud de pago expiró.",
   "sendMoneyLockedDestination": "Destino protegido",
   "sendMoneyPaymentRequestLoaded": "Solicitud de pago cargada.",
+  "authReasonTransactionConfirm": "Confirma en este dispositivo para autorizar la transacción.",
+  "transactionAuthVaultTitle": "Confirmación de la bóveda",
+  "transactionAuthOperationTitle": "Confirmación de la operación",
+  "transactionAuthPassphraseLabel": "Passphrase",
+  "transactionAuthConfirmationPassphraseLabel": "Passphrase de confirmación",
+  "transactionAuthEnterPassphrase": "Ingresa tu passphrase para continuar.",
+  "transactionAuthTotpCodeLabel": "Código TOTP",
+  "transactionAuthEnterAuthenticatorDigits": "Ingresa los 6 dígitos del autenticador.",
+  "transactionAuthContinue": "Continuar",
+  "transactionAuthProfileSubtitleMultisigFull": "Esta política usa passphrase, TOTP y passkey para liberar operaciones críticas.",
+  "transactionAuthProfileSubtitleMultisigStandard": "Esta política usa passphrase y TOTP para liberar operaciones críticas.",
+  "transactionAuthProfileSubtitlePasskeyOnly": "La confirmación final se solicitará con tu passkey.",
+  "transactionAuthProfileSubtitleDefault": "Confirma los factores necesarios para completar esta operación.",
+  "transactionAuthShamirRecoveryError": "Ingresa {threshold} shares completas para reconstruir la passphrase.",
+  "@transactionAuthShamirRecoveryError": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShamirReconstructFailed": "No fue posible reconstruir la passphrase. Revisa las shares e intenta de nuevo.",
+  "transactionAuthShamirTitle": "Autorización Shamir",
+  "transactionAuthShamirSubtitle": "Reconstruye la passphrase con {threshold} de {totalShares} shares antes de liberar la operación.",
+  "@transactionAuthShamirSubtitle": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      },
+      "totalShares": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShareLabel": "Share {index}",
+  "@transactionAuthShareLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthReconstructAndContinue": "Reconstruir y continuar",
+  "transactionAuthShareHint": "Pega la share completa aquí",
   "walletConfigAddressCopiedMessage": "La dirección de la billetera fue copiada con éxito.",
   "walletConfigAddressCopiedTitle": "Dirección copiada",
   "walletConfigExportNoticeMessage": "La exportación de la clave privada depende de la verificación de seguridad del dispositivo.",
@@ -2777,6 +2787,22 @@
   "landingStatusRegion": "Región",
   "landingStatusBuild": "Build",
   "landingStatusManifest": "Manifesto",
+  "landingNetworkStatusLabel": "ESTADO DE LA RED",
+  "landingNetworkOnlineDetail": "100% On-chain & Tor",
+  "landingNetworkFallbackDetail": "On-chain & Tor",
+  "landingApiAccessTitle": "API ACCESS",
+  "landingApiAccessBody": "La documentación técnica está disponible en el portal para desarrolladores en red Onion.",
+  "landingStatusLine": "{label}: {status}",
+  "@landingStatusLine": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "homeFundsDistributionTitle": "Distribución de fondos",
   "homeRecentActivitiesTitle": "Actividades",
   "homeViewStatementShortLabel": "Extracto",

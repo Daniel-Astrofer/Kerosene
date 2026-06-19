@@ -1,4 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 typedef DeferredWidgetBuilder = Widget Function(BuildContext context);
 
@@ -50,7 +53,7 @@ class _DeferredPageLoadingView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const Scaffold(
-      backgroundColor: Color(0xFF0E0E10),
+      backgroundColor: KeroseneBrandTokens.backgroundSoft,
       body: Center(
         child: SizedBox(
           width: 24,
@@ -70,25 +73,32 @@ class _DeferredPageErrorView extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: const Color(0xFF0E0E10),
+      backgroundColor: KeroseneBrandTokens.backgroundSoft,
       body: Center(
         child: Padding(
           padding: const EdgeInsets.all(24),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(Icons.cloud_off, color: Colors.white70, size: 32),
+              const Icon(
+                KeroseneIcons.serverUnavailable,
+                color: KeroseneBrandTokens.textSecondary,
+                size: 32,
+              ),
               const SizedBox(height: 12),
               const Text(
-                'Failed to load this screen.',
-                style: TextStyle(color: Colors.white),
+                KeroseneUiCopy.deferredLoadFailure,
+                style: TextStyle(color: KeroseneBrandTokens.textPrimary),
                 textAlign: TextAlign.center,
               ),
               if (error != null) ...[
                 const SizedBox(height: 8),
                 Text(
-                  '$error',
-                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                  KeroseneUiCopy.deferredLoadDetails,
+                  style: const TextStyle(
+                    color: KeroseneBrandTokens.textMuted,
+                    fontSize: 12,
+                  ),
                   textAlign: TextAlign.center,
                 ),
               ],

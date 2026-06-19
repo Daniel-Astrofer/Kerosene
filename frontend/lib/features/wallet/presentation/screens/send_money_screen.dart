@@ -1,11 +1,10 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:uuid/uuid.dart';
 import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
@@ -14,14 +13,17 @@ import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/services/audio_service.dart';
-import 'package:kerosene/core/widgets/nfc_scan_dialog.dart';
+import 'package:kerosene/core/services/notification_service.dart';
 import 'package:kerosene/features/home/presentation/screens/qr_scanner_screen.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/features/security/domain/entities/account_security_profile.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
-import 'package:kerosene/features/payments/presentation/providers/payment_intent_provider.dart';
 import 'package:kerosene/features/transactions/domain/entities/fee_estimate.dart';
 import 'package:kerosene/features/transactions/domain/entities/withdraw_fee_quote_calculation.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_amount_surface.dart';
+import 'package:kerosene/features/wallet/data/kfe_receiving_capabilities_service.dart';
+import 'package:kerosene/features/wallet/presentation/send/send_money_copy.dart';
 
 import '../../../../core/utils/qr_payment_parser.dart';
 import '../../../../core/widgets/transaction_auth_gate.dart';
@@ -32,6 +34,7 @@ import '../widgets/send_money_components.dart';
 import '../../../transactions/presentation/providers/transaction_provider.dart';
 import '../../domain/entities/wallet.dart';
 
+import 'package:kerosene/core/theme/app_typography.dart';
 part 'send_money_screen_review.dart';
 
 enum _SendDestinationType {
@@ -118,14 +121,13 @@ class SendMoneyScreen extends ConsumerStatefulWidget {
 }
 
 class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
-  static const Color _internalBlack = Color(0xFF000000);
-  static const Color _internalSurface = Color(0xFF111111);
-  static const Color _internalSurfaceHigh = Color(0xFF1F1F1F);
-  static const Color _internalBorder = Color(0xFF2C2C2E);
-  static const Color _internalText = Color(0xFFFFFFFF);
-  static const Color _internalMutedText = Color(0xFFA3A3A3);
-  static const Color _internalOutline = Color(0xFF666666);
-  static const Color _internalSuccessGreen = Color(0xFF4ADE80);
+  static const Color _internalBlack = KeroseneBrandTokens.background;
+  static const Color _internalSurface = KeroseneBrandTokens.surface;
+  static const Color _internalSurfaceHigh = KeroseneBrandTokens.surfaceHigh;
+  static const Color _internalBorder = KeroseneBrandTokens.border;
+  static const Color _internalText = KeroseneBrandTokens.textPrimary;
+  static const Color _internalMutedText = KeroseneBrandTokens.textMuted;
+  static const Color _internalOutline = KeroseneBrandTokens.borderStrong;
   static const double _defaultLightningRoutingFeeBtc = 0.000001;
 
   String? _pendingPaymentLinkId;
@@ -133,6 +135,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   double _lockedAmountBtc = 0.0;
   String? _lockedRecipientLabel;
   Wallet? _selectedWallet;
+  bool _destinationResolutionBusy = false;
 
   final _receiverController = TextEditingController();
 
@@ -213,13 +216,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   @override
   Widget build(BuildContext context) {
-    final isSending = ref.watch(
-      sendTransactionProvider.select((state) => state.isLoading),
-    );
-    final isPayingLink = ref.watch(
-      paymentLinkNotifierProvider.select((state) => state.isLoading),
-    );
-    final isLoading = isSending || isPayingLink;
+    var isLoading = false;
+    if (_currentStep == 2) {
+      final isSending = ref.watch(
+        sendTransactionProvider.select((state) => state.isLoading),
+      );
+      final isPayingLink = ref.watch(
+        paymentLinkNotifierProvider.select((state) => state.isLoading),
+      );
+      isLoading = isSending || isPayingLink;
+    }
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
     final btcBrl = ref.watch(btcBrlPriceProvider);
@@ -273,8 +279,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   void _handleBack() {
     if (_currentStep > _firstStep) {
       _pageController.previousPage(
-        duration: const Duration(milliseconds: 300),
-        curve: Curves.easeInOutCubic,
+        duration: KeroseneMotion.medium,
+        curve: KeroseneMotion.standard,
       );
       setState(() => _currentStep -= 1);
       return;
@@ -287,14 +293,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return InternalTopBar(
       onBack: _handleBack,
       textColor: _internalText,
-    );
-  }
-
-  Widget _buildKeypad() {
-    return InternalKeypad(
-      onKeyTap: _onKeyTap,
-      textColor: _internalText,
-      outlineColor: _internalOutline,
     );
   }
 
@@ -317,10 +315,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   Future<void> _handleContinue() async {
+    final insufficientBalanceMessage =
+        SendMoneyCopy.insufficientBalance(context);
     final walletState = ref.read(walletProvider);
     final currentWallet = _resolveWallet(walletState);
     if (currentWallet == null) {
-      SnackbarHelper.showError('Carteira não carregada.');
+      SnackbarHelper.showError(SendMoneyCopy.walletLoadFailed(context));
       return;
     }
     final btcUsd = ref.read(latestBtcPriceProvider);
@@ -340,7 +340,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       SnackbarHelper.showError(
         destination.isEmpty
             ? context.tr.sendMoneyMissingDestination
-            : 'Destino inválido.',
+            : SendMoneyCopy.unrecognizedDestination(context),
       );
       return;
     }
@@ -363,9 +363,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       destination = _currentDestinationAnalysis();
     }
 
+    if (mounted) {
+      setState(() => _destinationResolutionBusy = true);
+    }
     final resolvedDestination = await _resolveDestinationForKfe(destination);
     if (!mounted) return;
-    if (resolvedDestination == null) return;
+    if (resolvedDestination == null) {
+      setState(() => _destinationResolutionBusy = false);
+      return;
+    }
     destination = resolvedDestination;
 
     if (amountBtc <= 0) {
@@ -378,7 +384,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       destination: destination,
       amountBtc: amountBtc,
     );
-    if (feeQuote == null) return;
+    if (feeQuote == null) {
+      setState(() => _destinationResolutionBusy = false);
+      return;
+    }
 
     final totalDebited =
         destination.isExternal ? feeQuote.totalDebitedBtc : amountBtc;
@@ -387,7 +396,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       availableBtc: currentWallet.balance,
       totalDebitedBtc: totalDebited,
     )) {
-      SnackbarHelper.showError('Saldo insuficiente para esta transferência.');
+      setState(() => _destinationResolutionBusy = false);
+      SnackbarHelper.showError(insufficientBalanceMessage);
       return;
     }
 
@@ -399,6 +409,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       feeQuote: feeQuote,
       toAddress: destination.normalizedValue,
     );
+    if (mounted) {
+      setState(() => _destinationResolutionBusy = false);
+    }
   }
 
   _SendFeeQuote _resolveFeeQuote({
@@ -480,6 +493,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required _SendDestinationAnalysis destination,
     required double amountBtc,
   }) async {
+    final networkFeeUnavailableMessage =
+        SendMoneyCopy.networkFeeUnavailable(context);
     if (!destination.isExternal) {
       return _SendFeeQuote(
         requestedAmountBtc: amountBtc,
@@ -508,9 +523,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         feeRateSatPerByte: fee.standardSatPerByte,
       );
     } catch (error) {
-      SnackbarHelper.showError(
-        'Não conseguimos calcular a taxa de rede agora. Tente novamente.',
-      );
+      SnackbarHelper.showError(networkFeeUnavailableMessage);
       return null;
     }
   }
@@ -611,12 +624,14 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         Padding(
           padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           child: _buildInternalPrimaryButton(
-            label: 'Continuar',
-            icon: LucideIcons.arrowRight,
+            label: context.tr.continueButton,
+            icon: KeroseneIcons.next,
             enabled: selectedWallet != null,
             onTap: () {
               if (selectedWallet == null) {
-                SnackbarHelper.showError('Selecione uma carteira.');
+                SnackbarHelper.showError(
+                  SendMoneyCopy.chooseWalletToContinue(context),
+                );
                 return;
               }
               HapticFeedback.selectionClick();
@@ -626,8 +641,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 _currentStep = 1;
               });
               _pageController.nextPage(
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeInOutCubic,
+                duration: KeroseneMotion.medium,
+                curve: KeroseneMotion.standard,
               );
             },
           ),
@@ -643,15 +658,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         mainAxisAlignment: MainAxisAlignment.center,
         children: [
           const Icon(
-            LucideIcons.alertCircle,
+            KeroseneIcons.warning,
             color: _internalMutedText,
             size: 34,
           ),
           const SizedBox(height: 16),
           Text(
-            'Não foi possível carregar suas carteiras.',
+            SendMoneyCopy.walletLoadFailed(context),
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _internalText,
               fontSize: 28,
               fontWeight: FontWeight.w500,
@@ -670,8 +685,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           const SizedBox(height: 24),
           TextButton.icon(
             onPressed: () => ref.read(walletProvider.notifier).refresh(),
-            icon: const Icon(LucideIcons.refreshCw, size: 18),
-            label: const Text('Tentar novamente'),
+            icon: const Icon(KeroseneIcons.refresh, size: 18),
+            label: Text(context.tr.tryAgain),
           ),
         ],
       ),
@@ -688,7 +703,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         padding: const EdgeInsets.all(24),
         child: Center(
           child: Text(
-            'Nenhuma carteira encontrada para envio.',
+            SendMoneyCopy.noWalletsForSend(context),
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: _internalMutedText,
@@ -709,8 +724,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             crossAxisAlignment: CrossAxisAlignment.stretch,
             children: [
               Text(
-                'Enviar',
-                style: GoogleFonts.ibmPlexSerif(
+                SendMoneyCopy.sendTitle(context),
+                style: AppTypography.newsreader(
                   color: _internalText,
                   fontSize: 42,
                   fontWeight: FontWeight.w400,
@@ -720,7 +735,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               ),
               const SizedBox(height: 8),
               Text(
-                'Escolha de qual carteira deseja retirar seus bitcoins.',
+                SendMoneyCopy.walletSelectionSubtitle(context),
                 style: Theme.of(context).textTheme.bodySmall?.copyWith(
                       color: _internalMutedText,
                       fontSize: 14,
@@ -743,8 +758,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     Wallet? selectedWallet,
   ) {
     final selected = selectedWallet?.id == wallet.id;
+    const defaultWalletMode = 'KEROSENE';
+    const availableBalanceLabel = 'SALDO DISPONÍVEL';
     final walletMode = wallet.walletMode.trim().isEmpty
-        ? 'KEROSENE'
+        ? defaultWalletMode
         : wallet.walletMode.trim().replaceAll('_', ' ');
 
     return Padding(
@@ -758,7 +775,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             setState(() => _selectedWallet = wallet);
           },
           child: AnimatedContainer(
-            duration: const Duration(milliseconds: 180),
+            duration: KeroseneMotion.short,
             padding: const EdgeInsets.all(18),
             decoration: BoxDecoration(
               color: _internalSurface,
@@ -781,7 +798,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                         border: Border.all(color: _internalBorder),
                       ),
                       child: const Icon(
-                        LucideIcons.wallet,
+                        KeroseneIcons.wallet,
                         color: _internalText,
                         size: 20,
                       ),
@@ -821,7 +838,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       ),
                     ),
                     AnimatedContainer(
-                      duration: const Duration(milliseconds: 180),
+                      duration: KeroseneMotion.short,
                       width: 22,
                       height: 22,
                       decoration: BoxDecoration(
@@ -833,7 +850,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                       ),
                       child: selected
                           ? const Icon(
-                              LucideIcons.check,
+                              KeroseneIcons.check,
                               color: _internalBlack,
                               size: 14,
                             )
@@ -847,7 +864,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 Row(
                   children: [
                     Text(
-                      'SALDO DISPONÍVEL',
+                      availableBalanceLabel,
                       style: Theme.of(context).textTheme.labelSmall?.copyWith(
                             color: _internalMutedText,
                             fontSize: 10,
@@ -857,10 +874,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      '${_formatBtcValue(wallet.balance, decimalPlaces: 6)} BTC',
+                      _walletBalanceLabel(wallet.balance),
                       style: Theme.of(context).textTheme.bodySmall?.copyWith(
                             color: _internalText,
-                            fontFamily: 'IBMPlexSansHebrew',
+                            fontFamily: AppTypography.financialFontFamily,
                             fontSize: 13,
                             fontWeight: FontWeight.w700,
                           ),
@@ -882,41 +899,33 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final destination = _receiverController.text.trim();
     final analysis = _currentDestinationAnalysis();
     final isValidDestination = analysis.isValid;
+    final hasContacts = recentDestinations.isNotEmpty;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        _buildInternalTopBar(context),
         Expanded(
           child: SingleChildScrollView(
             physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(32, 40, 32, 24),
+            padding: EdgeInsets.fromLTRB(24, hasContacts ? 12 : 0, 24, 28),
             child: Center(
               child: ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 448),
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.stretch,
                   children: [
-                    Text(
-                      'Insira um usuário Kerosene, endereço Bitcoin, invoice Lightning, link de pagamento, QR ou NFC.',
-                      textAlign: TextAlign.center,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: _internalMutedText,
-                            fontSize: 14,
-                            height: 1.55,
-                            letterSpacing: 0,
-                          ),
-                    ),
-                    const SizedBox(height: 46),
-                    _buildInternalDestinationInput(
+                    _buildDestinationHeader(context, hasContacts: hasContacts),
+                    SizedBox(height: hasContacts ? 32 : 26),
+                    _buildDestinationInputSection(
                       context,
                       analysis: analysis,
+                      largeLabel: !hasContacts,
                     ),
                     if (destination.isNotEmpty) ...[
                       const SizedBox(height: 12),
                       Text(
                         _destinationHelperText(analysis),
-                        textAlign: TextAlign.center,
+                        textAlign: TextAlign.left,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: isValidDestination
                                   ? _internalMutedText
@@ -925,42 +934,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                             ),
                       ),
                     ],
-                    const SizedBox(height: 52),
-                    Row(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        _buildInternalQuickAction(
-                          context,
-                          icon: LucideIcons.scanLine,
-                          label: 'QR Code',
-                          tooltip: 'Ler QR Code',
-                          onTap: _scanInternalDestination,
-                        ),
-                        const SizedBox(width: 48),
-                        _buildInternalQuickAction(
-                          context,
-                          iconWidget: const Icon(Icons.nfc, size: 25),
-                          label: 'NFC',
-                          tooltip: 'Usar NFC',
-                          onTap: _scanNfcDestination,
-                        ),
-                      ],
-                    ),
                     if (recentDestinations.isNotEmpty) ...[
-                      const SizedBox(height: 56),
-                      Text(
-                        'CONTATOS RECENTES',
-                        style: GoogleFonts.ibmPlexSerif(
-                          color: _internalMutedText,
-                          fontSize: 13,
-                          fontWeight: FontWeight.w600,
-                          height: 1.2,
-                          letterSpacing: 1.6,
-                        ),
+                      const SizedBox(height: 40),
+                      _buildInternalFrequentContactsSection(
+                        recentDestinations.take(3).toList(growable: false),
                       ),
-                      const SizedBox(height: 6),
-                      for (final destination in recentDestinations.take(6))
-                        _buildInternalRecentDestination(destination),
+                      const SizedBox(height: 36),
+                      _buildInternalAllContactsSection(recentDestinations),
+                    ] else ...[
+                      const SizedBox(height: 42),
+                      _buildEmptyContactsState(context),
                     ],
                   ],
                 ),
@@ -968,26 +951,147 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             ),
           ),
         ),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(32, 16, 32, 34),
-          child: _buildInternalPrimaryButton(
-            label: 'Continuar',
-            icon: LucideIcons.arrowRight,
-            enabled: isValidDestination,
-            onTap: () {
-              if (!isValidDestination) {
-                SnackbarHelper.showError(
-                  destination.isEmpty
-                      ? context.tr.sendMoneyMissingDestination
-                      : 'Destino inválido.',
-                );
-                return;
-              }
-              unawaited(_continueFromDestinationStep(analysis));
-            },
+        _buildDestinationBottomAction(
+          context,
+          hasContacts: hasContacts,
+          onTap: () {
+            if (!isValidDestination) {
+              SnackbarHelper.showError(
+                destination.isEmpty
+                    ? context.tr.sendMoneyMissingDestination
+                    : SendMoneyCopy.unrecognizedDestination(context),
+              );
+              return;
+            }
+            unawaited(_continueFromDestinationStep(analysis));
+          },
+        ),
+      ],
+    );
+  }
+
+  Widget _buildDestinationHeader(
+    BuildContext context, {
+    required bool hasContacts,
+  }) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        SizedBox(
+          width: 40,
+          height: 40,
+          child: IconButton(
+            onPressed: () => Navigator.of(context).maybePop(),
+            tooltip: context.tr.close,
+            icon: const Icon(KeroseneIcons.close, size: 24),
+            color: _internalText,
+            padding: EdgeInsets.zero,
+            style: IconButton.styleFrom(
+              minimumSize: const Size.square(40),
+              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+            ),
+          ),
+        ),
+        SizedBox(height: hasContacts ? 18 : 20),
+        Text(
+          SendMoneyCopy.destinationTitle(context),
+          textAlign: TextAlign.left,
+          style: AppTypography.newsreader(
+            color: _internalText,
+            fontSize: hasContacts ? 30 : 28,
+            fontWeight: hasContacts ? FontWeight.w700 : FontWeight.w500,
+            height: hasContacts ? 1.12 : 1.2,
+            letterSpacing: 0,
           ),
         ),
       ],
+    );
+  }
+
+  Widget _buildDestinationBottomAction(
+    BuildContext context, {
+    required bool hasContacts,
+    required VoidCallback onTap,
+  }) {
+    final backgroundColor = hasContacts ? _internalSurfaceHigh : _internalText;
+    final foregroundColor = hasContacts ? _internalText : _internalBlack;
+
+    return SafeArea(
+      top: false,
+      child: Container(
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 24),
+        color: _internalBlack,
+        child: SizedBox(
+          height: 56,
+          width: double.infinity,
+          child: FilledButton(
+            onPressed: onTap,
+            style: FilledButton.styleFrom(
+              backgroundColor: backgroundColor,
+              foregroundColor: foregroundColor,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(hasContacts ? 8 : 28),
+              ),
+              textStyle: AppTypography.inter(
+                fontSize: hasContacts ? 14 : 11,
+                fontWeight: FontWeight.w800,
+                height: 1.2,
+                letterSpacing: hasContacts ? 1.4 : 1.1,
+              ),
+            ),
+            child: Text(context.tr.continueButton),
+          ),
+        ),
+      ),
+    );
+  }
+
+  Widget _buildEmptyContactsState(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.symmetric(vertical: 48),
+      child: Column(
+        children: [
+          Container(
+            width: 64,
+            height: 64,
+            decoration: const BoxDecoration(
+              shape: BoxShape.circle,
+              color: _internalSurfaceHigh,
+            ),
+            child: const Center(
+              child: Icon(
+                KeroseneIcons.userAdd,
+                color: _internalMutedText,
+                size: 32,
+              ),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            SendMoneyCopy.noRecentDestinations(context),
+            textAlign: TextAlign.center,
+            style: AppTypography.newsreader(
+              color: _internalText,
+              fontSize: 28,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            SendMoneyCopy.noRecentDestinationsBody(context),
+            textAlign: TextAlign.center,
+            style: AppTypography.inter(
+              color: _internalMutedText,
+              fontSize: 14,
+              fontWeight: FontWeight.w400,
+              height: 1.5,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
     );
   }
 
@@ -1028,8 +1132,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
 
     _pageController.nextPage(
-      duration: const Duration(milliseconds: 300),
-      curve: Curves.easeInOutCubic,
+      duration: KeroseneMotion.medium,
+      curve: KeroseneMotion.standard,
     );
     setState(() => _currentStep = 2);
   }
@@ -1134,7 +1238,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     try {
       final capabilities = await ref
-          .read(paymentIntentServiceProvider)
+          .read(kfeReceivingCapabilitiesServiceProvider)
           .receivingCapabilities(analysis.normalizedValue);
       if (!mounted) return null;
       final walletId = capabilities.internalWalletId?.trim();
@@ -1245,82 +1349,228 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return '';
   }
 
-  Widget _buildInternalDestinationInput(
+  Widget _buildDestinationInputSection(
     BuildContext context, {
     required _SendDestinationAnalysis analysis,
+    required bool largeLabel,
   }) {
-    final hasValue = _receiverController.text.trim().isNotEmpty;
-    final isValidDestination = analysis.isValid;
+    final borderColor = analysis.isInvalid
+        ? _internalText
+        : _destinationResolutionBusy
+            ? _internalMutedText
+            : _internalBorder;
 
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        border: Border(
-          bottom: BorderSide(
-            color: hasValue && isValidDestination
-                ? _internalText
-                : _internalText.withValues(alpha: 0.88),
-            width: 1,
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        SizedBox(height: largeLabel ? 8 : 0),
+        Row(
+          children: [
+            Expanded(
+              child: TextField(
+                controller: _receiverController,
+                onChanged: (_) {
+                  _pendingPaymentLinkId = null;
+                  _lockedRecipientAddress = '';
+                  _lockedRecipientLabel = null;
+                  if (widget.initialAmountBtc == null) {
+                    _lockedAmountBtc = 0;
+                  }
+                },
+                keyboardType: TextInputType.text,
+                textInputAction: TextInputAction.done,
+                cursorColor: _internalText,
+                textAlign: TextAlign.left,
+                style: AppTypography.inter(
+                  color: _internalText,
+                  fontSize: 18,
+                  fontWeight: FontWeight.w500,
+                  height: 1.45,
+                  letterSpacing: 0,
+                ),
+                decoration: InputDecoration(
+                  hintText: SendMoneyCopy.destinationHint(context),
+                  hintStyle: AppTypography.inter(
+                    color: _internalMutedText.withValues(alpha: 0.55),
+                    fontSize: 18,
+                    fontWeight: FontWeight.w500,
+                    height: 1.45,
+                    letterSpacing: 0,
+                  ),
+                  border: InputBorder.none,
+                  enabledBorder: InputBorder.none,
+                  focusedBorder: InputBorder.none,
+                  filled: false,
+                  fillColor: Colors.transparent,
+                  contentPadding: EdgeInsets.zero,
+                  isDense: true,
+                ),
+              ),
+            ),
+            const SizedBox(width: 10),
+            AnimatedSwitcher(
+              duration: KeroseneMotion.short,
+              child: _destinationResolutionBusy
+                  ? const SizedBox(
+                      key: ValueKey('destination-loading'),
+                      width: 18,
+                      height: 18,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _internalMutedText,
+                      ),
+                    )
+                  : const SizedBox(
+                      key: ValueKey('destination-loading-empty'),
+                      width: 18,
+                      height: 18,
+                    ),
+            ),
+            IconButton(
+              onPressed: _scanInternalDestination,
+              tooltip: context.tr.scanQR,
+              icon: const Icon(KeroseneIcons.scanner, size: 24),
+              color: _internalMutedText,
+              padding: EdgeInsets.zero,
+              style: IconButton.styleFrom(
+                minimumSize: const Size.square(40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
+          ],
+        ),
+        AnimatedContainer(
+          duration: KeroseneMotion.short,
+          margin: const EdgeInsets.only(top: 8),
+          height: 1,
+          color: borderColor,
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInternalFrequentContactsSection(
+    List<RecentTransactionDestination> destinations,
+  ) {
+    if (destinations.isEmpty) {
+      return const SizedBox.shrink();
+    }
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          SendMoneyCopy.frequentDestinations(context),
+          style: AppTypography.inter(
+            color: _internalMutedText,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+            letterSpacing: 0,
           ),
         ),
-      ),
-      child: TextField(
-        controller: _receiverController,
-        onChanged: (_) {
-          _pendingPaymentLinkId = null;
-          _lockedRecipientAddress = '';
-          _lockedRecipientLabel = null;
-          if (widget.initialAmountBtc == null) {
-            _lockedAmountBtc = 0;
-          }
-        },
-        keyboardType: TextInputType.text,
-        textInputAction: TextInputAction.done,
-        cursorColor: _internalText,
-        textAlign: TextAlign.center,
-        style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-              color: _internalText,
-              fontSize: 18,
-              height: 1.4,
-              letterSpacing: 0,
+        const SizedBox(height: 24),
+        SizedBox(
+          height: 126,
+          child: ListView.separated(
+            clipBehavior: Clip.none,
+            scrollDirection: Axis.horizontal,
+            physics: const BouncingScrollPhysics(),
+            itemBuilder: (context, index) {
+              return _buildInternalFrequentContact(destinations[index]);
+            },
+            separatorBuilder: (context, index) => const SizedBox(width: 24),
+            itemCount: destinations.length,
+          ),
+        ),
+      ],
+    );
+  }
+
+  Widget _buildInternalFrequentContact(
+    RecentTransactionDestination destination,
+  ) {
+    final title = _recentInternalDestinationTitle(destination);
+    final subtitle = _recentInternalDestinationSubtitle(destination);
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        borderRadius: BorderRadius.circular(8),
+        onTap: () => _applyRecentInternalDestination(destination),
+        child: SizedBox(
+          width: 104,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(vertical: 2),
+            child: Column(
+              children: [
+                _InternalRecentAvatar(
+                  title: title,
+                  size: 64,
+                  fontSize: 18,
+                ),
+                const SizedBox(height: 10),
+                Text(
+                  title,
+                  maxLines: 2,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _internalText,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        height: 1.15,
+                        letterSpacing: 0,
+                      ),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  textAlign: TextAlign.center,
+                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
+                        color: _internalMutedText,
+                        fontSize: 11,
+                        height: 1.2,
+                        letterSpacing: 0,
+                      ),
+                ),
+              ],
             ),
-        decoration: const InputDecoration(
-          border: InputBorder.none,
-          enabledBorder: InputBorder.none,
-          focusedBorder: InputBorder.none,
-          contentPadding: EdgeInsets.fromLTRB(8, 11, 8, 13),
-          isDense: true,
+          ),
         ),
       ),
     );
   }
 
-  Widget _buildInternalQuickAction(
-    BuildContext context, {
-    IconData? icon,
-    Widget? iconWidget,
-    required String label,
-    required String tooltip,
-    required VoidCallback onTap,
-  }) {
-    return InternalQuickAction(
-      icon: icon,
-      iconWidget: iconWidget,
-      label: label,
-      tooltip: tooltip,
-      onTap: onTap,
-      textColor: _internalText,
-      mutedTextColor: _internalMutedText,
+  Widget _buildInternalAllContactsSection(
+    List<RecentTransactionDestination> destinations,
+  ) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
+      children: [
+        Text(
+          SendMoneyCopy.allDestinations(context),
+          style: AppTypography.inter(
+            color: _internalMutedText,
+            fontSize: 14,
+            fontWeight: FontWeight.w600,
+            height: 1.2,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(height: 24),
+        for (final destination in destinations)
+          _buildInternalRecentDestination(destination),
+      ],
     );
   }
 
   Widget _buildInternalRecentDestination(
     RecentTransactionDestination destination,
   ) {
-    final label = destination.label?.trim();
-    final title = label == null || label.isEmpty ? destination.address : label;
-    final subtitle = label == null || label.isEmpty
-        ? _recentInternalDestinationKindLabel(destination.kind)
-        : _compactInternalValue(destination.address);
+    final title = _recentInternalDestinationTitle(destination);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -1330,73 +1580,34 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       ),
       child: Material(
         color: Colors.transparent,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 16),
-          child: Row(
-            children: [
-              Expanded(
-                child: InkWell(
-                  onTap: () => _applyRecentInternalDestination(destination),
-                  child: Row(
-                    children: [
-                      _InternalRecentAvatar(title: title),
-                      const SizedBox(width: 16),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              title,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodyMedium
-                                  ?.copyWith(
-                                    color: _internalText,
-                                    fontSize: 18,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.05,
-                                    letterSpacing: 0,
-                                  ),
-                            ),
-                            const SizedBox(height: 5),
-                            Text(
-                              subtitle,
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: _internalMutedText,
-                                    fontSize: 12,
-                                    height: 1.25,
-                                    letterSpacing: 0,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
+        child: InkWell(
+          onTap: () => _applyRecentInternalDestination(destination),
+          child: Padding(
+            padding: const EdgeInsets.only(bottom: 16),
+            child: Row(
+              children: [
+                _InternalRecentAvatar(
+                  title: title,
+                  size: 48,
+                  fontSize: 14,
+                ),
+                const SizedBox(width: 16),
+                Expanded(
+                  child: Text(
+                    title,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: AppTypography.newsreader(
+                      color: _internalText,
+                      fontSize: 16,
+                      fontWeight: FontWeight.w600,
+                      height: 1.2,
+                      letterSpacing: 0,
+                    ),
                   ),
                 ),
-              ),
-              const SizedBox(width: 12),
-              IconButton(
-                onPressed: () => _removeRecentInternalDestination(
-                  destination,
-                ),
-                tooltip: 'Remover recente',
-                icon: const Icon(LucideIcons.trash2, size: 18),
-                color: _internalOutline,
-                style: IconButton.styleFrom(
-                  minimumSize: const Size.square(40),
-                  tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                  padding: EdgeInsets.zero,
-                ),
-              ),
-            ],
+              ],
+            ),
           ),
         ),
       ),
@@ -1441,9 +1652,8 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         final balanceLabel = wallet == null
             ? '--'
             : '${_formatBtcValue(wallet.balance, decimalPlaces: 6)} BTC';
-        final locked = _pendingPaymentLinkId != null ||
-            _lockedRecipientAddress.isNotEmpty ||
-            _lockedAmountBtc > 0;
+        final amountLocked =
+            _pendingPaymentLinkId != null || _lockedAmountBtc > 0;
         final networkFeeLabel = feeQuote.isLoading
             ? 'Calculando'
             : '${_formatBtcValue(feeQuote.networkFeeBtc)} BTC';
@@ -1456,82 +1666,100 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 btcBrl: btcBrl,
                 includeApproxPrefix: false,
               );
+        final canContinue = amountBtc > 0 &&
+            !isLoading &&
+            (!destination.isOnChain || feeQuote.isReady);
 
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [
             _buildInternalTopBar(context),
             Expanded(
-              child: LayoutBuilder(
-                builder: (context, constraints) {
-                  return SingleChildScrollView(
-                    physics: const BouncingScrollPhysics(),
-                    padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
-                    child: ConstrainedBox(
-                      constraints: BoxConstraints(
-                        minHeight: constraints.maxHeight,
-                      ),
-                      child: IntrinsicHeight(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _InternalSendPartyRow(
-                              prefix: 'Enviando de:',
-                              title: wallet?.name ?? 'Carteira Principal',
-                              subtitle: _compactInternalValue(
-                                wallet?.address.trim().isNotEmpty == true
-                                    ? wallet!.address
-                                    : wallet?.id ?? '',
-                              ),
-                              icon: LucideIcons.user,
-                            ),
-                            const SizedBox(height: 22),
-                            _InternalSendPartyRow(
-                              prefix: 'para:',
-                              title: recipient.isEmpty ? 'Destino' : recipient,
-                              subtitle: _compactInternalValue(recipientValue),
-                              icon: LucideIcons.user,
-                            ),
-                            const SizedBox(height: 38),
-                            const Spacer(),
-                            _InternalSendAmountField(
-                              amountLabel: amountLabel,
-                              fiatLabel: fiatLabel,
-                              muted: locked,
-                            ),
-                            const SizedBox(height: 28),
-                            _InternalSendFinancialDetails(
-                              balanceLabel: balanceLabel,
-                              networkFeeLabel: networkFeeLabel,
-                              networkFeeFiatLabel: networkFeeFiatLabel,
-                              estimatedTimeLabel:
-                                  _estimatedSendTime(destination),
-                            ),
-                            const SizedBox(height: 24),
-                            if (!locked) ...[
-                              RepaintBoundary(child: _buildKeypad()),
-                              const SizedBox(height: 18),
-                            ],
-                            _buildInternalPrimaryButton(
-                              label: 'Continuar',
-                              enabled: amountBtc > 0 &&
-                                  !isLoading &&
-                                  (!destination.isOnChain || feeQuote.isReady),
-                              isLoading: isLoading,
-                              onTap: _handleContinue,
-                            ),
-                          ],
-                        ),
-                      ),
-                    ),
-                  );
-                },
+              child: TransactionAmountSurface(
+                direction: TransactionAmountDirection.send,
+                rail: _railLabelForDestination(destination),
+                sourceParty: TransactionPartyData(
+                  prefix: 'Enviando de:',
+                  title: wallet?.name ?? 'Carteira Principal',
+                  subtitle: _compactInternalValue(
+                    wallet?.address.trim().isNotEmpty == true
+                        ? wallet!.address
+                        : wallet?.id ?? '',
+                  ),
+                  icon: KeroseneIcons.user,
+                ),
+                destinationParty: TransactionPartyData(
+                  prefix: 'para:',
+                  title: recipient.isEmpty ? 'Destino' : recipient,
+                  subtitle: _compactInternalValue(recipientValue),
+                  icon: KeroseneIcons.user,
+                ),
+                amountLabel: amountLabel,
+                unitLabel: MoneyDisplay.symbolFor(_selectedCurrency),
+                fiatReference: fiatLabel,
+                amountMuted: amountLocked,
+                keypadConfig: TransactionKeypadConfig(
+                  visible: !amountLocked,
+                  onKeyTap: _onKeyTap,
+                ),
+                details: [
+                  TransactionDetailRowData(
+                    label: 'Saldo disponível',
+                    value: balanceLabel,
+                  ),
+                  TransactionDetailRowData(
+                    label: 'Taxa da rede',
+                    value: networkFeeLabel,
+                    secondaryValue: networkFeeFiatLabel.isEmpty
+                        ? null
+                        : networkFeeFiatLabel,
+                    loading: feeQuote.isLoading,
+                  ),
+                  TransactionDetailRowData(
+                    label: 'Tempo estimado',
+                    value: _estimatedSendTime(destination),
+                  ),
+                ],
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                fillAvailableHeight: false,
+                backgroundColor: _internalBlack,
+                textColor: _internalText,
+                mutedTextColor: _internalMutedText,
+                tertiaryTextColor: _internalOutline,
+                surfaceColor: _internalSurface,
+                borderColor: _internalBorder,
+                primaryButtonColor: _internalText,
+                primaryButtonTextColor: _internalBlack,
+              ),
+            ),
+            Container(
+              padding: const EdgeInsets.fromLTRB(16, 12, 16, 28),
+              decoration: BoxDecoration(
+                color: _internalBlack,
+                border: Border(
+                  top: BorderSide(
+                    color: _internalBorder.withValues(alpha: 0.45),
+                  ),
+                ),
+              ),
+              child: _buildInternalPrimaryButton(
+                label: context.tr.continueButton,
+                enabled: canContinue,
+                isLoading: isLoading,
+                onTap: _handleContinue,
               ),
             ),
           ],
         );
       },
     );
+  }
+
+  String _railLabelForDestination(_SendDestinationAnalysis destination) {
+    if (destination.isPaymentLink) return 'Link';
+    if (destination.isLightning) return 'Lightning';
+    if (destination.isOnChain) return 'On-chain';
+    return 'Kerosene';
   }
 
   String _currentRecipientValue() {
@@ -1542,7 +1770,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   String _currentRecipientLabel() {
     final label = _lockedRecipientLabel?.trim();
-    if (label == null || label.isEmpty || label == 'Destino bloqueado') {
+    if (label == null ||
+        label.isEmpty ||
+        label == context.tr.sendMoneyLockedDestination) {
       return _currentRecipientValue();
     }
     return label;
@@ -1633,6 +1863,34 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
   }
 
+  Future<void> _showSentTransactionNotification({
+    required Wallet wallet,
+    required _SendDestinationAnalysis destination,
+    required double amount,
+    required String toAddress,
+  }) async {
+    final amountLabel = '${_formatBtcValue(amount)} BTC';
+    final recipient = _resolveRecentInternalDestinationLabel(toAddress) ??
+        _compactInternalValue(toAddress);
+    final title = destination.isLightning
+        ? 'Pagamento Lightning enviado'
+        : destination.isOnChain
+            ? 'Envio on-chain iniciado'
+            : 'Transferência enviada';
+    final body = destination.isExternal
+        ? '$amountLabel enviado para $recipient. Acompanhe o status no histórico.'
+        : '$amountLabel enviado para $recipient pela Kerosene.';
+
+    await NotificationService().showTransactionNotification(
+      id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
+      title: title,
+      body: body,
+      summary: wallet.name,
+      payload: '/home',
+      incoming: false,
+    );
+  }
+
   Future<dynamic> _confirmPayment({
     required BuildContext confirmationContext,
     required Wallet wallet,
@@ -1676,6 +1934,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           );
 
       if (result != null) {
+        await _showSentTransactionNotification(
+          wallet: wallet,
+          destination: destination,
+          amount: amount,
+          toAddress: toAddress,
+        );
         AudioService.instance.playTransaction();
         HapticFeedback.vibrate();
         ref.read(paymentLinkNotifierProvider.notifier).reset();
@@ -1709,7 +1973,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             maxRoutingFeeBtc: _defaultLightningRoutingFeeBtc,
             description: destination.isLightning
                 ? 'Pagamento Lightning'
-                : 'Saque on-chain',
+                : SendMoneyCopy.onchainSendDescription(context),
             confirmationPassphrase: authResult.confirmationPassphrase,
             passkeyAssertionJson: authResult.passkeyAssertionJson,
           );
@@ -1724,6 +1988,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                   : RecentTransactionDestinationKind.onChain,
               label: _resolveRecentInternalDestinationLabel(toAddress),
             );
+        await _showSentTransactionNotification(
+          wallet: wallet,
+          destination: destination,
+          amount: amount,
+          toAddress: toAddress,
+        );
         AudioService.instance.playTransaction();
         HapticFeedback.vibrate();
         ref.read(withdrawProvider.notifier).reset();
@@ -1769,6 +2039,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             kind: RecentTransactionDestinationKind.internal,
             label: _resolveRecentInternalDestinationLabel(toAddress),
           );
+      await _showSentTransactionNotification(
+        wallet: wallet,
+        destination: destination,
+        amount: amount,
+        toAddress: toAddress,
+      );
       AudioService.instance.playTransaction();
       HapticFeedback.vibrate();
       ref.read(sendTransactionProvider.notifier).reset();
@@ -1916,24 +2192,12 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     });
   }
 
-  Future<void> _removeRecentInternalDestination(
-    RecentTransactionDestination destination,
-  ) async {
-    HapticFeedback.selectionClick();
-    await ref
-        .read(recentTransactionDestinationsProvider.notifier)
-        .removeDestination(
-          address: destination.address,
-          kind: destination.kind,
-        );
-  }
-
   String? _resolveRecentInternalDestinationLabel(String toAddress) {
     final label = _lockedRecipientLabel?.trim();
     if (label == null ||
         label.isEmpty ||
         label == toAddress ||
-        label == 'Destino bloqueado') {
+        label == context.tr.sendMoneyLockedDestination) {
       return null;
     }
     return label;
@@ -1950,20 +2214,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Future<void> _scanInternalDestination() async {
     final payload = await Navigator.of(context).push<String>(
       MaterialPageRoute(builder: (_) => const QrScannerScreen()),
-    );
-    final value = payload?.trim();
-    if (!mounted || value == null || value.isEmpty) {
-      return;
-    }
-
-    await _parsePaymentRequest(value);
-  }
-
-  Future<void> _scanNfcDestination() async {
-    HapticFeedback.selectionClick();
-    final payload = await showDialog<String>(
-      context: context,
-      builder: (_) => const NfcScanDialog(),
     );
     final value = payload?.trim();
     if (!mounted || value == null || value.isEmpty) {
@@ -1995,6 +2245,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return '${trimmed.substring(0, 10)}...${trimmed.substring(trimmed.length - 6)}';
   }
 
+  String _recentInternalDestinationTitle(
+    RecentTransactionDestination destination,
+  ) {
+    final label = destination.label?.trim();
+    return label == null || label.isEmpty ? destination.address : label;
+  }
+
+  String _recentInternalDestinationSubtitle(
+    RecentTransactionDestination destination,
+  ) {
+    final label = destination.label?.trim();
+    if (label == null || label.isEmpty) {
+      return _recentInternalDestinationKindLabel(destination.kind);
+    }
+    return _compactInternalValue(destination.address);
+  }
+
   String _recentInternalDestinationKindLabel(
     RecentTransactionDestinationKind kind,
   ) {
@@ -2012,6 +2279,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       withSymbol: false,
       decimalPlaces: decimalPlaces,
     );
+  }
+
+  String _walletBalanceLabel(double value) {
+    return '${_formatBtcValue(value, decimalPlaces: 6)} BTC';
   }
 
   String _formatFiatReference({
@@ -2042,287 +2313,24 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 }
 
-class _InternalSendPartyRow extends StatelessWidget {
-  final String prefix;
-  final String title;
-  final String subtitle;
-  final IconData icon;
-
-  const _InternalSendPartyRow({
-    required this.prefix,
-    required this.title,
-    required this.subtitle,
-    required this.icon,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      children: [
-        Container(
-          width: 48,
-          height: 48,
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            color: _SendMoneyScreenState._internalSurfaceHigh,
-            border: Border.all(
-              color:
-                  _SendMoneyScreenState._internalText.withValues(alpha: 0.10),
-            ),
-          ),
-          child: Icon(
-            icon,
-            color: _SendMoneyScreenState._internalMutedText,
-            size: 20,
-          ),
-        ),
-        const SizedBox(width: 16),
-        Expanded(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text.rich(
-                TextSpan(
-                  children: [
-                    TextSpan(
-                      text: '$prefix ',
-                      style: const TextStyle(
-                        color: _SendMoneyScreenState._internalMutedText,
-                      ),
-                    ),
-                    TextSpan(text: title),
-                  ],
-                ),
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _SendMoneyScreenState._internalText,
-                      fontSize: 15,
-                      height: 1.3,
-                      letterSpacing: 0,
-                    ),
-              ),
-              const SizedBox(height: 3),
-              Text(
-                subtitle.isEmpty ? '--' : subtitle,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: _SendMoneyScreenState._internalOutline,
-                      fontFamily: 'IBMPlexSansHebrew',
-                      fontSize: 13,
-                      height: 1.25,
-                      letterSpacing: 0,
-                    ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
-class _InternalSendAmountField extends StatelessWidget {
-  final String amountLabel;
-  final String fiatLabel;
-  final bool muted;
-
-  const _InternalSendAmountField({
-    required this.amountLabel,
-    required this.fiatLabel,
-    required this.muted,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final lineColor = muted
-        ? _SendMoneyScreenState._internalBorder
-        : _SendMoneyScreenState._internalText.withValues(alpha: 0.20);
-
-    return Column(
-      children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.end,
-          children: [
-            Expanded(
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Flexible(
-                    child: Text(
-                      amountLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.ibmPlexSerif(
-                        color: _SendMoneyScreenState._internalText,
-                        fontSize: 48,
-                        fontWeight: FontWeight.w500,
-                        height: 1,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'BTC',
-                    style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                          color: _SendMoneyScreenState._internalMutedText,
-                          fontSize: 18,
-                          height: 1,
-                          letterSpacing: 0,
-                        ),
-                  ),
-                ],
-              ),
-            ),
-            const SizedBox(width: 12),
-            Flexible(
-              child: Padding(
-                padding: const EdgeInsets.only(bottom: 5),
-                child: Text(
-                  fiatLabel,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodyLarge?.copyWith(
-                        color: _SendMoneyScreenState._internalMutedText,
-                        fontSize: 17,
-                        height: 1.2,
-                        letterSpacing: 0,
-                      ),
-                ),
-              ),
-            ),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Container(height: 1, color: lineColor),
-      ],
-    );
-  }
-}
-
-class _InternalSendFinancialDetails extends StatelessWidget {
-  final String balanceLabel;
-  final String networkFeeLabel;
-  final String networkFeeFiatLabel;
-  final String estimatedTimeLabel;
-
-  const _InternalSendFinancialDetails({
-    required this.balanceLabel,
-    required this.networkFeeLabel,
-    required this.networkFeeFiatLabel,
-    required this.estimatedTimeLabel,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      children: [
-        _InternalSendDetailRow(label: 'Saldo atual', value: balanceLabel),
-        const SizedBox(height: 16),
-        _InternalSendDetailRow(
-          label: 'Taxa de rede',
-          value: networkFeeLabel,
-          secondaryValue:
-              networkFeeFiatLabel.isEmpty ? null : '(~ $networkFeeFiatLabel)',
-        ),
-        const SizedBox(height: 16),
-        _InternalSendDetailRow(
-          label: 'Tempo estimado',
-          value: estimatedTimeLabel,
-        ),
-      ],
-    );
-  }
-}
-
-class _InternalSendDetailRow extends StatelessWidget {
-  final String label;
-  final String value;
-  final String? secondaryValue;
-
-  const _InternalSendDetailRow({
-    required this.label,
-    required this.value,
-    this.secondaryValue,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final valueStyle = Theme.of(context).textTheme.bodyMedium?.copyWith(
-          color: _SendMoneyScreenState._internalText,
-          fontSize: 15,
-          fontWeight: FontWeight.w600,
-          height: 1.25,
-          letterSpacing: 0,
-        );
-
-    return Row(
-      crossAxisAlignment: secondaryValue == null
-          ? CrossAxisAlignment.center
-          : CrossAxisAlignment.start,
-      children: [
-        Expanded(
-          child: Text(
-            label,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: _SendMoneyScreenState._internalMutedText,
-                  fontSize: 15,
-                  height: 1.3,
-                  letterSpacing: 0,
-                ),
-          ),
-        ),
-        const SizedBox(width: 16),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Text(
-                value,
-                maxLines: 1,
-                overflow: TextOverflow.ellipsis,
-                textAlign: TextAlign.right,
-                style: valueStyle,
-              ),
-              if (secondaryValue != null) ...[
-                const SizedBox(height: 3),
-                Text(
-                  secondaryValue!,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                        color: _SendMoneyScreenState._internalOutline,
-                        fontSize: 13,
-                        height: 1.25,
-                        letterSpacing: 0,
-                      ),
-                ),
-              ],
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-}
-
 class _InternalRecentAvatar extends StatelessWidget {
   final String title;
+  final double size;
+  final double fontSize;
 
-  const _InternalRecentAvatar({required this.title});
+  const _InternalRecentAvatar({
+    required this.title,
+    this.size = 48,
+    this.fontSize = 18,
+  });
 
   @override
   Widget build(BuildContext context) {
-    final initial = _initialFor(title);
+    final initials = _initialsFor(title);
 
     return Container(
-      width: 48,
-      height: 48,
+      width: size,
+      height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
         color: _SendMoneyScreenState._internalSurfaceHigh,
@@ -2332,10 +2340,10 @@ class _InternalRecentAvatar extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          initial,
+          initials,
           style: Theme.of(context).textTheme.titleMedium?.copyWith(
                 color: _SendMoneyScreenState._internalText,
-                fontSize: 18,
+                fontSize: fontSize,
                 fontWeight: FontWeight.w600,
                 height: 1,
               ),
@@ -2344,11 +2352,18 @@ class _InternalRecentAvatar extends StatelessWidget {
     );
   }
 
-  String _initialFor(String value) {
+  String _initialsFor(String value) {
     final trimmed = value.trim();
     if (trimmed.isEmpty) {
       return '?';
     }
-    return trimmed.characters.first.toUpperCase();
+    final parts = trimmed.split(RegExp(r'\s+')).where((part) {
+      return part.trim().isNotEmpty;
+    }).toList(growable: false);
+    if (parts.length > 1) {
+      return '${parts.first.characters.first}${parts[1].characters.first}'
+          .toUpperCase();
+    }
+    return trimmed.characters.take(2).join().toUpperCase();
   }
 }

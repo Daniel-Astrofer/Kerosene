@@ -67,19 +67,6 @@ abstract class WalletRepository {
   /// Buscar carteira por nome
   Future<Either<Failure, Wallet>> findWallet(String name);
 
-  /// Atualizar nome da carteira
-  Future<Either<Failure, String>> updateWallet({
-    required String name,
-    required String newName,
-    required String passphrase,
-  });
-
-  /// Deletar carteira
-  Future<Either<Failure, String>> deleteWallet({
-    required String name,
-    required String passphrase,
-  });
-
   // ==================== Security ====================
 
   /// Salvar Mnemonic de forma segura

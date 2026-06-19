@@ -30,7 +30,7 @@ as superfícies de produto residem em `features`.
 | `features/home` | Shell inicial móvel, exibição de saldo, entrada de link de pagamento, atalhos de envio/recebimento. |
 | `features/wallet` | Estado da carteira, fluxos de recebimento, tela de envio, telas de depósito, cartões de carteira, vinculação WebSocket de saldo. |
 | `features/transactions` | Contratos de dados de transação, provedores de histórico, depósitos, saques, links de pagamento, UI de confirmação. |
-| `features/payments` | Fluxo de cotação/confirmação/status de intenção de pagamento para `/payments/*`. |
+| `features/payments` | Fluxo de cotação/confirmação/status de intenção de pagamento para `REMOVED_LEGACY_FINANCIAL_ROUTE`. |
 | `features/bitcoin_accounts` | Contas Bitcoin com suporte KFE, cartões internos, carteiras frias watch-only, manipulação de endereço de recebimento. |
 | `features/security` | Status de soberania, inventário de passkeys, perfil PIN do aplicativo, visão geral de tesouraria/segurança. |
 | `features/notifications` | Repositório de notificação de sessão, central, barra lateral e host de notificação global. |
@@ -181,7 +181,7 @@ Comportamento atual por fluxo:
 - Recebimento de fatura Lightning e fluxos de trabalho PSBT de carteira fria ainda estão
   marcados como indisponíveis onde o KFE não expõe a operação.
 
-`/payments/*` permanece um domínio separado de intenção de pagamento:
+`REMOVED_LEGACY_FINANCIAL_ROUTE` permanece um domínio separado de intenção de pagamento:
 
 | Rota | Uso no frontend |
 | --- | --- |
@@ -279,5 +279,5 @@ Para alterações que afetam o KFE, verifique pelo menos:
 2. A lista de carteiras baseada no dashboard e o histórico de transações renderizam corretamente.
 3. A criação de endereço de recebimento/link de pagamento usa `/kfe/wallets/{walletId}/addresses/rotate`.
 4. O envio/saque de transação usa `/kfe/transactions`.
-5. Nenhuma chamada legada `/transactions/create-payment-link`, `/transactions/payment-link`
-   ou `/transactions/payment-links` é emitida a partir de fluxos de recebimento ativos.
+5. Nenhuma chamada legada `REMOVED_LEGACY_FINANCIAL_ROUTE`, `REMOVED_LEGACY_FINANCIAL_ROUTE`
+   ou `REMOVED_LEGACY_FINANCIAL_ROUTE` é emitida a partir de fluxos de recebimento ativos.

@@ -6,18 +6,22 @@ import 'package:kerosene/core/motion/app_motion.dart';
 class AuthMotion {
   const AuthMotion._();
 
-  static const Duration entrance = Duration(milliseconds: 260);
-  static const Duration step = Duration(milliseconds: 300);
-  static const Duration shake = Duration(milliseconds: 300);
-  static const Duration press = Duration(milliseconds: 90);
-  static const Duration ceremonial = Duration(milliseconds: 3400);
+  static const Duration entrance = KeroseneMotion.medium;
+  static const Duration step = KeroseneMotion.medium;
+  static const Duration shake = KeroseneMotion.medium;
+  static const Duration press = KeroseneMotion.pageOut;
+  static const Duration ceremonial = KeroseneMotion.ceremonial;
 
   static bool reduce(BuildContext context) {
     return KeroseneMotion.reduceMotion(context);
   }
 
   static Duration staggerDelay(int index) {
-    return Duration(milliseconds: 34 * index.clamp(0, 10));
+    return KeroseneMotion.stagger(
+      index,
+      step: KeroseneMotion.authStagger,
+      maxIndex: 10,
+    );
   }
 }
 
@@ -257,7 +261,7 @@ class AuthDirectionalSwitcher extends StatelessWidget {
     return AnimatedSwitcher(
       duration: KeroseneMotion.duration(context, duration),
       switchInCurve: KeroseneMotion.entrance,
-      switchOutCurve: Curves.easeInCubic,
+      switchOutCurve: KeroseneMotion.exit,
       transitionBuilder: (child, animation) {
         if (KeroseneMotion.reduceMotion(context)) {
           return FadeTransition(opacity: animation, child: child);

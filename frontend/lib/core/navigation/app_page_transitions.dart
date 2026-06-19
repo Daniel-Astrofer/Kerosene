@@ -63,7 +63,7 @@ Widget buildKeroseneHorizontalTransition({
   final curved = CurvedAnimation(
     parent: animation,
     curve: KeroseneMotion.entrance,
-    reverseCurve: Curves.easeInCubic,
+    reverseCurve: KeroseneMotion.exit,
   );
 
   return RepaintBoundary(

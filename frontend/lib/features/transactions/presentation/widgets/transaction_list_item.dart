@@ -2,10 +2,11 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
-import 'package:kerosene/core/utils/transaction_address_display.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/safe_display_text.dart';
+import 'package:kerosene/core/utils/transaction_address_display.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 
@@ -56,9 +57,9 @@ class TransactionListItem extends ConsumerWidget {
       begin: Alignment.centerLeft,
       end: Alignment.centerRight,
       colors: [
-        Color.lerp(const Color(0xFF101923), visual.amountColor, 0.18)!,
+        Color.lerp(AppColors.hexFF101923, visual.amountColor, 0.18)!,
         Colors.black,
-        const Color(0xFF121A24),
+        AppColors.hexFF121A24,
       ],
     );
 
@@ -90,7 +91,7 @@ class TransactionListItem extends ConsumerWidget {
               size: 44,
               iconSize: 20,
               borderRadius: 14,
-              backgroundColor: const Color(0xFF111720),
+              backgroundColor: AppColors.hexFF111720,
               borderColor: visual.iconColor.withValues(alpha: 0.24),
             ),
             const SizedBox(width: AppSpacing.md),

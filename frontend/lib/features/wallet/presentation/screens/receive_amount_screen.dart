@@ -1,15 +1,17 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/transactions/presentation/widgets/transaction_amount_surface.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
@@ -33,30 +35,23 @@ class ReceiveAmountScreen extends ConsumerStatefulWidget {
 }
 
 class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
-  static const Color _black = Color(0xFF000000);
-  static const Color _surface = Color(0xFF111111);
-  static const Color _border = Color(0xFF2C2C2E);
-  static const Color _text = Color(0xFFFFFFFF);
-  static const Color _mutedText = Color(0xFFA3A3A3);
-  static const Color _outline = Color(0xFF666666);
+  static const Color _black = KeroseneBrandTokens.background;
+  static const Color _surface = KeroseneBrandTokens.surface;
+  static const Color _border = KeroseneBrandTokens.border;
+  static const Color _text = KeroseneBrandTokens.textPrimary;
+  static const Color _mutedText = KeroseneBrandTokens.textSecondary;
+  static const Color _outline = KeroseneBrandTokens.textMuted;
 
   String _amount = '0';
-  bool _keyboardExpanded = true;
   bool _isContinuing = false;
-
-  String get _methodTitle {
-    return switch (widget.method) {
-      ReceiveAmountMethod.qrCode => 'QR Code',
-      ReceiveAmountMethod.paymentLink => 'Link de pagamento',
-      ReceiveAmountMethod.nfc => 'NFC',
-    };
-  }
+  int _paymentLinkExpiresInMinutes = 60;
 
   IconData get _methodIcon {
     return switch (widget.method) {
-      ReceiveAmountMethod.qrCode => LucideIcons.qrCode,
-      ReceiveAmountMethod.paymentLink => LucideIcons.link2,
-      ReceiveAmountMethod.nfc => LucideIcons.nfc,
+      ReceiveAmountMethod.qrCode => KeroseneIcons.qr,
+      ReceiveAmountMethod.paymentLink => KeroseneIcons.onchain,
+      ReceiveAmountMethod.nfc => KeroseneIcons.nfc,
+      ReceiveAmountMethod.p2p => KeroseneIcons.internalTransfer,
     };
   }
 
@@ -121,21 +116,23 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
   }
 
   Future<PaymentLink?> _createPaymentLinkIfNeeded() async {
-    if (widget.method != ReceiveAmountMethod.paymentLink) {
+    if (widget.method != ReceiveAmountMethod.paymentLink &&
+        widget.method != ReceiveAmountMethod.qrCode) {
       return null;
     }
 
     return ref.read(transactionRepositoryProvider).createPaymentLink(
       amount: _amountBtc,
       description: 'Recebimento ${widget.wallet.name}',
-      expiresInMinutes: 60,
+      expiresInMinutes: _paymentLinkExpiresInMinutes,
       visibility: 'PRIVATE',
       confirmationMode: 'USER_ACTION_REQUIRED',
       amountLocked: true,
       referenceLabel: widget.wallet.name,
       metadata: {
         'walletName': widget.wallet.name,
-        'rail': 'ONCHAIN',
+        'rail': widget.onChainWallet ? 'ONCHAIN' : 'INTERNAL',
+        'method': widget.method.name,
         'source': 'receive_flow',
       },
     );
@@ -166,70 +163,110 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
           children: [
             _buildTopBar(context),
             Expanded(
-              child: Column(
-                children: [
-                  const SizedBox(height: 16),
-                  Center(child: _buildMethodChip(context)),
-                  Expanded(
-                    child: LayoutBuilder(
-                      builder: (context, constraints) {
-                        final compact = constraints.maxHeight < 240;
-                        final topPadding = compact ? 12.0 : 40.0;
-                        final bottomPadding = compact ? 8.0 : 16.0;
-                        final minHeight =
-                            constraints.maxHeight - topPadding - bottomPadding;
-                        final content = _buildAmountContent(
-                          context,
-                          amountLabel: amountLabel,
-                          fiatLabel: fiatLabel,
-                          compact: compact,
-                        );
-
-                        return SingleChildScrollView(
-                          physics: const BouncingScrollPhysics(),
-                          padding: EdgeInsets.fromLTRB(
-                            16,
-                            topPadding,
-                            16,
-                            bottomPadding,
-                          ),
-                          child: ConstrainedBox(
-                            constraints: BoxConstraints(
-                              minHeight: minHeight > 0 ? minHeight : 0,
-                            ),
-                            child: content,
-                          ),
-                        );
-                      },
-                    ),
-                  ),
-                  AnimatedSize(
-                    duration: const Duration(milliseconds: 260),
-                    curve: Curves.easeInOutCubic,
-                    alignment: Alignment.topCenter,
-                    child: _keyboardExpanded
-                        ? Padding(
-                            padding: const EdgeInsets.fromLTRB(40, 0, 40, 20),
-                            child: RepaintBoundary(child: _buildKeypad()),
-                          )
-                        : const SizedBox.shrink(),
-                  ),
-                ],
-              ),
-            ),
-            Container(
-              padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-              decoration: BoxDecoration(
-                color: _black,
-                border: Border(
-                  top: BorderSide(color: _border.withValues(alpha: 0.3)),
+              child: TransactionAmountSurface(
+                direction: TransactionAmountDirection.receive,
+                rail: _methodLabel(context),
+                connectionLabel: _networkLabel,
+                topContent: widget.method == ReceiveAmountMethod.paymentLink
+                    ? _buildPaymentLinkExpiryOptions(context)
+                    : null,
+                sourceParty: TransactionPartyData(
+                  prefix: 'Recebimento por:',
+                  title: _methodLabel(context),
+                  subtitle: _networkLabel,
+                  icon: _methodIcon,
                 ),
+                destinationParty: TransactionPartyData(
+                  prefix: 'Recebendo em:',
+                  title: widget.wallet.name,
+                  subtitle: _shortAddress(widget.wallet.address),
+                  icon: _methodIcon,
+                ),
+                amountLabel: amountLabel,
+                unitLabel: 'BTC',
+                fiatReference: fiatLabel,
+                keypadConfig: TransactionKeypadConfig(onKeyTap: _onKeyTap),
+                details: _receiveDetails,
+                ctaLabel: widget.method == ReceiveAmountMethod.paymentLink
+                    ? context.tr.receiveGenAction
+                    : context.tr.continueButton,
+                ctaEnabled: _amountBtc > 0 && !_isContinuing,
+                isBusy: _isContinuing,
+                onContinue: _continue,
+                padding: const EdgeInsets.fromLTRB(24, 12, 24, 28),
+                fillAvailableHeight: false,
+                backgroundColor: _black,
+                textColor: _text,
+                mutedTextColor: _mutedText,
+                tertiaryTextColor: _outline,
+                surfaceColor: _surface,
+                borderColor: _border,
+                primaryButtonColor: _text,
+                primaryButtonTextColor: _black,
               ),
-              child: _buildPrimaryButton(context),
             ),
           ],
         ),
       ),
+    );
+  }
+
+  String _methodLabel(BuildContext context) {
+    return switch (widget.method) {
+      ReceiveAmountMethod.qrCode => context.tr.receiveQrMethod,
+      ReceiveAmountMethod.paymentLink =>
+        context.tr.receiveMethodPaymentLinkTitle,
+      ReceiveAmountMethod.nfc => context.tr.receiveNfcMethod,
+      ReceiveAmountMethod.p2p => context.tr.receiveMethodKeroseneTitle,
+    };
+  }
+
+  String get _networkLabel => widget.onChainWallet ? 'On-chain' : 'Kerosene';
+
+  List<TransactionDetailRowData> get _receiveDetails {
+    if (widget.method == ReceiveAmountMethod.paymentLink) {
+      return const [];
+    }
+
+    return [
+      TransactionDetailRowData(
+        label: 'Destino',
+        value: widget.wallet.name,
+        secondaryValue: _shortAddress(widget.wallet.address),
+      ),
+      TransactionDetailRowData(
+        label: 'Rede',
+        value: _networkLabel,
+      ),
+    ];
+  }
+
+  Widget _buildPaymentLinkExpiryOptions(BuildContext context) {
+    return Column(
+      children: [
+        Align(
+          alignment: Alignment.centerLeft,
+          child: Text(
+            context.tr.receiveExpirationLabel.toUpperCase(),
+            style: Theme.of(context).textTheme.labelSmall?.copyWith(
+                  color: _outline,
+                  fontSize: 11,
+                  fontWeight: FontWeight.w800,
+                  letterSpacing: 1.2,
+                ),
+          ),
+        ),
+        const SizedBox(height: 10),
+        Row(
+          children: [
+            _buildExpiryOption(context.tr.receive15Min, 15),
+            const SizedBox(width: 8),
+            _buildExpiryOption(context.tr.receive1Hour, 60),
+            const SizedBox(width: 8),
+            _buildExpiryOption(context.tr.receive24Hours, 1440),
+          ],
+        ),
+      ],
     );
   }
 
@@ -242,7 +279,7 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
           children: [
             IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(LucideIcons.chevronLeft),
+              icon: const Icon(KeroseneIcons.back),
               color: _text,
               style: IconButton.styleFrom(
                 backgroundColor: _surface,
@@ -251,9 +288,9 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
             ),
             Expanded(
               child: Text(
-                'Valor a receber',
+                context.tr.howMuchToReceive,
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: _text,
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -269,220 +306,39 @@ class _ReceiveAmountScreenState extends ConsumerState<ReceiveAmountScreen> {
     );
   }
 
-  Widget _buildAmountContent(
-    BuildContext context, {
-    required String amountLabel,
-    required String fiatLabel,
-    required bool compact,
-  }) {
-    final amountFontSize = compact ? 42.0 : 54.0;
-    final unitFontSize = compact ? 22.0 : 28.0;
-    final summaryGap = compact ? 20.0 : 40.0;
-
-    return Column(
-      mainAxisAlignment:
-          compact ? MainAxisAlignment.start : MainAxisAlignment.center,
-      children: [
-        GestureDetector(
-          behavior: HitTestBehavior.opaque,
-          onTap: () {
-            HapticFeedback.selectionClick();
-            setState(() => _keyboardExpanded = !_keyboardExpanded);
-          },
-          child: Column(
-            children: [
-              Row(
-                mainAxisAlignment: MainAxisAlignment.center,
-                crossAxisAlignment: CrossAxisAlignment.baseline,
-                textBaseline: TextBaseline.alphabetic,
-                children: [
-                  Flexible(
-                    child: Text(
-                      amountLabel,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      style: GoogleFonts.ibmPlexSerif(
-                        color: _text,
-                        fontSize: amountFontSize,
-                        fontWeight: FontWeight.w100,
-                        height: 1.05,
-                        letterSpacing: 0,
-                      ),
-                    ),
-                  ),
-                  const SizedBox(width: 8),
-                  Text(
-                    'BTC',
-                    style: GoogleFonts.ibmPlexSerif(
-                      color: _text,
-                      fontSize: unitFontSize,
-                      fontWeight: FontWeight.w100,
-                      height: 1,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                ],
-              ),
-              const SizedBox(height: 8),
-              Text(
-                fiatLabel,
-                style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                      color: _outline,
-                      fontFamily: 'IBMPlexSansHebrew',
-                      fontSize: compact ? 12 : 14,
-                      height: 1.4,
-                      letterSpacing: 0.2,
-                    ),
-              ),
-            ],
-          ),
-        ),
-        SizedBox(height: summaryGap),
-        _buildWalletSummary(context, compact: compact),
-      ],
-    );
-  }
-
-  Widget _buildMethodChip(BuildContext context) {
-    final rail = widget.onChainWallet ? 'Carteira fria' : 'Kerosene';
-
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 8),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(999),
-        border: Border.all(color: _border),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Icon(_methodIcon, color: _outline, size: 18),
-          const SizedBox(width: 8),
-          Text(
-            '$rail · $_methodTitle',
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                  color: _text,
-                  fontSize: 16,
-                  height: 1.4,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildWalletSummary(BuildContext context, {bool compact = false}) {
-    return Container(
-      padding: EdgeInsets.symmetric(
-        horizontal: 16,
-        vertical: compact ? 8 : 10,
-      ),
-      decoration: BoxDecoration(
-        color: _surface,
-        borderRadius: BorderRadius.circular(8),
-        border: Border.all(color: _border),
-      ),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            'DESTINO DO RECEBIMENTO',
-            style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                  color: _outline,
-                  fontSize: compact ? 10 : 12,
-                  fontWeight: FontWeight.w700,
-                  letterSpacing: 1.1,
-                ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            widget.wallet.name,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                  color: _mutedText,
-                  fontFamily: 'IBMPlexSansHebrew',
-                  fontSize: compact ? 12 : 14,
-                  height: 1.4,
-                ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildPrimaryButton(BuildContext context) {
-    return SizedBox(
-      width: double.infinity,
-      height: 56,
-      child: FilledButton(
-        onPressed: _amountBtc > 0 && !_isContinuing ? _continue : null,
-        style: FilledButton.styleFrom(
-          backgroundColor: _text,
-          foregroundColor: _black,
-          disabledBackgroundColor: _text.withValues(alpha: 0.22),
-          disabledForegroundColor: _text.withValues(alpha: 0.42),
-          shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(999),
-          ),
-          textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                fontSize: 12,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.5,
-              ),
-        ),
-        child: _isContinuing
-            ? const SizedBox(
-                width: 18,
-                height: 18,
-                child: CircularProgressIndicator(
-                  strokeWidth: 2,
-                  color: _black,
-                ),
-              )
-            : const Text('CONTINUAR'),
-      ),
-    );
-  }
-
-  Widget _buildKeypad() {
-    return Column(
-      children: [
-        Row(children: [_buildKey('1'), _buildKey('2'), _buildKey('3')]),
-        Row(children: [_buildKey('4'), _buildKey('5'), _buildKey('6')]),
-        Row(children: [_buildKey('7'), _buildKey('8'), _buildKey('9')]),
-        Row(children: [_buildKey('.'), _buildKey('0'), _buildKey('←')]),
-      ],
-    );
-  }
-
-  Widget _buildKey(String key) {
-    final isBackspace = key == '←';
-    final display = key == '.' ? '.' : key;
+  Widget _buildExpiryOption(String label, int minutes) {
+    final selected = _paymentLinkExpiresInMinutes == minutes;
 
     return Expanded(
       child: SizedBox(
-        height: 58,
-        child: TextButton(
-          onPressed: () => _onKeyTap(key),
-          style: TextButton.styleFrom(
-            foregroundColor: isBackspace ? _outline : _text,
-            shape: const CircleBorder(),
-            textStyle: Theme.of(context).textTheme.headlineSmall?.copyWith(
-                  fontFamily: 'IBMPlexSansHebrew',
-                  fontSize: 24,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0,
-                ),
+        height: 42,
+        child: OutlinedButton(
+          onPressed: () {
+            HapticFeedback.selectionClick();
+            setState(() => _paymentLinkExpiresInMinutes = minutes);
+          },
+          style: OutlinedButton.styleFrom(
+            backgroundColor: selected ? _text : _surface,
+            foregroundColor: selected ? _black : _text,
+            side: BorderSide(color: selected ? _text : _border),
+            shape: RoundedRectangleBorder(
+              borderRadius: BorderRadius.circular(8),
+            ),
+            textStyle: const TextStyle(
+              fontSize: 12,
+              fontWeight: FontWeight.w800,
+              letterSpacing: 0,
+            ),
           ),
-          child: isBackspace
-              ? const Icon(LucideIcons.delete, size: 24)
-              : Text(display),
+          child: Text(label),
         ),
       ),
     );
+  }
+
+  String _shortAddress(String address) {
+    if (address.length <= 18) return address;
+    return '${address.substring(0, 8)}...${address.substring(address.length - 6)}';
   }
 
   String _formatFiatReference({

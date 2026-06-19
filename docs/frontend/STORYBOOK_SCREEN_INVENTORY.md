@@ -87,7 +87,7 @@ em `frontend/lib/storybook`.
 
 | Tela | Arquivo | Storybook |
 | --- | --- | --- |
-| `PaymentIntentFlowScreen` | `frontend/lib/features/payments/presentation/screens/payment_intent_flow_screen.dart` | `Payments/Intent Start`, `Payments/Intent Capabilities`, `Payments/Intent Quote`, `Payments/Intent Settled`, `Payments/Intent Failed`, `Payments/Intent Missing Rail`, `Kerosene/App Flow` -> `/payments/intent`, `/payments/intent-settled`, `/payments/intent-failed` |
+| `PaymentIntentFlowScreen` | `frontend/lib/features/payments/presentation/screens/payment_intent_flow_screen.dart` | `Payments/Intent Start`, `Payments/Intent Capabilities`, `Payments/Intent Quote`, `Payments/Intent Settled`, `Payments/Intent Failed`, `Payments/Intent Missing Rail`, `Kerosene/App Flow` -> `REMOVED_LEGACY_FINANCIAL_ROUTE`, `REMOVED_LEGACY_FINANCIAL_ROUTE`, `REMOVED_LEGACY_FINANCIAL_ROUTE` |
 
 ### Conta e seguranca
 
@@ -108,10 +108,10 @@ em `frontend/lib/storybook`.
 | `ReceiveRequestFlowScreen` | `frontend/lib/features/wallet/presentation/screens/receive_request_flow_screen.dart` | `Kerosene/App Flow` -> `/receive/qr`, `/receive/onchain-confirming`, `/receive/onchain-identified` |
 | `ReceivePaymentLinkScreen` | `frontend/lib/features/wallet/presentation/screens/receive_payment_link_screen.dart` | `Kerosene/App Flow` -> `/receive/payment-link`, `/receive/payment-link-paid` |
 | `ReceiveNfcFlowScreen` | `frontend/lib/features/wallet/presentation/screens/receive_nfc_flow_screen.dart` | `Kerosene/App Flow` -> `/receive/nfc`, `/receive/onchain-nfc` |
-| `DepositAmountScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart` | `Kerosene/App Flow` -> `/deposit/amount` |
-| `DepositMethodScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_method_screen.dart` | `Kerosene/App Flow` -> `/deposit/method` |
-| `DepositLightningInvoiceScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_lightning_invoice_screen.dart` | `Kerosene/App Flow` -> `/deposit/lightning` |
-| `DepositOnchainInvoiceScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_onchain_invoice_screen.dart` | `Kerosene/App Flow` -> `/deposit/onchain` |
+| `DepositAmountScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_amount_screen.dart` | `Kerosene/App Flow` -> `REMOVED_LEGACY_FINANCIAL_ROUTE` |
+| `DepositMethodScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_method_screen.dart` | `Kerosene/App Flow` -> `REMOVED_LEGACY_FINANCIAL_ROUTE` |
+| `DepositLightningInvoiceScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_lightning_invoice_screen.dart` | `Kerosene/App Flow` -> `REMOVED_LEGACY_FINANCIAL_ROUTE` |
+| `DepositOnchainInvoiceScreen` | `frontend/lib/features/wallet/presentation/screens/deposit/deposit_onchain_invoice_screen.dart` | `Kerosene/App Flow` -> `REMOVED_LEGACY_FINANCIAL_ROUTE` |
 
 ### Web publico
 

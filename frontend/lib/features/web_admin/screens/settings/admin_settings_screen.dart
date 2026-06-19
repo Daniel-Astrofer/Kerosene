@@ -8,6 +8,7 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class AdminSettingsScreen extends ConsumerWidget {
   const AdminSettingsScreen({super.key});
@@ -39,7 +40,7 @@ class AdminSettingsScreen extends ConsumerWidget {
                   ref.invalidate(adminReleaseSnapshotProvider);
                   ref.invalidate(adminMobileReleaseProvider);
                 },
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(KeroseneIcons.refresh, size: 16),
                 label: Text(context.tr.adminActionRefresh),
               ),
             ),
@@ -51,7 +52,7 @@ class AdminSettingsScreen extends ConsumerWidget {
                       ? context.tr.adminValueTor
                       : context.tr.adminValueDirect,
                   subtitle: AppConfig.activeNodeName,
-                  icon: Icons.route_outlined,
+                  icon: KeroseneIcons.route,
                   accentColor: AppConfig.isTorEnabled ? AdminColors.info : null,
                 ),
                 AdminMetricCard(
@@ -63,13 +64,13 @@ class AdminSettingsScreen extends ConsumerWidget {
                   ),
                   subtitle: currentUser.asData?.value['username']?.toString() ??
                       context.tr.adminValueAdminContext,
-                  icon: Icons.badge_outlined,
+                  icon: KeroseneIcons.badge,
                 ),
                 AdminMetricCard(
                   label: context.tr.security,
                   value: AppConfig.effectivePasskeyRpId,
                   subtitle: context.tr.adminLabelPasskeyRelyingParty,
-                  icon: Icons.key_outlined,
+                  icon: KeroseneIcons.key,
                   accentColor: AdminColors.accent,
                 ),
                 AdminMetricCard(
@@ -81,7 +82,7 @@ class AdminSettingsScreen extends ConsumerWidget {
                     loading: () => context.tr.adminValueCheckingRelease,
                     error: (_, __) => context.tr.adminValueReleaseUnavailable,
                   ),
-                  icon: Icons.verified_outlined,
+                  icon: KeroseneIcons.verified,
                 ),
               ],
             ),
@@ -132,7 +133,7 @@ class _RoutingSettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdminPanel(
       title: context.tr.adminSettingsApiRoutingTitle,
-      icon: Icons.route_outlined,
+      icon: KeroseneIcons.route,
       child: Column(
         children: [
           AdminKeyValueRow(
@@ -172,7 +173,7 @@ class _SecuritySettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdminPanel(
       title: context.tr.adminSettingsSessionSecurityTitle,
-      icon: Icons.security_outlined,
+      icon: KeroseneIcons.security,
       child: currentUser.when(
         loading: () => const AdminSkeleton(height: 120),
         error: (_, __) => AdminErrorState(
@@ -222,7 +223,7 @@ class _ReleaseSettingsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdminPanel(
       title: context.tr.adminSettingsReleaseTitle,
-      icon: Icons.verified_user_outlined,
+      icon: KeroseneIcons.security,
       child: Column(
         children: [
           release.when(

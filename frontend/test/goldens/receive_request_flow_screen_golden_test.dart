@@ -26,6 +26,11 @@ void main() {
         initialPaymentUri: 'bitcoin:${mockWallets.first.address}?amount=0.0042',
       ),
     );
-    await screenMatchesGolden(tester, 'receive_request_flow_screen');
+    await screenMatchesGolden(
+      tester,
+      'receive_request_flow_screen',
+      finder: find.byType(ReceiveRequestFlowScreen),
+      customPump: pumpGoldenAnimationFrame,
+    );
   });
 }

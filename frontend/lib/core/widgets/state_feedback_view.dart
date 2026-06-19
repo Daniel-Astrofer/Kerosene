@@ -1,9 +1,10 @@
 import 'dart:math' as math;
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import '../../../core/theme/app_spacing.dart';
-import '../presentation/widgets/cyber_button.dart';
+import 'package:kerosene/design_system/buttons/app_button.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
@@ -121,7 +122,10 @@ class StateFeedbackView extends StatelessWidget {
                       ),
                     ),
                 textAlign: TextAlign.center,
-              ).animate().fade(duration: 300.ms).slideY(begin: 0.1, end: 0),
+              )
+                  .animate()
+                  .fade(duration: KeroseneMotion.medium)
+                  .slideY(begin: 0.1, end: 0),
 
               const SizedBox(height: AppSpacing.sm),
 
@@ -133,18 +137,18 @@ class StateFeedbackView extends StatelessWidget {
                 style: Theme.of(context).textTheme.bodyMedium!,
                 textAlign: TextAlign.center,
               )
-                  .animate(delay: 100.ms)
-                  .fade(duration: 300.ms)
+                  .animate(delay: KeroseneMotion.fast)
+                  .fade(duration: KeroseneMotion.medium)
                   .slideY(begin: 0.1, end: 0),
 
               if (actionLabel != null && onAction != null) ...[
                 const SizedBox(height: AppSpacing.xl),
                 SizedBox(
                   width: math.min(200.0, availableWidth),
-                  child: CyberButton(text: actionLabel!, onTap: onAction),
+                  child: AppButton(label: actionLabel!, onPressed: onAction),
                 )
-                    .animate(delay: 200.ms)
-                    .fade(duration: 300.ms)
+                    .animate(delay: KeroseneMotion.short)
+                    .fade(duration: KeroseneMotion.medium)
                     .slideY(begin: 0.1, end: 0),
               ],
             ],
@@ -195,7 +199,8 @@ class _NativeIllustrationState extends State<_NativeIllustration>
   @override
   void initState() {
     super.initState();
-    _ctrl = AnimationController(vsync: this, duration: 2400.ms);
+    _ctrl =
+        AnimationController(vsync: this, duration: KeroseneMotion.ceremonial);
   }
 
   @override
@@ -244,8 +249,8 @@ class _NativeIllustrationState extends State<_NativeIllustration>
     ).animate().scale(
           begin: const Offset(0.6, 0.6),
           end: const Offset(1.0, 1.0),
-          duration: 500.ms,
-          curve: Curves.elasticOut,
+          duration: KeroseneMotion.long,
+          curve: KeroseneMotion.spring,
         );
   }
 

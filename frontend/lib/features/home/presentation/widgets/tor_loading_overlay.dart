@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
 
@@ -26,7 +27,7 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay> {
     super.initState();
 
     // Ensure we wait at least 3 seconds
-    Future.delayed(const Duration(seconds: 3), () {
+    Future.delayed(KeroseneMotion.noticeHold, () {
       if (mounted) {
         setState(() {
           _minDurationReached = true;
@@ -65,7 +66,7 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay> {
     });
 
     // Wait for fade animation to end
-    await Future.delayed(const Duration(milliseconds: 1000));
+    await Future.delayed(KeroseneMotion.calm);
 
     // Unblock the main app UI
     widget.onComplete();
@@ -81,8 +82,8 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay> {
 
     return AnimatedOpacity(
       opacity: _transitionOpacity,
-      duration: const Duration(milliseconds: 1000),
-      curve: Curves.easeInOutBack,
+      duration: KeroseneMotion.calm,
+      curve: KeroseneMotion.spring,
       child: const KeroseneLogoLoadingView(),
     );
   }

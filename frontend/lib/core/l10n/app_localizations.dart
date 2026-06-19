@@ -610,6 +610,12 @@ abstract class AppLocalizations {
   /// **'Go Back'**
   String get goBack;
 
+  /// No description provided for @goToHome.
+  ///
+  /// In en, this message translates to:
+  /// **'Go to home'**
+  String get goToHome;
+
   /// No description provided for @done.
   ///
   /// In en, this message translates to:
@@ -915,6 +921,12 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Settings'**
   String get settingsTitle;
+
+  /// No description provided for @settingsScreenSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Manage your account, security, and devices'**
+  String get settingsScreenSubtitle;
 
   /// No description provided for @currency.
   ///
@@ -2428,6 +2440,60 @@ abstract class AppLocalizations {
   /// **'Unexpected error: {error}'**
   String passkeyUnexpectedError(String error);
 
+  /// No description provided for @passkeyVerificationUserNotFound.
+  ///
+  /// In en, this message translates to:
+  /// **'User not found'**
+  String get passkeyVerificationUserNotFound;
+
+  /// No description provided for @passkeyVerificationNoLocal.
+  ///
+  /// In en, this message translates to:
+  /// **'No local passkey on this device'**
+  String get passkeyVerificationNoLocal;
+
+  /// No description provided for @passkeyVerificationCancelled.
+  ///
+  /// In en, this message translates to:
+  /// **'Verification cancelled'**
+  String get passkeyVerificationCancelled;
+
+  /// No description provided for @passkeyVerificationChallengeExpired.
+  ///
+  /// In en, this message translates to:
+  /// **'Time expired'**
+  String get passkeyVerificationChallengeExpired;
+
+  /// No description provided for @passkeyVerificationRejected.
+  ///
+  /// In en, this message translates to:
+  /// **'Passkey rejected'**
+  String get passkeyVerificationRejected;
+
+  /// No description provided for @passkeyVerificationFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'Could not validate passkey'**
+  String get passkeyVerificationFailed;
+
+  /// No description provided for @passkeyVerificationBodyPreparing.
+  ///
+  /// In en, this message translates to:
+  /// **'Starting secure confirmation.'**
+  String get passkeyVerificationBodyPreparing;
+
+  /// No description provided for @passkeyVerificationBodySending.
+  ///
+  /// In en, this message translates to:
+  /// **'Waiting for approval from this device.'**
+  String get passkeyVerificationBodySending;
+
+  /// No description provided for @passkeyVerificationBodySuccess.
+  ///
+  /// In en, this message translates to:
+  /// **'Credential accepted. Continuing automatically.'**
+  String get passkeyVerificationBodySuccess;
+
   /// No description provided for @passkeyLoadingInitBiom.
   ///
   /// In en, this message translates to:
@@ -3868,17 +3934,17 @@ abstract class AppLocalizations {
   /// **'Tax reports'**
   String get bitcoinTaxReportsTitle;
 
-  /// No description provided for @bitcoinTaxEventsUnavailableTitle.
+  /// No description provided for @taxEventsUnavailableTitle.
   ///
   /// In en, this message translates to:
   /// **'Events unavailable'**
-  String get bitcoinTaxEventsUnavailableTitle;
+  String get taxEventsUnavailableTitle;
 
-  /// No description provided for @bitcoinTaxEventsUnavailableMessage.
+  /// No description provided for @taxEventsUnavailableMessage.
   ///
   /// In en, this message translates to:
   /// **'We could not load temporary events.'**
-  String get bitcoinTaxEventsUnavailableMessage;
+  String get taxEventsUnavailableMessage;
 
   /// No description provided for @bitcoinTaxNoEventsTitle.
   ///
@@ -5206,240 +5272,6 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'no expiry'**
   String get bitcoinReceiveRequestsNoExpiry;
-
-  /// No description provided for @paymentIntentScreenTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment intent'**
-  String get paymentIntentScreenTitle;
-
-  /// No description provided for @paymentIntentScreenSubtitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Quote, confirmation, and status'**
-  String get paymentIntentScreenSubtitle;
-
-  /// No description provided for @paymentIntentRecipientHint.
-  ///
-  /// In en, this message translates to:
-  /// **'username, email, or address'**
-  String get paymentIntentRecipientHint;
-
-  /// No description provided for @paymentIntentSearchAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Search'**
-  String get paymentIntentSearchAction;
-
-  /// No description provided for @paymentIntentAmountFeeTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Amount and fee'**
-  String get paymentIntentAmountFeeTitle;
-
-  /// No description provided for @paymentIntentGenerateQuoteAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Generate quote'**
-  String get paymentIntentGenerateQuoteAction;
-
-  /// No description provided for @paymentIntentQuoteTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Quote'**
-  String get paymentIntentQuoteTitle;
-
-  /// No description provided for @paymentIntentMetricReceiver.
-  ///
-  /// In en, this message translates to:
-  /// **'Receiver'**
-  String get paymentIntentMetricReceiver;
-
-  /// No description provided for @paymentIntentMetricRoute.
-  ///
-  /// In en, this message translates to:
-  /// **'Route'**
-  String get paymentIntentMetricRoute;
-
-  /// No description provided for @paymentIntentMetricReceives.
-  ///
-  /// In en, this message translates to:
-  /// **'Receives'**
-  String get paymentIntentMetricReceives;
-
-  /// No description provided for @paymentIntentMetricNetworkFee.
-  ///
-  /// In en, this message translates to:
-  /// **'Network fee'**
-  String get paymentIntentMetricNetworkFee;
-
-  /// No description provided for @paymentIntentMetricKeroseneFee.
-  ///
-  /// In en, this message translates to:
-  /// **'Kerosene fee'**
-  String get paymentIntentMetricKeroseneFee;
-
-  /// No description provided for @paymentIntentMetricTotalDebit.
-  ///
-  /// In en, this message translates to:
-  /// **'Total debited'**
-  String get paymentIntentMetricTotalDebit;
-
-  /// No description provided for @paymentIntentConfirmPaymentAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirm payment'**
-  String get paymentIntentConfirmPaymentAction;
-
-  /// No description provided for @paymentIntentStatusTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Status'**
-  String get paymentIntentStatusTitle;
-
-  /// No description provided for @paymentIntentNotCompleted.
-  ///
-  /// In en, this message translates to:
-  /// **'Payment not completed.'**
-  String get paymentIntentNotCompleted;
-
-  /// No description provided for @paymentIntentReviewTitle.
-  ///
-  /// In en, this message translates to:
-  /// **'Review send'**
-  String get paymentIntentReviewTitle;
-
-  /// No description provided for @paymentIntentReviewDebitMessage.
-  ///
-  /// In en, this message translates to:
-  /// **'{total} will be debited to {receiver}.'**
-  String paymentIntentReviewDebitMessage(Object total, Object receiver);
-
-  /// No description provided for @paymentIntentAuthorizeAction.
-  ///
-  /// In en, this message translates to:
-  /// **'Authorize'**
-  String get paymentIntentAuthorizeAction;
-
-  /// No description provided for @paymentIntentValidationRecipientRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the recipient.'**
-  String get paymentIntentValidationRecipientRequired;
-
-  /// No description provided for @paymentIntentValidationAmountRequired.
-  ///
-  /// In en, this message translates to:
-  /// **'Enter the amount.'**
-  String get paymentIntentValidationAmountRequired;
-
-  /// No description provided for @paymentIntentRailInternal.
-  ///
-  /// In en, this message translates to:
-  /// **'Kerosene'**
-  String get paymentIntentRailInternal;
-
-  /// No description provided for @paymentIntentRailLightning.
-  ///
-  /// In en, this message translates to:
-  /// **'Lightning'**
-  String get paymentIntentRailLightning;
-
-  /// No description provided for @paymentIntentRailOnchain.
-  ///
-  /// In en, this message translates to:
-  /// **'On-chain'**
-  String get paymentIntentRailOnchain;
-
-  /// No description provided for @paymentIntentFeeSenderPays.
-  ///
-  /// In en, this message translates to:
-  /// **'Sender pays'**
-  String get paymentIntentFeeSenderPays;
-
-  /// No description provided for @paymentIntentFeeRecipientPays.
-  ///
-  /// In en, this message translates to:
-  /// **'Recipient pays'**
-  String get paymentIntentFeeRecipientPays;
-
-  /// No description provided for @paymentIntentSpeedEconomy.
-  ///
-  /// In en, this message translates to:
-  /// **'Economy'**
-  String get paymentIntentSpeedEconomy;
-
-  /// No description provided for @paymentIntentSpeedNormal.
-  ///
-  /// In en, this message translates to:
-  /// **'Normal'**
-  String get paymentIntentSpeedNormal;
-
-  /// No description provided for @paymentIntentSpeedFast.
-  ///
-  /// In en, this message translates to:
-  /// **'Fast'**
-  String get paymentIntentSpeedFast;
-
-  /// No description provided for @paymentIntentStatusCreated.
-  ///
-  /// In en, this message translates to:
-  /// **'Created'**
-  String get paymentIntentStatusCreated;
-
-  /// No description provided for @paymentIntentStatusQuoted.
-  ///
-  /// In en, this message translates to:
-  /// **'Quoted'**
-  String get paymentIntentStatusQuoted;
-
-  /// No description provided for @paymentIntentStatusConfirmed.
-  ///
-  /// In en, this message translates to:
-  /// **'Confirmed'**
-  String get paymentIntentStatusConfirmed;
-
-  /// No description provided for @paymentIntentStatusProcessing.
-  ///
-  /// In en, this message translates to:
-  /// **'Processing'**
-  String get paymentIntentStatusProcessing;
-
-  /// No description provided for @paymentIntentStatusAcceptedByProvider.
-  ///
-  /// In en, this message translates to:
-  /// **'Accepted by provider'**
-  String get paymentIntentStatusAcceptedByProvider;
-
-  /// No description provided for @paymentIntentStatusRequiresReconciliation.
-  ///
-  /// In en, this message translates to:
-  /// **'Requires reconciliation'**
-  String get paymentIntentStatusRequiresReconciliation;
-
-  /// No description provided for @paymentIntentStatusSettled.
-  ///
-  /// In en, this message translates to:
-  /// **'Settled'**
-  String get paymentIntentStatusSettled;
-
-  /// No description provided for @paymentIntentStatusFailed.
-  ///
-  /// In en, this message translates to:
-  /// **'Failed'**
-  String get paymentIntentStatusFailed;
-
-  /// No description provided for @paymentIntentStatusCanceled.
-  ///
-  /// In en, this message translates to:
-  /// **'Canceled'**
-  String get paymentIntentStatusCanceled;
-
-  /// No description provided for @paymentIntentStatusExpired.
-  ///
-  /// In en, this message translates to:
-  /// **'Expired'**
-  String get paymentIntentStatusExpired;
 
   /// No description provided for @bitcoinReceiveStatusDetected.
   ///
@@ -12065,6 +11897,126 @@ abstract class AppLocalizations {
   /// **'Payment request loaded.'**
   String get sendMoneyPaymentRequestLoaded;
 
+  /// No description provided for @authReasonTransactionConfirm.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm on this device to authorize the transaction.'**
+  String get authReasonTransactionConfirm;
+
+  /// No description provided for @transactionAuthVaultTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Vault confirmation'**
+  String get transactionAuthVaultTitle;
+
+  /// No description provided for @transactionAuthOperationTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Operation confirmation'**
+  String get transactionAuthOperationTitle;
+
+  /// No description provided for @transactionAuthPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Passphrase'**
+  String get transactionAuthPassphraseLabel;
+
+  /// No description provided for @transactionAuthConfirmationPassphraseLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirmation passphrase'**
+  String get transactionAuthConfirmationPassphraseLabel;
+
+  /// No description provided for @transactionAuthEnterPassphrase.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter your passphrase to continue.'**
+  String get transactionAuthEnterPassphrase;
+
+  /// No description provided for @transactionAuthTotpCodeLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'TOTP code'**
+  String get transactionAuthTotpCodeLabel;
+
+  /// No description provided for @transactionAuthEnterAuthenticatorDigits.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter the 6 digits from your authenticator.'**
+  String get transactionAuthEnterAuthenticatorDigits;
+
+  /// No description provided for @transactionAuthContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Continue'**
+  String get transactionAuthContinue;
+
+  /// No description provided for @transactionAuthProfileSubtitleMultisigFull.
+  ///
+  /// In en, this message translates to:
+  /// **'This policy uses passphrase, TOTP, and passkey to release critical operations.'**
+  String get transactionAuthProfileSubtitleMultisigFull;
+
+  /// No description provided for @transactionAuthProfileSubtitleMultisigStandard.
+  ///
+  /// In en, this message translates to:
+  /// **'This policy uses passphrase and TOTP to release critical operations.'**
+  String get transactionAuthProfileSubtitleMultisigStandard;
+
+  /// No description provided for @transactionAuthProfileSubtitlePasskeyOnly.
+  ///
+  /// In en, this message translates to:
+  /// **'Final confirmation will be requested with your passkey.'**
+  String get transactionAuthProfileSubtitlePasskeyOnly;
+
+  /// No description provided for @transactionAuthProfileSubtitleDefault.
+  ///
+  /// In en, this message translates to:
+  /// **'Confirm the required factors to complete this operation.'**
+  String get transactionAuthProfileSubtitleDefault;
+
+  /// No description provided for @transactionAuthShamirRecoveryError.
+  ///
+  /// In en, this message translates to:
+  /// **'Enter {threshold} full shares to reconstruct the passphrase.'**
+  String transactionAuthShamirRecoveryError(int threshold);
+
+  /// No description provided for @transactionAuthShamirReconstructFailed.
+  ///
+  /// In en, this message translates to:
+  /// **'The passphrase could not be reconstructed. Review the shares and try again.'**
+  String get transactionAuthShamirReconstructFailed;
+
+  /// No description provided for @transactionAuthShamirTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Shamir authorization'**
+  String get transactionAuthShamirTitle;
+
+  /// No description provided for @transactionAuthShamirSubtitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconstruct the passphrase with {threshold} of {totalShares} shares before releasing the operation.'**
+  String transactionAuthShamirSubtitle(int threshold, int totalShares);
+
+  /// No description provided for @transactionAuthShareLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'Share {index}'**
+  String transactionAuthShareLabel(int index);
+
+  /// No description provided for @transactionAuthReconstructAndContinue.
+  ///
+  /// In en, this message translates to:
+  /// **'Reconstruct and continue'**
+  String get transactionAuthReconstructAndContinue;
+
+  /// No description provided for @transactionAuthShareHint.
+  ///
+  /// In en, this message translates to:
+  /// **'Paste the full share here'**
+  String get transactionAuthShareHint;
+
   /// No description provided for @walletConfigAddressCopiedMessage.
   ///
   /// In en, this message translates to:
@@ -13211,6 +13163,42 @@ abstract class AppLocalizations {
   /// In en, this message translates to:
   /// **'Manifest'**
   String get landingStatusManifest;
+
+  /// No description provided for @landingNetworkStatusLabel.
+  ///
+  /// In en, this message translates to:
+  /// **'NETWORK STATUS'**
+  String get landingNetworkStatusLabel;
+
+  /// No description provided for @landingNetworkOnlineDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'100% On-chain & Tor'**
+  String get landingNetworkOnlineDetail;
+
+  /// No description provided for @landingNetworkFallbackDetail.
+  ///
+  /// In en, this message translates to:
+  /// **'On-chain & Tor'**
+  String get landingNetworkFallbackDetail;
+
+  /// No description provided for @landingApiAccessTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'API ACCESS'**
+  String get landingApiAccessTitle;
+
+  /// No description provided for @landingApiAccessBody.
+  ///
+  /// In en, this message translates to:
+  /// **'Technical documentation is available through the developer portal on the Onion network.'**
+  String get landingApiAccessBody;
+
+  /// No description provided for @landingStatusLine.
+  ///
+  /// In en, this message translates to:
+  /// **'{label}: {status}'**
+  String landingStatusLine(String label, String status);
 
   /// No description provided for @homeFundsDistributionTitle.
   ///

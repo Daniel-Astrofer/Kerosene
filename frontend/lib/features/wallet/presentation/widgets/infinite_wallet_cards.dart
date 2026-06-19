@@ -1,6 +1,7 @@
 import 'dart:math';
 import 'dart:ui';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import '../../domain/entities/wallet.dart';
@@ -58,7 +59,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     _initializeIndices();
     _animController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 700),
+      duration: KeroseneMotion.calm,
     );
   }
 
@@ -95,7 +96,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     if (_visualIndices.length > 1 && !_animController.isAnimating) {
       _draggedVisualRank = 1;
       _isDragUp = true;
-      _animController.animateTo(1.0, curve: Curves.easeInOut).then((_) {
+      _animController.animateTo(1.0, curve: KeroseneMotion.standard).then((_) {
         _finalizeCardSwap(_draggedVisualRank!);
       });
     }
@@ -409,7 +410,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
     }
 
     if (_animController.value > 0.4 || fastFlick) {
-      _animController.animateTo(1.0, curve: Curves.easeOutBack).then((_) {
+      _animController.animateTo(1.0, curve: KeroseneMotion.spring).then((_) {
         if (_isDragUp) {
           _finalizeCardSwap(_draggedVisualRank!);
         } else {
@@ -417,7 +418,7 @@ class _InfiniteWalletCardsState extends State<InfiniteWalletCards>
         }
       });
     } else {
-      _animController.animateTo(0.0, curve: Curves.bounceOut).then((_) {
+      _animController.animateTo(0.0, curve: KeroseneMotion.spring).then((_) {
         setState(() {
           _draggedVisualRank = null;
           _rawDragAccumulator = 0.0;

@@ -1,7 +1,7 @@
 import 'package:equatable/equatable.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 
-/// Entidade PaymentLink — link de pagamento Bitcoin
+/// Entidade PaymentLink — solicitação de recebimento Bitcoin.
 class PaymentLink extends Equatable {
   final String id;
   final int userId;
@@ -29,7 +29,7 @@ class PaymentLink extends Equatable {
   final DateTime? cancelledAt;
   final String? cancelReason;
   final String paymentRail;
-  final String paymentIntentStatus;
+  final String settlementStatus;
   final String? settlementReference;
   final bool terminal;
 
@@ -60,7 +60,7 @@ class PaymentLink extends Equatable {
     this.cancelledAt,
     this.cancelReason,
     this.paymentRail = 'ONCHAIN',
-    this.paymentIntentStatus = 'QUOTED',
+    this.settlementStatus = 'QUOTED',
     this.settlementReference,
     this.terminal = false,
   });
@@ -101,9 +101,9 @@ class PaymentLink extends Equatable {
       rawStatus,
       txid: data['txid']?.toString() ?? data['blockchainTxid']?.toString(),
     );
-    final paymentIntentStatus =
-        data['paymentIntentStatus']?.toString().toUpperCase() ??
-            _paymentIntentStatusFor(normalizedStatus);
+    final settlementStatus =
+        data['settlementStatus']?.toString().toUpperCase() ??
+            _settlementStatusFor(normalizedStatus);
 
     return PaymentLink(
       id: data['id']?.toString() ??
@@ -160,11 +160,11 @@ class PaymentLink extends Equatable {
       paymentRail: data['paymentRail']?.toString().toUpperCase() ??
           data['rail']?.toString().toUpperCase() ??
           'ONCHAIN',
-      paymentIntentStatus: paymentIntentStatus,
+      settlementStatus: settlementStatus,
       settlementReference: data['settlementReference']?.toString(),
       terminal: _parseBool(
         data['terminal'],
-        fallback: _terminalPaymentIntentStatus(paymentIntentStatus),
+        fallback: _terminalSettlementStatus(settlementStatus),
       ),
     );
   }
@@ -197,7 +197,7 @@ class PaymentLink extends Equatable {
         cancelledAt,
         cancelReason,
         paymentRail,
-        paymentIntentStatus,
+        settlementStatus,
         settlementReference,
         terminal,
       ];
@@ -231,7 +231,7 @@ class PaymentLink extends Equatable {
     );
   }
 
-  static String _paymentIntentStatusFor(String status) {
+  static String _settlementStatusFor(String status) {
     switch (status) {
       case 'pending':
         return 'QUOTED';
@@ -280,7 +280,7 @@ class PaymentLink extends Equatable {
     }
   }
 
-  static bool _terminalPaymentIntentStatus(String status) {
+  static bool _terminalSettlementStatus(String status) {
     return status == 'SETTLED' ||
         status == 'FAILED' ||
         status == 'CANCELED' ||

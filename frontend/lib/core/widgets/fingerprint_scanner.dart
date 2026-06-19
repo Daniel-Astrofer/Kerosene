@@ -1,10 +1,10 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 
-class CyberFingerprintScanner extends StatelessWidget {
+class KeroseneFingerprintScanner extends StatelessWidget {
   final double size;
 
-  const CyberFingerprintScanner({super.key, this.size = 96});
+  const KeroseneFingerprintScanner({super.key, this.size = 96});
 
   @override
   Widget build(BuildContext context) {
@@ -20,7 +20,7 @@ class CyberFingerprintScanner extends StatelessWidget {
             border: Border.all(color: color.withValues(alpha: 0.28)),
           ),
           child: Icon(
-            LucideIcons.fingerprint,
+            KeroseneIcons.biometric,
             color: color,
             size: size * 0.54,
           ),

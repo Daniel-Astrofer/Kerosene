@@ -5,6 +5,8 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 /// Hash-chain module.
 ///
@@ -46,7 +48,7 @@ class _HashPolicyCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Retention policy',
-      icon: Icons.timer_outlined,
+      icon: KeroseneIcons.schedule,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -55,7 +57,7 @@ class _HashPolicyCard extends StatelessWidget {
           _Line('Backend proof', 'hashes, commitments, Merkle roots'),
           const SizedBox(height: AdminTheme.spacingMd),
           Text(
-            'Ledger sem payload: the server proves consistency without acting as a permanent user statement.',
+            AdminCopy.ledgerNoPayloadPolicy,
             style: AdminTypography.bodySmall.copyWith(
               color: AdminColors.textSecondary,
               height: 1.45,
@@ -76,7 +78,7 @@ class _LatestRootCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Merkle audit root',
-      icon: Icons.account_tree_outlined,
+      icon: KeroseneIcons.network,
       child: latestRoot.when(
         data: (root) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -90,7 +92,7 @@ class _LatestRootCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load Merkle root: $error',
+          AdminCopy.merkleRootUnavailable,
           style: AdminTypography.caption,
         ),
       ),
@@ -107,7 +109,7 @@ class _LedgerIntegrityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Integrity state',
-      icon: Icons.fingerprint,
+      icon: KeroseneIcons.biometric,
       child: sov.when(
         data: (data) {
           final value = data['ledgerIntegrity'];
@@ -116,7 +118,7 @@ class _LedgerIntegrityCard extends StatelessWidget {
               : <String, dynamic>{};
           if (integrity.isEmpty) {
             return Text(
-              'Ledger integrity data unavailable',
+              AdminCopy.ledgerIntegrityUnavailable,
               style: AdminTypography.bodyMedium,
             );
           }
@@ -132,7 +134,7 @@ class _LedgerIntegrityCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load integrity data: $error',
+          AdminCopy.integrityDataUnavailable,
           style: AdminTypography.caption,
         ),
       ),

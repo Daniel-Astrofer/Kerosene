@@ -72,12 +72,13 @@ class RecentTransactionDestinationsNotifier
 
   final SecureStorageService _secureStorage = SecureStorageService();
   late final SharedPreferences _prefs;
+  int _mutationRevision = 0;
 
   @override
   List<RecentTransactionDestination> build() {
     _prefs = ref.watch(sharedPreferencesProvider);
     final legacyEntries = _readFromPrefs();
-    unawaited(_loadFromSecureStorage(legacyEntries));
+    unawaited(_loadFromSecureStorage(legacyEntries, _mutationRevision));
     return legacyEntries;
   }
 
@@ -91,6 +92,7 @@ class RecentTransactionDestinationsNotifier
       return;
     }
 
+    _mutationRevision++;
     final normalizedLabel = _normalizeLabel(label);
     final existing = _findExisting(
       address: normalizedAddress,
@@ -129,6 +131,7 @@ class RecentTransactionDestinationsNotifier
       return;
     }
 
+    _mutationRevision++;
     final key = _entryKey(normalizedAddress, kind);
     final next = [
       for (final item in state)
@@ -139,6 +142,7 @@ class RecentTransactionDestinationsNotifier
       return;
     }
 
+    _mutationRevision++;
     state = next;
     await _persist(next);
   }
@@ -176,8 +180,13 @@ class RecentTransactionDestinationsNotifier
 
   Future<void> _loadFromSecureStorage(
     List<RecentTransactionDestination> legacyEntries,
+    int loadRevision,
   ) async {
     final raw = await _secureStorage.read(key: _storageKey);
+    if (loadRevision != _mutationRevision) {
+      return;
+    }
+
     final secureEntries = _decodeEntries(raw);
 
     if (secureEntries.isNotEmpty) {
@@ -242,7 +251,11 @@ class RecentTransactionDestinationsNotifier
     List<RecentTransactionDestination> entries,
   ) {
     entries.sort((a, b) => b.lastUsedAt.compareTo(a.lastUsedAt));
-    return entries.take(_maxItems).toList(growable: false);
+    final normalized = <String, RecentTransactionDestination>{};
+    for (final entry in entries) {
+      normalized.putIfAbsent(_entryKey(entry.address, entry.kind), () => entry);
+    }
+    return normalized.values.take(_maxItems).toList(growable: false);
   }
 
   Future<void> _persist(List<RecentTransactionDestination> entries) async {

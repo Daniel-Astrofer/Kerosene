@@ -5,6 +5,8 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 /// Lightning Network operations module.
 ///
@@ -56,7 +58,7 @@ class LightningScreen extends ConsumerWidget {
                           label: 'LND Status',
                           value: status,
                           subtitle: '${data['message'] ?? 'operational probe'}',
-                          icon: Icons.flash_on_outlined,
+                          icon: KeroseneIcons.lightning,
                           accentColor: _statusColor(status),
                         ),
                         AdminMetricCard(
@@ -64,21 +66,21 @@ class LightningScreen extends ConsumerWidget {
                           value: '${node['blockHeight'] ?? 0}',
                           subtitle:
                               'synced chain ${node['syncedToChain'] == true}',
-                          icon: Icons.layers_outlined,
+                          icon: KeroseneIcons.layers,
                         ),
                         AdminMetricCard(
                           label: 'Peers',
                           value: '$peers',
                           subtitle:
                               'graph synced ${node['syncedToGraph'] == true}',
-                          icon: Icons.hub_outlined,
+                          icon: KeroseneIcons.hub,
                         ),
                         AdminMetricCard(
                           label: 'Channels',
                           value: '$totalChannels',
                           subtitle:
                               '$activeChannels active | $pendingChannels pending',
-                          icon: Icons.account_tree_outlined,
+                          icon: KeroseneIcons.network,
                           accentColor: pendingChannels == 0
                               ? AdminColors.positive
                               : AdminColors.warning,
@@ -119,19 +121,19 @@ class LightningScreen extends ConsumerWidget {
                             label: 'Local Balance',
                             value: '${_formatSats(localBalance)} sats',
                             subtitle: 'aggregate outbound capacity',
-                            icon: Icons.arrow_upward,
+                            icon: KeroseneIcons.up,
                           ),
                           AdminMetricCard(
                             label: 'Remote Balance',
                             value: '${_formatSats(remoteBalance)} sats',
                             subtitle: 'aggregate inbound capacity',
-                            icon: Icons.arrow_downward,
+                            icon: KeroseneIcons.down,
                           ),
                           AdminMetricCard(
                             label: 'Wallet Balance',
                             value: '${_formatSats(walletBalance)} sats',
                             subtitle: 'confirmed LND wallet aggregate',
-                            icon: Icons.account_balance_wallet_outlined,
+                            icon: KeroseneIcons.wallet,
                           ),
                         ],
                       ),
@@ -174,7 +176,7 @@ class LightningScreen extends ConsumerWidget {
                 ),
               ),
               error: (error, _) => AdminErrorState(
-                message: 'Failed to load Lightning monitor: $error',
+                message: AdminCopy.lightningMonitorUnavailable,
                 onRetry: () => ref.invalidate(adminLightningMonitorProvider),
               ),
             ),

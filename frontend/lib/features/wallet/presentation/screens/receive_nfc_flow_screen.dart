@@ -1,15 +1,21 @@
+import 'package:kerosene/core/theme/app_colors.dart';
+
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
-import 'package:google_fonts/google_fonts.dart';
 import 'package:intl/intl.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 
-enum ReceiveNfcStage { searching, found, success }
+enum ReceiveNfcStage { methodSelection, searching, found, success }
+
+enum ReceiveNfcMethod { direct, lightning, onchain, automatic }
 
 class ReceiveNfcFlowScreen extends StatefulWidget {
   final Wallet wallet;
@@ -29,18 +35,19 @@ class ReceiveNfcFlowScreen extends StatefulWidget {
 
 class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
     with SingleTickerProviderStateMixin {
-  static const Color _background = Color(0xFF050505);
-  static const Color _surface = Color(0xFF121212);
-  static const Color _surfaceHigh = Color(0xFF1A1A1A);
-  static const Color _border = Color(0xFF2A2A2A);
-  static const Color _text = Color(0xFFFFFFFF);
-  static const Color _mutedText = Color(0xFFA3A3A3);
-  static const Color _success = Color(0xFF4ADE80);
+  static const Color _background = AppColors.hexFF050505;
+  static const Color _surface = AppColors.hexFF121212;
+  static const Color _surfaceHigh = AppColors.hexFF1A1A1A;
+  static const Color _border = AppColors.hexFF2A2A2A;
+  static const Color _text = AppColors.hexFFFFFFFF;
+  static const Color _mutedText = AppColors.hexFFA3A3A3;
+  static const Color _success = AppColors.hexFF4ADE80;
 
   late final AnimationController _pulseController;
   final List<Timer> _timers = [];
 
-  ReceiveNfcStage _stage = ReceiveNfcStage.searching;
+  ReceiveNfcStage _stage = ReceiveNfcStage.methodSelection;
+  ReceiveNfcMethod _detectedMethod = ReceiveNfcMethod.direct;
   DateTime _completedAt = DateTime.now();
 
   @override
@@ -48,18 +55,8 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2400),
+      duration: KeroseneMotion.ceremonial,
     )..repeat();
-
-    _timers
-      ..add(Timer(const Duration(milliseconds: 1600), () {
-        _setStage(ReceiveNfcStage.found);
-      }))
-      ..add(Timer(const Duration(milliseconds: 3900), () {
-        _completedAt = DateTime.now();
-        HapticFeedback.mediumImpact();
-        _setStage(ReceiveNfcStage.success);
-      }));
   }
 
   @override
@@ -78,6 +75,38 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
     setState(() => _stage = stage);
   }
 
+  void _selectMethod(ReceiveNfcMethod method) {
+    HapticFeedback.selectionClick();
+    _clearTimers();
+    _detectedMethod = _resolveDetectedMethod(method);
+    setState(() => _stage = ReceiveNfcStage.searching);
+    _timers
+      ..add(Timer(KeroseneMotion.nfcSceneIntro, () {
+        _setStage(ReceiveNfcStage.found);
+      }))
+      ..add(Timer(KeroseneMotion.nfcSceneReady, () {
+        _completedAt = DateTime.now();
+        HapticFeedback.mediumImpact();
+        _setStage(ReceiveNfcStage.success);
+      }));
+  }
+
+  ReceiveNfcMethod _resolveDetectedMethod(ReceiveNfcMethod method) {
+    if (method != ReceiveNfcMethod.automatic) {
+      return method;
+    }
+    return widget.onChainWallet
+        ? ReceiveNfcMethod.onchain
+        : ReceiveNfcMethod.direct;
+  }
+
+  void _clearTimers() {
+    for (final timer in _timers) {
+      timer.cancel();
+    }
+    _timers.clear();
+  }
+
   String get _amountLabel {
     final amount = MoneyDisplay.formatCompact(
       amount: widget.amountBtc,
@@ -89,13 +118,43 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   }
 
   String get _statusLabel {
-    return widget.onChainWallet
-        ? 'Confirmado na rede'
-        : 'Confirmado na Kerosene';
+    return switch (_detectedMethod) {
+      ReceiveNfcMethod.direct => 'Confirmado na Kerosene',
+      ReceiveNfcMethod.lightning => 'Confirmado via Lightning',
+      ReceiveNfcMethod.onchain => 'Aguardando rede Bitcoin',
+      ReceiveNfcMethod.automatic => 'Confirmado na Kerosene',
+    };
   }
 
   String get _networkLabel {
-    return widget.onChainWallet ? 'Bitcoin (BTC)' : 'Kerosene';
+    return switch (_detectedMethod) {
+      ReceiveNfcMethod.direct => 'Direct',
+      ReceiveNfcMethod.lightning => 'Lightning',
+      ReceiveNfcMethod.onchain => 'On-chain',
+      ReceiveNfcMethod.automatic => 'Direct',
+    };
+  }
+
+  String get _detectedTitle {
+    return switch (_detectedMethod) {
+      ReceiveNfcMethod.direct => 'Transação Direct detectada',
+      ReceiveNfcMethod.lightning => 'Transação Lightning detectada',
+      ReceiveNfcMethod.onchain => 'Transação On-chain detectada',
+      ReceiveNfcMethod.automatic => 'Transação Direct detectada',
+    };
+  }
+
+  String get _detectedDescription {
+    return switch (_detectedMethod) {
+      ReceiveNfcMethod.direct =>
+        'Transferência interna reconhecida. Aguardando autenticação do pagador.',
+      ReceiveNfcMethod.lightning =>
+        'Invoice Lightning reconhecida. Validando rota e liquidez.',
+      ReceiveNfcMethod.onchain =>
+        'Pedido on-chain reconhecido. Aguardando propagação da transação.',
+      ReceiveNfcMethod.automatic =>
+        'Método detectado automaticamente. Aguardando confirmação do pagador.',
+    };
   }
 
   @override
@@ -113,12 +172,14 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                 width: width,
                 height: constraints.maxHeight,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 360),
-                  switchInCurve: Curves.easeOutCubic,
-                  switchOutCurve: Curves.easeInCubic,
+                  duration: KeroseneMotion.long,
+                  switchInCurve: KeroseneMotion.standard,
+                  switchOutCurve: KeroseneMotion.exit,
                   child: KeyedSubtree(
                     key: ValueKey(_stage),
                     child: switch (_stage) {
+                      ReceiveNfcStage.methodSelection =>
+                        _buildMethodSelection(context),
                       ReceiveNfcStage.searching => _buildSearching(context),
                       ReceiveNfcStage.found => _buildFound(context),
                       ReceiveNfcStage.success => _buildSuccess(context),
@@ -134,6 +195,9 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   }
 
   Widget _buildSearching(BuildContext context) {
+    const searchingTitle = 'Aproxime o dispositivo';
+    const searchingFooter =
+        'Aproxime o dispositivo do pagador ao sensor NFC do seu celular';
     return _buildHeaderLayout(
       context,
       center: Column(
@@ -142,9 +206,9 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           _buildNfcOrb(size: 200),
           const SizedBox(height: 32),
           Text(
-            'Aproxime o dispositivo',
+            searchingTitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _text,
               fontSize: 48,
               fontWeight: FontWeight.w400,
@@ -155,14 +219,174 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
         ],
       ),
       footer: Text(
-        'Aproxime o dispositivo do pagador ao sensor NFC do seu celular',
+        searchingFooter,
         textAlign: TextAlign.center,
-        style: GoogleFonts.inter(
+        style: AppTypography.inter(
           color: _text.withValues(alpha: 0.9),
           fontSize: 14,
           fontWeight: FontWeight.w400,
           height: 1.4,
           letterSpacing: 0,
+        ),
+      ),
+    );
+  }
+
+  Widget _buildMethodSelection(BuildContext context) {
+    const selectMethodTitle = 'Selecionar método';
+    const selectMethodSubtitle =
+        'Selecione quais redes aceitar para recebimento via NFC.';
+    const understandMethodsTitle = 'Entenda os métodos';
+    const directMethodLabel = 'Direct';
+    const lightningMethodLabel = 'Lightning';
+    const onChainMethodLabel = 'On-chain';
+    const autoDetectLabel = 'Detectar\nautomaticamente';
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+      child: Column(
+        children: [
+          _buildHeader(context),
+          Expanded(
+            child: SingleChildScrollView(
+              physics: const BouncingScrollPhysics(),
+              padding: const EdgeInsets.symmetric(vertical: 24),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    selectMethodTitle,
+                    style: AppTypography.newsreader(
+                      color: _text,
+                      fontSize: 32,
+                      fontWeight: FontWeight.w500,
+                      height: 1.15,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    selectMethodSubtitle,
+                    style: AppTypography.inter(
+                      color: _mutedText,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w400,
+                      height: 1.5,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  GridView.count(
+                    shrinkWrap: true,
+                    physics: const NeverScrollableScrollPhysics(),
+                    crossAxisCount: 2,
+                    mainAxisSpacing: 32,
+                    crossAxisSpacing: 24,
+                    childAspectRatio: 0.95,
+                    children: [
+                      _buildMethodOption(
+                        icon: KeroseneIcons.internalTransfer,
+                        label: directMethodLabel,
+                        method: ReceiveNfcMethod.direct,
+                      ),
+                      _buildMethodOption(
+                        icon: KeroseneIcons.lightning,
+                        label: lightningMethodLabel,
+                        method: ReceiveNfcMethod.lightning,
+                      ),
+                      _buildMethodOption(
+                        icon: KeroseneIcons.onchain,
+                        label: onChainMethodLabel,
+                        method: ReceiveNfcMethod.onchain,
+                      ),
+                      _buildMethodOption(
+                        icon: KeroseneIcons.nfc,
+                        label: autoDetectLabel,
+                        method: ReceiveNfcMethod.automatic,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 40),
+                  Text(
+                    understandMethodsTitle,
+                    style: AppTypography.newsreader(
+                      color: _text,
+                      fontSize: 22,
+                      fontWeight: FontWeight.w500,
+                      height: 1.2,
+                      letterSpacing: 0,
+                    ),
+                  ),
+                  const SizedBox(height: 16),
+                  SizedBox(
+                    height: 156,
+                    child: ListView(
+                      scrollDirection: Axis.horizontal,
+                      physics: const BouncingScrollPhysics(),
+                      children: const [
+                        _NfcMethodInfoCard(
+                          title: 'Direct',
+                          body:
+                              'Transferência direta entre usuários da plataforma.',
+                        ),
+                        _NfcMethodInfoCard(
+                          title: 'Lightning',
+                          body:
+                              'Recebimento instantâneo com taxa de roteamento.',
+                        ),
+                        _NfcMethodInfoCard(
+                          title: 'On-chain',
+                          body:
+                              'Transação registrada na rede Bitcoin para valores maiores.',
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _buildMethodOption({
+    required IconData icon,
+    required String label,
+    required ReceiveNfcMethod method,
+  }) {
+    return Semantics(
+      button: true,
+      label: label.replaceAll('\n', ' '),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(999),
+        onTap: () => _selectMethod(method),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 80,
+              height: 80,
+              decoration: BoxDecoration(
+                shape: BoxShape.circle,
+                color: _surfaceHigh,
+                border: Border.all(color: _border),
+              ),
+              child: Icon(icon, color: _text, size: 34),
+            ),
+            const SizedBox(height: 12),
+            Text(
+              label,
+              textAlign: TextAlign.center,
+              style: AppTypography.inter(
+                color: _mutedText,
+                fontSize: 14,
+                fontWeight: FontWeight.w500,
+                height: 1.2,
+                letterSpacing: 0,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -177,9 +401,9 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           _buildNfcOrb(size: 192, detected: true),
           const SizedBox(height: 40),
           Text(
-            'Dispositivo detectado!',
+            _detectedTitle,
             textAlign: TextAlign.center,
-            style: GoogleFonts.ibmPlexSerif(
+            style: AppTypography.newsreader(
               color: _text,
               fontSize: 32,
               fontWeight: FontWeight.w500,
@@ -189,9 +413,9 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           ),
           const SizedBox(height: 16),
           Text(
-            'Aguardando confirmação e autenticação no dispositivo do pagador...',
+            _detectedDescription,
             textAlign: TextAlign.center,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _mutedText,
               fontSize: 16,
               fontWeight: FontWeight.w400,
@@ -207,6 +431,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   }
 
   Widget _buildSuccess(BuildContext context) {
+    const successTitle = 'Transação reconhecida';
     return Padding(
       padding: const EdgeInsets.fromLTRB(24, 28, 24, 32),
       child: Column(
@@ -221,9 +446,9 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                     _buildSuccessIcon(),
                     const SizedBox(height: 32),
                     Text(
-                      'Pagamento\nIdentificado!',
+                      successTitle,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: _text,
                         fontSize: 48,
                         fontWeight: FontWeight.w400,
@@ -235,7 +460,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                     Text(
                       _amountLabel,
                       textAlign: TextAlign.center,
-                      style: GoogleFonts.ibmPlexSerif(
+                      style: AppTypography.newsreader(
                         color: _text,
                         fontSize: 20,
                         fontWeight: FontWeight.w500,
@@ -292,6 +517,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   }
 
   Widget _buildHeader(BuildContext context) {
+    const receiveLabel = 'Receber';
     return SizedBox(
       height: 56,
       child: Stack(
@@ -301,7 +527,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: () => Navigator.of(context).maybePop(),
-              icon: const Icon(LucideIcons.chevronLeft),
+              icon: const Icon(KeroseneIcons.back),
               color: _text,
               style: IconButton.styleFrom(
                 foregroundColor: _text,
@@ -310,8 +536,8 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
             ),
           ),
           Text(
-            'Receber',
-            style: GoogleFonts.inter(
+            receiveLabel,
+            style: AppTypography.inter(
               color: _text,
               fontSize: 16,
               fontWeight: FontWeight.w400,
@@ -393,7 +619,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                   border: Border.all(color: _border),
                 ),
                 child: Icon(
-                  LucideIcons.nfc,
+                  KeroseneIcons.nfc,
                   color: detected ? _success : _text,
                   size: size * 0.34,
                 ),
@@ -478,7 +704,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                   ],
                 ),
                 child: const Icon(
-                  LucideIcons.checkCircle2,
+                  KeroseneIcons.success,
                   color: _success,
                   size: 48,
                 ),
@@ -515,6 +741,21 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           const SizedBox(height: 16),
           Divider(color: _border.withValues(alpha: 0.6), height: 1),
           const SizedBox(height: 16),
+          _buildDetailRow('Status', _statusLabel),
+          const SizedBox(height: 16),
+          Divider(color: _border.withValues(alpha: 0.6), height: 1),
+          const SizedBox(height: 16),
+          if (_detectedMethod == ReceiveNfcMethod.lightning) ...[
+            _buildDetailRow('Taxa Lightning', '0.000001 BTC'),
+            const SizedBox(height: 16),
+            Divider(color: _border.withValues(alpha: 0.6), height: 1),
+            const SizedBox(height: 16),
+          ] else if (_detectedMethod == ReceiveNfcMethod.onchain) ...[
+            _buildDetailRow('Taxa de rede', 'A confirmar'),
+            const SizedBox(height: 16),
+            Divider(color: _border.withValues(alpha: 0.6), height: 1),
+            const SizedBox(height: 16),
+          ],
           _buildDetailRow('Data', 'Hoje, $time'),
           const SizedBox(height: 16),
         ],
@@ -527,7 +768,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
       children: [
         Text(
           label,
-          style: GoogleFonts.inter(
+          style: AppTypography.inter(
             color: _mutedText,
             fontSize: 14,
             fontWeight: FontWeight.w400,
@@ -542,7 +783,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             textAlign: TextAlign.right,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _text,
               fontSize: 16,
               fontWeight: FontWeight.w500,
@@ -583,7 +824,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
           const SizedBox(width: 8),
           Text(
             _statusLabel,
-            style: GoogleFonts.inter(
+            style: AppTypography.inter(
               color: _text,
               fontSize: 12,
               fontWeight: FontWeight.w400,
@@ -611,14 +852,14 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
                 borderRadius: BorderRadius.circular(8),
                 side: const BorderSide(color: _border),
               ),
-              textStyle: GoogleFonts.inter(
+              textStyle: AppTypography.inter(
                 fontSize: 16,
                 fontWeight: FontWeight.w500,
                 height: 1.5,
                 letterSpacing: 0,
               ),
             ),
-            child: const Text('Ir para o início'),
+            child: Text(context.tr.goToHome),
           ),
         ),
       ],
@@ -628,6 +869,56 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   void _goHome() {
     HapticFeedback.selectionClick();
     Navigator.of(context).popUntil((route) => route.isFirst);
+  }
+}
+
+class _NfcMethodInfoCard extends StatelessWidget {
+  final String title;
+  final String body;
+
+  const _NfcMethodInfoCard({
+    required this.title,
+    required this.body,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 240,
+      margin: const EdgeInsets.only(right: 14),
+      padding: const EdgeInsets.all(18),
+      decoration: BoxDecoration(
+        color: _ReceiveNfcFlowScreenState._surfaceHigh,
+        border: Border.all(color: _ReceiveNfcFlowScreenState._border),
+        borderRadius: BorderRadius.circular(12),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            title,
+            style: AppTypography.newsreader(
+              color: _ReceiveNfcFlowScreenState._text,
+              fontSize: 20,
+              fontWeight: FontWeight.w500,
+              height: 1.2,
+              letterSpacing: 0,
+            ),
+          ),
+          const SizedBox(height: 10),
+          Text(
+            body,
+            style: AppTypography.inter(
+              color: _ReceiveNfcFlowScreenState._mutedText,
+              fontSize: 13,
+              fontWeight: FontWeight.w400,
+              height: 1.45,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
   }
 }
 

@@ -88,8 +88,8 @@ class AppConfig {
   static const String authAppPinVerify = '/auth/security/app-pin/verify';
   static const String authSecurityStatus = '/auth/security-status';
   static const String authActivationStatus = '/auth/activation-status';
-  static const String authActivationDepositLink =
-      '/auth/activation-status/deposit-link';
+  static const String authActivationFundingLink =
+      '/auth/activation-status/funding-link';
   static const String authBackupCodes = '/auth/backup-codes';
   static const String authBackupCodesRegenerate =
       '/auth/backup-codes/regenerate';
@@ -117,131 +117,54 @@ class AppConfig {
   static const String kfeTransactions = '/kfe/transactions';
   static String kfeTransaction(String transactionId) =>
       '$kfeTransactions/$transactionId';
+  static String kfeWallet(String walletId) => '$kfeWallets/$walletId';
+  static String kfeWalletArchive(String walletId) =>
+      '${kfeWallet(walletId)}/archive';
   static String kfeWalletAddressRotate(String walletId) =>
       '$kfeWallets/$walletId/addresses/rotate';
 
-  // ==================== Wallets ====================
-  static const String walletCreate = kfeWallets;
-  static const String walletAll = kfeDashboard;
-  static const String walletFind = kfeWallets;
-  static const String walletUpdate = kfeWallets;
-  static const String walletDelete = kfeWallets;
-
-  // ==================== Ledger ====================
-  static const String ledgerAll = kfeDashboard;
-  static const String ledgerFind = kfeDashboard;
-  static const String ledgerBalance = kfeDashboard;
-  static const String ledgerHistory = kfeDashboard;
-  static const String ledgerTransaction = kfeTransactions;
-  static const String ledgerPaymentRequest = kfeTransactions;
-  static String ledgerPaymentRequestPayPath(String linkId) =>
-      kfeTransaction(linkId);
-  static const String ledgerPaymentRequestPay = kfeTransactions;
-  static const String ledgerDelete = kfeDashboard;
-
-  // ==================== Payments ====================
-  static const String transactionsDepositAddress = kfeDashboard;
-  static const String transactionsEstimateFee = kfeTransactions;
-  static const String transactionsCreateUnsigned = kfeTransactions;
-  static const String transactionsBroadcast = kfeTransactions;
-  static const String transactionsStatus = kfeTransactions;
-  static const String transactionsWithdraw = kfeTransactions;
-  static const String transactionsNetworkOnchainAddress = kfeWallets;
-  static const String transactionsNetworkWalletProfile = kfeDashboard;
-  static const String transactionsNetworkOnchainSend = kfeTransactions;
-  static const String transactionsNetworkLightningInvoice = kfeTransactions;
-  static const String transactionsNetworkLightningPay = kfeTransactions;
-  static const String transactionsNetworkTransfers = kfeDashboard;
-  static const String legacyTransactionsDepositAddress =
-      '/transactions/deposit-address';
-  static const String legacyTransactionsEstimateFee =
-      '/transactions/estimate-fee';
-  static const String legacyTransactionsCreateUnsigned =
-      '/transactions/create-unsigned';
-  static const String legacyTransactionsBroadcast = '/transactions/broadcast';
-  static const String legacyTransactionsStatus = '/transactions/status';
-  static const String legacyTransactionsWithdraw = '/transactions/withdraw';
-  static const String legacyTransactionsNetworkOnchainAddress =
-      '/transactions/network/onchain/address';
-  static const String legacyTransactionsNetworkWalletProfile =
-      '/transactions/network/wallet-profile';
-  static const String legacyTransactionsNetworkOnchainSend =
-      '/transactions/network/onchain/send';
-  static const String legacyTransactionsNetworkLightningInvoice =
-      '/transactions/network/lightning/invoice';
-  static const String legacyTransactionsNetworkLightningPay =
-      '/transactions/network/lightning/pay';
-  static const String legacyTransactionsNetworkTransfers =
-      '/transactions/network/transfers';
-  static const String depositRoot = '/deposit';
-  static const String treasuryOverview = '/treasury/overview';
-  static const String transactionsCreatePaymentLink =
-      '/transactions/create-payment-link';
-  static const String transactionsPaymentLink = '/transactions/payment-link';
-  static const String transactionsPaymentLinksList =
-      '/transactions/payment-links';
-  static const String transactionsOnrampUrls = '/api/onramp/urls';
-  static const String paymentsQuote = '/payments/quote';
-  static String paymentsConfirm(String paymentIntentId) =>
-      '/payments/$paymentIntentId/confirm';
-  static String paymentsStatus(String paymentIntentId) =>
-      '/payments/$paymentIntentId';
-  static String paymentReceivingCapabilities(String receiverIdentifier) =>
+  static const String kfeTransactionQuote = '$kfeTransactions/quote';
+  static const String kfePaymentRequests = '/kfe/payment-requests';
+  static String kfePaymentRequest(String requestId) =>
+      '$kfePaymentRequests/$requestId';
+  static String kfePublicPaymentRequest(String publicId) =>
+      '/api/public/kfe/payment-requests/$publicId';
+  static String kfePaymentRequestExpire(String requestId) =>
+      '$kfePaymentRequests/$requestId/expire';
+  static String kfePaymentRequestHide(String requestId) =>
+      '$kfePaymentRequests/$requestId/hide';
+  static String kfePaymentRequestCancel(String requestId) =>
+      '$kfePaymentRequests/$requestId/cancel';
+  static const String kfeOnrampUrls = '$kfeTransactions/onramp-urls';
+  static const String kfeReserveOverview = '/api/admin/kfe/reserves/overview';
+  static String kfeReceivingCapabilities(String receiverIdentifier) =>
       '/kfe/users/$receiverIdentifier/receiving-capabilities';
 
-  // ==================== Bitcoin Accounts ====================
-  static const String bitcoinAccounts = kfeDashboard;
-  static const String bitcoinAccountsInternalCard = kfeWallets;
-  static const String bitcoinAccountsColdWallet = kfeWallets;
-  static const String legacyBitcoinAccounts = '/bitcoin/accounts';
-  static const String legacyBitcoinAccountsInternalCard =
-      '/bitcoin/accounts/internal-card';
-  static const String legacyBitcoinAccountsColdWallet =
-      '/bitcoin/accounts/cold-wallet';
-  static const String bitcoinReceivePublic = kfeDashboard;
-  static String bitcoinAccountReceiveRequests(String accountId) =>
-      kfeWalletAddressRotate(accountId);
-  static String bitcoinReceiveRequestStatus(String id) => kfeTransactions;
-  static String bitcoinReceiveRequestExpire(String id) => kfeTransactions;
-  static String bitcoinReceiveRequestHide(String id) => kfeTransactions;
-  static String bitcoinReceiveRequestUserAction(String id) => kfeTransactions;
-  static String bitcoinColdWalletPsbt(String coldWalletId) => kfeWallets;
-  static String bitcoinColdWalletUtxos(String coldWalletId) => kfeWallets;
-  static const String bitcoinTaxEvents = kfeDashboard;
-  static String bitcoinTaxEventsExport(String format) => kfeDashboard;
-  static String bitcoinTaxEventClassify(String eventId) => kfeDashboard;
-  static String bitcoinPsbt(String workflowId) => kfeTransactions;
-  static String bitcoinPsbtSigned(String workflowId) => kfeTransactions;
-  static const String legacyBitcoinReceivePublic = '/bitcoin/receive';
-  static String legacyBitcoinAccountReceiveRequests(String accountId) =>
-      '/bitcoin/accounts/$accountId/receive-requests';
-  static String legacyBitcoinReceiveRequestStatus(String id) =>
-      '/bitcoin/receive-requests/$id/status';
-  static String legacyBitcoinReceiveRequestExpire(String id) =>
-      '/bitcoin/receive-requests/$id/expire';
-  static String legacyBitcoinReceiveRequestHide(String id) =>
-      '/bitcoin/receive-requests/$id/hide';
-  static String legacyBitcoinReceiveRequestUserAction(String id) =>
-      '/bitcoin/receive-requests/$id/user-action';
-  static String legacyBitcoinColdWalletPsbt(String coldWalletId) =>
-      '/bitcoin/cold-wallets/$coldWalletId/psbt';
-  static String legacyBitcoinColdWalletUtxos(String coldWalletId) =>
-      '/bitcoin/cold-wallets/$coldWalletId/utxos';
-  static const String legacyBitcoinTaxEvents = '/bitcoin/tax-events';
-  static String legacyBitcoinTaxEventsExport(String format) =>
-      '/bitcoin/tax-events/export?format=$format';
-  static String legacyBitcoinTaxEventClassify(String eventId) =>
-      '/bitcoin/tax-events/$eventId/classify';
-  static String legacyBitcoinPsbt(String workflowId) =>
-      '/bitcoin/psbt/$workflowId';
-  static String legacyBitcoinPsbtSigned(String workflowId) =>
-      '/bitcoin/psbt/$workflowId/signed';
+  static String kfeColdWalletPsbtCreate(String walletId) =>
+      '$kfeWallets/$walletId/cold-wallet/psbt';
+  static String kfeColdWalletUtxos(String walletId) =>
+      '$kfeWallets/$walletId/utxos';
+  static const String kfeTaxEvents = '/kfe/tax-events';
+  static String kfeTaxEventsExport(String format) =>
+      '$kfeTaxEvents/export?format=$format';
+  static String kfeTaxEventClassify(String eventId) =>
+      '$kfeTaxEvents/$eventId/classify';
+  static const String kfeColdWalletPsbts = '/kfe/cold-wallet/psbts';
+  static String kfeColdWalletPsbtWorkflow(String workflowId) =>
+      '$kfeColdWalletPsbts/$workflowId';
+  static String kfeColdWalletPsbtSigned(String workflowId) =>
+      '$kfeColdWalletPsbts/$workflowId/signed';
+  static String kfeColdWalletPsbtBroadcast(String workflowId) =>
+      '$kfeColdWalletPsbts/$workflowId/broadcast';
 
   // ==================== Notifications ====================
   static const String notificationsList = '/notifications';
   static const String notificationsRead = '/notifications/{id}/read';
   static const String notificationRegisterToken =
       '/notifications/register-token';
+  static const String notificationDeviceTokens = '/notifications/device-tokens';
+  static String notificationDeviceToken(String tokenId) =>
+      '$notificationDeviceTokens/$tokenId';
 
   // ==================== Security ====================
   static const String sovereigntyStatus = '/sovereignty/status';

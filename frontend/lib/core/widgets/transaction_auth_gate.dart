@@ -1,13 +1,21 @@
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:slip39/slip39.dart';
-import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/utils/error_translator.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
+import '../../features/security/domain/entities/app_pin_status.dart';
 import '../../features/security/domain/entities/account_security_profile.dart';
+import '../../features/security/presentation/providers/security_provider.dart';
+import '../../features/security/presentation/widgets/pin_entry_scaffold.dart';
 import '../security/biometric_service.dart';
 import '../theme/app_spacing.dart';
+import '../theme/app_typography.dart';
 
 class TransactionAuthResult {
   final bool isAuthenticated;
@@ -57,17 +65,30 @@ class TransactionAuthGate {
     );
     final needsManualFactors = _needsManualFactors(effectiveProfile);
 
+    final appPinOutcome = await _showAppPinIfConfigured(
+      context,
+      effectiveProfile.appPin,
+    );
+    if (appPinOutcome == _DeviceAuthOutcome.rejected ||
+        appPinOutcome == _DeviceAuthOutcome.unavailable ||
+        !context.mounted) {
+      onCancelled?.call();
+      return const TransactionAuthResult.cancelled();
+    }
+
     if (effectiveProfile.requiresPasskey && !needsManualFactors) {
       onAuthenticated?.call();
       return const TransactionAuthResult.success();
     }
 
     if (!effectiveProfile.requiresPasskey) {
-      final biometricService = BiometricService();
-      final deviceAuthOutcome = await _showDevicePinFallback(
-        context,
-        biometricService,
-      );
+      final deviceAuthOutcome =
+          appPinOutcome == _DeviceAuthOutcome.authenticated
+              ? _DeviceAuthOutcome.authenticated
+              : await _showDevicePinFallback(
+                  context,
+                  BiometricService(),
+                );
 
       if (deviceAuthOutcome == _DeviceAuthOutcome.rejected ||
           (deviceAuthOutcome == _DeviceAuthOutcome.unavailable &&
@@ -164,8 +185,7 @@ class TransactionAuthGate {
     BiometricService bio,
   ) async {
     try {
-      final localizedReason =
-          AppCopy.authReasonTransactionConfirm.resolve(context);
+      final localizedReason = context.tr.authReasonTransactionConfirm;
       final canUseDeviceAuth = await bio.canAuthenticate();
       if (!context.mounted) {
         return _DeviceAuthOutcome.rejected;
@@ -184,9 +204,163 @@ class TransactionAuthGate {
       return _DeviceAuthOutcome.unavailable;
     }
   }
+
+  static Future<_DeviceAuthOutcome?> _showAppPinIfConfigured(
+    BuildContext context,
+    AppPinStatus status,
+  ) async {
+    if (!status.configured) {
+      return null;
+    }
+    return _showAppPinAuthorization(context, status);
+  }
+
+  static Future<_DeviceAuthOutcome> _showAppPinAuthorization(
+    BuildContext context,
+    AppPinStatus status,
+  ) async {
+    final result = await showGeneralDialog<_DeviceAuthOutcome>(
+      context: context,
+      barrierDismissible: false,
+      barrierColor: Colors.black,
+      pageBuilder: (context, _, __) {
+        return _TransactionPinAuthorizationScreen(status: status);
+      },
+      transitionDuration: KeroseneMotion.short,
+      transitionBuilder: (context, animation, _, child) {
+        return FadeTransition(opacity: animation, child: child);
+      },
+    );
+    return result ?? _DeviceAuthOutcome.rejected;
+  }
 }
 
 enum _DeviceAuthOutcome { authenticated, unavailable, rejected }
+
+class _TransactionPinAuthorizationScreen extends ConsumerStatefulWidget {
+  final AppPinStatus status;
+
+  const _TransactionPinAuthorizationScreen({required this.status});
+
+  @override
+  ConsumerState<_TransactionPinAuthorizationScreen> createState() =>
+      _TransactionPinAuthorizationScreenState();
+}
+
+class _TransactionPinAuthorizationScreenState
+    extends ConsumerState<_TransactionPinAuthorizationScreen> {
+  bool _busy = false;
+  String _pin = '';
+  String? _error;
+
+  int get _pinLength => widget.status.minPinLength.clamp(4, 8);
+
+  void _appendDigit(String digit) {
+    if (_busy || widget.status.locked || _pin.length >= _pinLength) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _pin += digit;
+      _error = null;
+    });
+  }
+
+  void _deleteDigit() {
+    if (_busy || _pin.isEmpty) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _pin = _pin.substring(0, _pin.length - 1);
+      _error = null;
+    });
+  }
+
+  Future<void> _submit() async {
+    if (_busy || widget.status.locked) {
+      return;
+    }
+    if (_pin.length != _pinLength) {
+      setState(() {
+        _error = context.tr.appEntryPinLengthError(_pinLength, _pinLength);
+      });
+      return;
+    }
+
+    setState(() {
+      _busy = true;
+      _error = null;
+    });
+
+    final result =
+        await ref.read(securityRepositoryProvider).verifyAppPin(pin: _pin);
+
+    result.fold(
+      (failure) {
+        if (!mounted) {
+          return;
+        }
+        HapticFeedback.heavyImpact();
+        setState(() {
+          _busy = false;
+          _pin = '';
+          _error = ErrorTranslator.translate(context.tr, failure.message);
+        });
+        ref.invalidate(appPinStatusProvider);
+      },
+      (_) {
+        ref.invalidate(appPinStatusProvider);
+        Navigator.of(context).pop(_DeviceAuthOutcome.authenticated);
+      },
+    );
+
+    if (mounted) {
+      setState(() => _busy = false);
+    }
+  }
+
+  void _cancel() {
+    Navigator.of(context).pop(_DeviceAuthOutcome.rejected);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return PinEntryScaffold(
+      instruction: _transactionPinInstruction(context),
+      valueLength: _pin.length,
+      maxLength: _pinLength,
+      error: _error,
+      busy: _busy,
+      enabled: !widget.status.locked,
+      confirmLabel: context.tr.appEntryConfirm,
+      onDigit: _appendDigit,
+      onDelete: _deleteDigit,
+      onConfirm: _busy || widget.status.locked ? null : _submit,
+      footer: TextButton(
+        onPressed: _busy ? null : _cancel,
+        style: TextButton.styleFrom(foregroundColor: Colors.white70),
+        child: Text(_transactionPinCancel(context)),
+      ),
+    );
+  }
+}
+
+String _transactionPinInstruction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Enter this device PIN to authorize the transaction.',
+    'es' => 'Ingresa el PIN de este dispositivo para autorizar la transacción.',
+    _ => 'Digite o PIN deste dispositivo para autorizar a transação.',
+  };
+}
+
+String _transactionPinCancel(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Cancel',
+    'es' => 'Cancelar',
+    _ => 'Cancelar',
+  };
+}
 
 class _FactorAuthorizationSheet extends StatefulWidget {
   final AccountSecurityProfile profile;
@@ -242,11 +416,11 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
 
     return _AuthorizationSheetBase(
       icon: widget.profile.mode == AccountSecurityMode.multisig2fa
-          ? LucideIcons.shield
-          : LucideIcons.keyRound,
+          ? KeroseneIcons.totp
+          : KeroseneIcons.passkey,
       title: widget.profile.mode == AccountSecurityMode.multisig2fa
-          ? AppCopy.transactionAuthVaultTitle.resolve(context)
-          : AppCopy.transactionAuthOperationTitle.resolve(context),
+          ? context.tr.transactionAuthVaultTitle
+          : context.tr.transactionAuthOperationTitle,
       subtitle: _subtitle(context, widget.profile),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -257,15 +431,14 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
             children: [
               if (widget.profile.requiresPassphrase)
                 _FactorChip(
-                  label:
-                      AppCopy.transactionAuthPassphraseLabel.resolve(context),
-                  icon: LucideIcons.keyRound,
+                  label: context.tr.transactionAuthPassphraseLabel,
+                  icon: KeroseneIcons.passkey,
                   color: theme.colorScheme.primary,
                 ),
               if (widget.profile.requiresTotp)
                 _FactorChip(
                   label: 'TOTP',
-                  icon: LucideIcons.shield,
+                  icon: KeroseneIcons.totp,
                   color: theme.colorScheme.secondary,
                 ),
             ],
@@ -274,32 +447,28 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
           if (widget.profile.requiresPassphrase)
             _LabeledField(
               controller: _passphraseController,
-              label: AppCopy.transactionAuthConfirmationPassphraseLabel.resolve(
-                context,
-              ),
+              label: context.tr.transactionAuthConfirmationPassphraseLabel,
               keyboardType: TextInputType.visiblePassword,
               obscureText: true,
               hasError: _passphraseError,
-              errorText:
-                  AppCopy.transactionAuthEnterPassphrase.resolve(context),
+              errorText: context.tr.transactionAuthEnterPassphrase,
               onChanged: (_) => setState(() => _passphraseError = false),
             ),
           if (widget.profile.requiresPassphrase) const SizedBox(height: 12),
           if (widget.profile.requiresTotp)
             _LabeledField(
               controller: _totpController,
-              label: AppCopy.transactionAuthTotpCodeLabel.resolve(context),
+              label: context.tr.transactionAuthTotpCodeLabel,
               keyboardType: TextInputType.number,
               maxLength: 6,
               hasError: _totpError,
-              errorText: AppCopy.transactionAuthEnterAuthenticatorDigits
-                  .resolve(context),
+              errorText: context.tr.transactionAuthEnterAuthenticatorDigits,
               onChanged: (_) => setState(() => _totpError = false),
             ),
           const SizedBox(height: AppSpacing.xl),
           _ConfirmButton(
             onTap: _confirm,
-            text: AppCopy.transactionAuthContinue.resolve(context),
+            text: context.tr.transactionAuthContinue,
           ),
         ],
       ),
@@ -307,12 +476,15 @@ class _FactorAuthorizationSheetState extends State<_FactorAuthorizationSheet> {
   }
 
   String _subtitle(BuildContext context, AccountSecurityProfile profile) {
-    return AppCopy.transactionAuthProfileSubtitle(
-      context,
-      isMultisig: profile.mode == AccountSecurityMode.multisig2fa,
-      multisigThreshold: profile.multisigThreshold,
-      isPasskeyOnly: profile.mode == AccountSecurityMode.passkey,
-    );
+    if (profile.mode == AccountSecurityMode.multisig2fa) {
+      return profile.multisigThreshold >= 3
+          ? context.tr.transactionAuthProfileSubtitleMultisigFull
+          : context.tr.transactionAuthProfileSubtitleMultisigStandard;
+    }
+    if (profile.mode == AccountSecurityMode.passkey) {
+      return context.tr.transactionAuthProfileSubtitlePasskeyOnly;
+    }
+    return context.tr.transactionAuthProfileSubtitleDefault;
   }
 }
 
@@ -359,10 +531,8 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
 
     if (shares.length != _threshold) {
       setState(() {
-        _recoveryError = AppCopy.transactionAuthShamirRecoveryError(
-          context,
-          threshold: _threshold,
-        );
+        _recoveryError =
+            context.tr.transactionAuthShamirRecoveryError(_threshold);
       });
       return;
     }
@@ -394,9 +564,7 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
       );
     } catch (_) {
       setState(() {
-        _recoveryError = AppCopy.transactionAuthShamirReconstructFailed(
-          context,
-        );
+        _recoveryError = context.tr.transactionAuthShamirReconstructFailed;
       });
     }
   }
@@ -404,12 +572,11 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
   @override
   Widget build(BuildContext context) {
     return _AuthorizationSheetBase(
-      icon: LucideIcons.layoutGrid,
-      title: AppCopy.transactionAuthShamirTitle.resolve(context),
-      subtitle: AppCopy.transactionAuthShamirSubtitle(
-        context,
-        threshold: _threshold,
-        totalShares: _totalShares,
+      icon: KeroseneIcons.shares,
+      title: context.tr.transactionAuthShamirTitle,
+      subtitle: context.tr.transactionAuthShamirSubtitle(
+        _threshold,
+        _totalShares,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -420,13 +587,13 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
             children: [
               _FactorChip(
                 label: '$_threshold/$_totalShares SLIP-39',
-                icon: LucideIcons.layoutGrid,
-                color: Colors.orange,
+                icon: KeroseneIcons.shares,
+                color: KeroseneBrandTokens.warning,
               ),
               if (widget.profile.requiresTotp)
                 _FactorChip(
                   label: 'TOTP',
-                  icon: LucideIcons.shield,
+                  icon: KeroseneIcons.totp,
                   color: Theme.of(context).colorScheme.secondary,
                 ),
             ],
@@ -440,10 +607,7 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
               ),
               child: _ShareField(
                 controller: _shareControllers[index],
-                label: AppCopy.transactionAuthShareLabel(
-                  context,
-                  index: index + 1,
-                ),
+                label: context.tr.transactionAuthShareLabel(index + 1),
               ),
             );
           }),
@@ -455,8 +619,7 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
               keyboardType: TextInputType.number,
               maxLength: 6,
               hasError: _totpError,
-              errorText: AppCopy.transactionAuthEnterAuthenticatorDigits
-                  .resolve(context),
+              errorText: context.tr.transactionAuthEnterAuthenticatorDigits,
               onChanged: (_) => setState(() => _totpError = false),
             ),
           ],
@@ -472,9 +635,7 @@ class _ShamirAuthorizationSheetState extends State<_ShamirAuthorizationSheet> {
           const SizedBox(height: AppSpacing.xl),
           _ConfirmButton(
             onTap: _confirm,
-            text: AppCopy.transactionAuthReconstructAndContinue.resolve(
-              context,
-            ),
+            text: context.tr.transactionAuthReconstructAndContinue,
           ),
         ],
       ),
@@ -637,8 +798,9 @@ class _LabeledField extends StatelessWidget {
           ? TextAlign.center
           : TextAlign.start,
       style: theme.textTheme.titleMedium!.copyWith(
-        fontFamily:
-            keyboardType == TextInputType.number ? 'IBMPlexSansHebrew' : null,
+        fontFamily: keyboardType == TextInputType.number
+            ? AppTypography.financialFontFamily
+            : null,
         letterSpacing: keyboardType == TextInputType.number ? 6 : 0,
       ),
       decoration: InputDecoration(
@@ -688,7 +850,7 @@ class _ShareField extends StatelessWidget {
       decoration: InputDecoration(
         labelText: label,
         alignLabelWithHint: true,
-        hintText: AppCopy.transactionAuthShareHint.resolve(context),
+        hintText: context.tr.transactionAuthShareHint,
         enabledBorder: OutlineInputBorder(
           borderRadius: BorderRadius.circular(AppSpacing.md),
           borderSide: BorderSide(

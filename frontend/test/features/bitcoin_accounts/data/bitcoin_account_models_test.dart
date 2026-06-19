@@ -60,6 +60,19 @@ void main() {
     expect(utxo.isSpendable, isTrue);
   });
 
+  test('parses KFE UTXO response fields', () {
+    final utxo = ColdWalletUtxoView.fromJson(const {
+      'txid': 'abcdef1234567890',
+      'vout': 0,
+      'valueSats': 125000,
+    });
+
+    expect(utxo.id, 'abcdef1234567890:0');
+    expect(utxo.txidRef, 'abcdef1234567890');
+    expect(utxo.amountSats, 125000);
+    expect(utxo.isSpendable, isTrue);
+  });
+
   test('parses PSBT workflow view', () {
     final workflow = PsbtWorkflowView.fromJson(const {
       'id': 'psbt-1',
@@ -76,6 +89,22 @@ void main() {
     expect(workflow.id, 'psbt-1');
     expect(workflow.awaitsSignature, isTrue);
     expect(workflow.amountSats, 100000);
+  });
+
+  test('parses KFE PSBT response fields', () {
+    final workflow = PsbtWorkflowView.fromJson(const {
+      'psbtHash': 'psbt-hash-1',
+      'walletId': 'cold-1',
+      'psbt': 'cHNidP8BAHECAAAAA',
+      'destinationAddress': 'bc1qrecipient000000000000000000000000000000',
+      'amountSats': 100000,
+      'feeSats': 450,
+    });
+
+    expect(workflow.id, 'psbt-hash-1');
+    expect(workflow.coldWalletId, 'cold-1');
+    expect(workflow.unsignedPsbt, 'cHNidP8BAHECAAAAA');
+    expect(workflow.estimatedFeeSats, 450);
   });
 
   test('parses tax export view with nested events', () {

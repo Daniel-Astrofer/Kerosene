@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/presentation/widgets/glass_container.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class AnimatedErrorPopup extends StatefulWidget {
   final String title;
@@ -46,7 +50,7 @@ class AnimatedErrorPopup extends StatefulWidget {
       barrierDismissible: true,
       barrierLabel: 'Dismiss Error',
       barrierColor: Colors.black.withValues(alpha: 0.7),
-      transitionDuration: const Duration(milliseconds: 400),
+      transitionDuration: KeroseneMotion.long,
       pageBuilder: (context, anim1, anim2) {
         return Center(
           child: Material(
@@ -62,7 +66,8 @@ class AnimatedErrorPopup extends StatefulWidget {
         );
       },
       transitionBuilder: (context, anim1, anim2, child) {
-        final curve = CurvedAnimation(parent: anim1, curve: Curves.easeOutBack);
+        final curve =
+            CurvedAnimation(parent: anim1, curve: KeroseneMotion.spring);
         return ScaleTransition(
           scale: Tween<double>(begin: 0.8, end: 1.0).animate(curve),
           child: FadeTransition(opacity: anim1, child: child),
@@ -85,13 +90,14 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: KeroseneMotion.status,
     )..repeat(reverse: true);
 
     _pulseAnimation = Tween<double>(
       begin: 1.0,
       end: 1.1,
-    ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
+    ).animate(
+        CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard));
   }
 
   @override
@@ -102,8 +108,9 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
 
   @override
   Widget build(BuildContext context) {
-    final baseColor =
-        widget.isSuccess ? const Color(0xFF00FF94) : const Color(0xFFFF0055);
+    final baseColor = widget.isSuccess
+        ? KeroseneBrandTokens.success
+        : KeroseneBrandTokens.error;
 
     // Split message logic: "Description. Faltam X BTC"
     String mainMessage = widget.message;
@@ -152,8 +159,8 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
                     ),
                     child: Icon(
                       widget.isSuccess
-                          ? Icons.check_circle_outline_rounded
-                          : Icons.error_outline_rounded,
+                          ? KeroseneIcons.success
+                          : KeroseneIcons.error,
                       color: baseColor,
                       size: 40,
                     ),
@@ -206,7 +213,7 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        Icons.info_outline_rounded,
+                        KeroseneIcons.info,
                         color: baseColor,
                         size: 16,
                       ),
@@ -218,7 +225,7 @@ class _AnimatedErrorPopupState extends State<AnimatedErrorPopup>
                             color: baseColor,
                             fontSize: 13,
                             fontWeight: FontWeight.w600,
-                            fontFamily: 'IBMPlexSansHebrew',
+                            fontFamily: AppTypography.financialFontFamily,
                           ),
                         ),
                       ),

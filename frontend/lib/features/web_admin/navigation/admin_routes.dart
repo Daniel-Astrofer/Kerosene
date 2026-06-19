@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class AdminRouteNotifier extends Notifier<AdminRoute> {
   @override
@@ -15,20 +16,20 @@ final adminRouteProvider =
     NotifierProvider<AdminRouteNotifier, AdminRoute>(AdminRouteNotifier.new);
 
 enum AdminRoute {
-  dashboard('Dashboard', Icons.dashboard_outlined),
-  monitoring('Monitoring', Icons.monitor_heart_outlined),
-  transactions('Integrity Proofs', Icons.fingerprint),
-  lightning('Lightning', Icons.flash_on_outlined),
-  onchain('On-chain', Icons.link),
-  checks('Hash Chain', Icons.account_tree_outlined),
-  paymentLinks('Payment Metrics', Icons.qr_code_2_outlined),
-  analytics('Analytics', Icons.bar_chart),
-  volatility('Volatility', Icons.show_chart),
-  companies('Infrastructure', Icons.business_outlined),
-  audit('Audit & Security', Icons.security_outlined),
-  authenticatedDevices('Authenticated Devices', Icons.devices_outlined),
-  notifications('Notifications', Icons.notifications_none_outlined),
-  settings('Settings', Icons.settings_outlined);
+  dashboard('Dashboard', KeroseneIcons.gauge),
+  monitoring('Monitoring', KeroseneIcons.activity),
+  transactions('Integrity Proofs', KeroseneIcons.biometric),
+  lightning('Lightning', KeroseneIcons.lightning),
+  onchain('On-chain', KeroseneIcons.onchain),
+  checks('Hash Chain', KeroseneIcons.network),
+  paymentLinks('Payment Metrics', KeroseneIcons.qr),
+  analytics('Analytics', KeroseneIcons.chart),
+  volatility('Volatility', KeroseneIcons.trendUp),
+  companies('Infrastructure', KeroseneIcons.business),
+  audit('Audit & Security', KeroseneIcons.security),
+  authenticatedDevices('Authenticated Devices', KeroseneIcons.devices),
+  notifications('Notifications', KeroseneIcons.notifications),
+  settings('Settings', KeroseneIcons.settings);
 
   final String label;
   final IconData icon;

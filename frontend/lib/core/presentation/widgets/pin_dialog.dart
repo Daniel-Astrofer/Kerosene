@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
-import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/security/app_pin_service.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 enum _PinMode { setup, enter }
 
-/// A premium full-screen PIN dialog - Refactored
+/// A full-screen PIN dialog for protected operations.
 class PinDialog extends StatefulWidget {
   final bool isSetup;
 
@@ -24,7 +27,7 @@ class PinDialog extends StatefulWidget {
       barrierColor:
           Theme.of(context).scaffoldBackgroundColor.withValues(alpha: 0.95),
       pageBuilder: (context, anim1, anim2) => PinDialog(isSetup: isSetup),
-      transitionDuration: const Duration(milliseconds: 300),
+      transitionDuration: KeroseneMotion.medium,
       transitionBuilder: (context, anim1, anim2, child) {
         return FadeTransition(opacity: anim1, child: child);
       },
@@ -85,7 +88,7 @@ class _PinDialogState extends State<PinDialog> {
         } else {
           HapticFeedback.heavyImpact();
           setState(() {
-            _error = 'PIN INCORRETO. TENTE NOVAMENTE.';
+            _error = 'Não conseguimos confirmar esse PIN. Tente novamente.';
             _entered = '';
           });
         }
@@ -96,9 +99,9 @@ class _PinDialogState extends State<PinDialog> {
   String get _title {
     switch (_mode) {
       case _PinMode.setup:
-        return 'CRIAR PIN';
+        return 'Criar PIN';
       case _PinMode.enter:
-        return 'AUTENTICAÇÃO';
+        return 'Confirme seu acesso';
     }
   }
 
@@ -107,16 +110,25 @@ class _PinDialogState extends State<PinDialog> {
       case _PinMode.setup:
         return 'Escolha um PIN de 6 dígitos para proteger sua carteira.';
       case _PinMode.enter:
-        return 'Digite seu PIN de segurança para processar esta operação.';
+        return 'Digite seu PIN de segurança para continuar com esta operação.';
     }
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Theme.of(context).scaffoldBackgroundColor,
-      body: CyberBackground(
-        useScroll: false,
+      backgroundColor: KeroseneBrandTokens.background,
+      body: DecoratedBox(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topCenter,
+            end: Alignment.bottomCenter,
+            colors: [
+              KeroseneBrandTokens.backgroundSoft,
+              KeroseneBrandTokens.background,
+            ],
+          ),
+        ),
         child: SafeArea(
           child: Column(
             children: [
@@ -126,10 +138,10 @@ class _PinDialogState extends State<PinDialog> {
               Text(
                 _title,
                 textAlign: TextAlign.center,
-                style: Theme.of(context)
-                    .textTheme
-                    .displayLarge!
-                    .copyWith(letterSpacing: 4),
+                style: Theme.of(context).textTheme.displayLarge!.copyWith(
+                      letterSpacing: -0.6,
+                      color: KeroseneBrandTokens.textPrimary,
+                    ),
               ).animate().fade().slideY(begin: 0.1, end: 0),
               const SizedBox(height: AppSpacing.sm),
               Padding(
@@ -138,19 +150,17 @@ class _PinDialogState extends State<PinDialog> {
                   _subtitle,
                   textAlign: TextAlign.center,
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
-                      color: Theme.of(context)
-                          .colorScheme
-                          .onPrimary
-                          .withValues(alpha: 0.5)),
+                        color: KeroseneBrandTokens.textSecondary,
+                      ),
                 ),
-              ).animate(delay: 100.ms).fade(),
+              ).animate(delay: KeroseneMotion.fast).fade(),
               const Spacer(),
               _buildDots().animate().fade(),
               const SizedBox(height: AppSpacing.md),
               _buildErrorMessage(),
               const Spacer(),
               _buildModernKeypad()
-                  .animate(delay: 200.ms)
+                  .animate(delay: KeroseneMotion.short)
                   .fade()
                   .slideY(begin: 0.2, end: 0),
               if (!widget.isSetup)
@@ -159,18 +169,15 @@ class _PinDialogState extends State<PinDialog> {
                   child: TextButton(
                     onPressed: () => Navigator.of(context).pop(false),
                     child: Text(
-                      'CANCELAR OPERAÇÃO',
+                      KeroseneUiCopy.cancelOperation,
                       style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                            color: Theme.of(context)
-                                .colorScheme
-                                .onPrimary
-                                .withValues(alpha: 0.3),
-                            fontWeight: FontWeight.w900,
-                            letterSpacing: 2,
+                            color: KeroseneBrandTokens.textMuted,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 0.2,
                           ),
                     ),
                   ),
-                ).animate(delay: 400.ms).fade(),
+                ).animate(delay: KeroseneMotion.long).fade(),
             ],
           ),
         ),
@@ -184,21 +191,25 @@ class _PinDialogState extends State<PinDialog> {
       height: 100,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.05),
+        color: KeroseneBrandTokens.brand.withValues(alpha: 0.05),
         border: Border.all(
-            color: Theme.of(context).colorScheme.primary.withValues(alpha: 0.2),
-            width: 2),
+          color: KeroseneBrandTokens.brand.withValues(alpha: 0.2),
+          width: 2,
+        ),
         boxShadow: [
           BoxShadow(
-              color:
-                  Theme.of(context).colorScheme.primary.withValues(alpha: 0.1),
-              blurRadius: 30,
-              spreadRadius: 5),
+            color: KeroseneBrandTokens.brand.withValues(alpha: 0.1),
+            blurRadius: 30,
+            spreadRadius: 5,
+          ),
         ],
       ),
-      child: Center(
-        child: Icon(LucideIcons.shieldCheck,
-            color: Theme.of(context).colorScheme.primary, size: 48),
+      child: const Center(
+        child: Icon(
+          KeroseneIcons.security,
+          color: KeroseneBrandTokens.brand,
+          size: 48,
+        ),
       ),
     );
   }
@@ -209,39 +220,28 @@ class _PinDialogState extends State<PinDialog> {
       children: List.generate(_pinLength, (i) {
         final filled = i < _entered.length;
         return AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
+          duration: KeroseneMotion.short,
           margin: const EdgeInsets.symmetric(horizontal: AppSpacing.sm),
           width: 16,
           height: 16,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
             color: filled
-                ? Theme.of(context).colorScheme.primary
-                : Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.05),
+                ? KeroseneBrandTokens.brand
+                : KeroseneBrandTokens.textPrimary.withValues(alpha: 0.05),
             border: Border.all(
               color: filled
-                  ? Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.3)
-                  : Theme.of(context)
-                      .colorScheme
-                      .onPrimary
-                      .withValues(alpha: 0.1),
+                  ? KeroseneBrandTokens.textPrimary.withValues(alpha: 0.3)
+                  : KeroseneBrandTokens.textPrimary.withValues(alpha: 0.1),
               width: 2,
             ),
             boxShadow: [
               if (filled)
                 BoxShadow(
-                    color: Theme.of(context)
-                        .colorScheme
-                        .primary
-                        .withValues(alpha: 0.3),
-                    blurRadius: 10,
-                    spreadRadius: 1),
+                  color: KeroseneBrandTokens.brand.withValues(alpha: 0.3),
+                  blurRadius: 10,
+                  spreadRadius: 1,
+                ),
             ],
           ),
         );
@@ -253,14 +253,15 @@ class _PinDialogState extends State<PinDialog> {
     return SizedBox(
       height: 24,
       child: AnimatedSwitcher(
-        duration: const Duration(milliseconds: 300),
+        duration: KeroseneMotion.medium,
         child: _error != null
             ? Text(
                 _error!,
                 style: Theme.of(context).textTheme.labelSmall!.copyWith(
-                    color: Theme.of(context).colorScheme.error,
-                    fontWeight: FontWeight.w900,
-                    letterSpacing: 1),
+                      color: KeroseneBrandTokens.error,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 0.1,
+                    ),
                 key: ValueKey(_error),
               )
             : const SizedBox.shrink(),
@@ -313,29 +314,26 @@ class _PinDialogState extends State<PinDialog> {
           height: 72,
           decoration: BoxDecoration(
             shape: BoxShape.circle,
-            color:
-                Theme.of(context).colorScheme.onPrimary.withValues(alpha: 0.02),
+            color: KeroseneBrandTokens.textPrimary.withValues(alpha: 0.02),
             border: Border.all(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.05),
-                width: 1.5),
+              color: KeroseneBrandTokens.textPrimary.withValues(alpha: 0.05),
+              width: 1.5,
+            ),
           ),
           alignment: Alignment.center,
           child: isSpecial && key == '←'
-              ? Icon(LucideIcons.delete,
-                  color: Theme.of(context).colorScheme.onPrimary, size: 24)
+              ? const Icon(
+                  KeroseneIcons.backspace,
+                  color: KeroseneBrandTokens.textPrimary,
+                  size: 24,
+                )
               : Text(
                   key,
                   style: Theme.of(context).textTheme.titleMedium!.copyWith(
                         color: isSpecial && key == 'C'
-                            ? Theme.of(context)
-                                .colorScheme
-                                .error
-                                .withValues(alpha: 0.7)
-                            : Theme.of(context).colorScheme.onPrimary,
-                        fontFamily: 'IBMPlexSansHebrew',
+                            ? KeroseneBrandTokens.error.withValues(alpha: 0.7)
+                            : KeroseneBrandTokens.textPrimary,
+                        fontFamily: AppTypography.financialFontFamily,
                         fontWeight: FontWeight.w300,
                       ),
                 ),

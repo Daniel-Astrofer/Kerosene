@@ -5,6 +5,8 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 /// Volatility module.
 ///
@@ -43,26 +45,26 @@ class VolatilityScreen extends ConsumerWidget {
                       AdminMetricCard(
                         label: 'BTC/USD',
                         value: '\$${_fmtPrice(btcUsd)}',
-                        icon: Icons.currency_bitcoin,
+                        icon: KeroseneIcons.bitcoin,
                         accentColor: AdminColors.warning,
                       ),
                       AdminMetricCard(
                         label: 'BTC/BRL',
                         value: 'R\$${_fmtPrice(btcBrl)}',
-                        icon: Icons.currency_bitcoin,
+                        icon: KeroseneIcons.bitcoin,
                         accentColor: AdminColors.warning,
                       ),
                       AdminMetricCard(
                         label: 'USD/BRL',
                         value: 'R\$${usdBrl.toStringAsFixed(2)}',
-                        icon: Icons.swap_horiz,
+                        icon: KeroseneIcons.swap,
                       ),
                       AdminMetricCard(
                         label: 'Aggregate Volume USD',
                         value: '\$${_fmtPrice(volumeUsd)}',
                         subtitle:
                             '${kpis.totalVolumeBtc.toStringAsFixed(8)} BTC aggregate',
-                        icon: Icons.bar_chart,
+                        icon: KeroseneIcons.chart,
                       ),
                     ],
                   ),
@@ -110,7 +112,7 @@ class VolatilityScreen extends ConsumerWidget {
               ),
             ),
             error: (e, _) => AdminErrorState(
-              message: 'Failed to load price data: $e',
+              message: AdminCopy.priceDataUnavailable,
               onRetry: () => ref.invalidate(adminBtcPriceProvider),
             ),
           ),

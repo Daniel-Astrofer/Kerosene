@@ -1,6 +1,7 @@
 import 'package:equatable/equatable.dart';
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
 /// Entidade ExpenseCategory - Categoria de despesas
 final class ExpenseCategory extends Equatable {
@@ -36,24 +37,24 @@ class ExpenseCategories {
   static const subscription = ExpenseCategory(
     id: 'subscription',
     name: 'Assinaturas',
-    icon: LucideIcons.creditCard,
-    color: Color(0xFF7B61FF),
+    icon: KeroseneIcons.creditCard,
+    color: AppColors.hexFF7B61FF,
     amountSatoshis: 12100000,
   );
 
   static const grocery = ExpenseCategory(
     id: 'grocery',
     name: 'Mercado',
-    icon: LucideIcons.shoppingBag,
-    color: Color(0xFF00C896),
+    icon: KeroseneIcons.shoppingBag,
+    color: AppColors.hexFF00C896,
     amountSatoshis: 8500000,
   );
 
   static const shopping = ExpenseCategory(
     id: 'shopping',
     name: 'Compras',
-    icon: LucideIcons.shoppingCart,
-    color: Color(0xFFFFB938),
+    icon: KeroseneIcons.shoppingCart,
+    color: AppColors.hexFFFFB938,
     amountSatoshis: 15400000,
   );
 }

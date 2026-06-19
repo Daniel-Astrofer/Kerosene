@@ -20,6 +20,11 @@ void main() {
         amountBtc: 0.0042,
       ),
     );
-    await screenMatchesGolden(tester, 'receive_nfc_flow_screen');
+    await screenMatchesGolden(
+      tester,
+      'receive_nfc_flow_screen',
+      finder: find.byType(ReceiveNfcFlowScreen),
+      customPump: pumpGoldenAnimationFrame,
+    );
   });
 }

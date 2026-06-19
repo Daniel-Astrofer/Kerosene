@@ -86,7 +86,7 @@ class _HomeEducationCarouselState
                               card.title,
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
-                              style: GoogleFonts.ibmPlexSerif(
+                              style: AppTypography.newsreader(
                                 textStyle: theme.textTheme.titleMedium,
                                 color: Colors.white,
                                 fontSize: _homeFontSize(20),
@@ -162,19 +162,19 @@ List<_HomeEducationCardData> _homeEducationCards(
   return switch (view) {
     _HomeLedgerBalanceView.platform => [
         _HomeEducationCardData(
-          icon: LucideIcons.repeat2,
+          icon: KeroseneIcons.internalTransfer,
           title: tr.homeEducationInternalTitle,
           body: tr.homeEducationInternalBody,
           tag: tr.homeEducationInternalTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.fingerprint,
+          icon: KeroseneIcons.biometric,
           title: tr.homeEducationWalletHashTitle,
           body: tr.homeEducationWalletHashBody,
           tag: tr.homeEducationWalletHashTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.zap,
+          icon: KeroseneIcons.lightning,
           title: tr.homeEducationLightningTitle,
           body: tr.homeEducationLightningBody,
           tag: tr.homeEducationLightningTag,
@@ -182,19 +182,19 @@ List<_HomeEducationCardData> _homeEducationCards(
       ],
     _HomeLedgerBalanceView.onChain => [
         _HomeEducationCardData(
-          icon: LucideIcons.bitcoin,
+          icon: KeroseneIcons.bitcoin,
           title: tr.homeEducationOnchainTitle,
           body: tr.homeEducationOnchainBody,
           tag: tr.homeEducationOnchainTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.activity,
+          icon: KeroseneIcons.sync,
           title: tr.homeEducationConfirmationsTitle,
           body: tr.homeEducationConfirmationsBody,
           tag: tr.homeEducationConfirmationsTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.gauge,
+          icon: KeroseneIcons.gauge,
           title: tr.homeEducationFeesTitle,
           body: tr.homeEducationFeesBody,
           tag: tr.homeEducationFeesTag,
@@ -202,19 +202,19 @@ List<_HomeEducationCardData> _homeEducationCards(
       ],
     _ => [
         _HomeEducationCardData(
-          icon: LucideIcons.bitcoin,
+          icon: KeroseneIcons.bitcoin,
           title: tr.homeEducationBitcoinTitle,
           body: tr.homeEducationBitcoinBody,
           tag: tr.homeEducationBitcoinTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.zap,
+          icon: KeroseneIcons.lightning,
           title: tr.homeEducationLightningTitle,
           body: tr.homeEducationLightningGeneralBody,
           tag: tr.homeEducationLightningGeneralTag,
         ),
         _HomeEducationCardData(
-          icon: LucideIcons.wallet,
+          icon: KeroseneIcons.wallet,
           title: tr.homeEducationInternalTitle,
           body: tr.homeEducationKeroseneGeneralBody,
           tag: tr.homeEducationKeroseneGeneralTag,

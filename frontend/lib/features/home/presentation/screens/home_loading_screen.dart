@@ -1,5 +1,6 @@
 import 'dart:async';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/navigation/deferred_page.dart';
 
@@ -37,11 +38,11 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
   @override
   void initState() {
     super.initState();
-    _minDurationTimer = Timer(const Duration(seconds: 3), () {
+    _minDurationTimer = Timer(KeroseneMotion.loadingMinimum, () {
       if (mounted) setState(() => _minDurationPassed = true);
     });
 
-    _timeoutTimer = Timer(const Duration(seconds: 15), () {
+    _timeoutTimer = Timer(KeroseneMotion.loadingTimeout, () {
       if (mounted && !_hasError) {
         setState(() {
           _uIsDelayed = 1.0;
@@ -76,9 +77,9 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
     }
 
     final delay = switch (_walletRetryAttempt) {
-      0 => const Duration(seconds: 3),
-      1 => const Duration(seconds: 6),
-      _ => const Duration(seconds: 12),
+      0 => KeroseneMotion.loadingMinimum,
+      1 => KeroseneMotion.loadingRetryMedium,
+      _ => KeroseneMotion.loadingRetryLong,
     };
     _walletRetryAttempt += 1;
 
@@ -98,7 +99,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
     _isNavigating = true;
     _timeoutTimer?.cancel();
 
-    Future.delayed(const Duration(milliseconds: 500), () {
+    Future.delayed(KeroseneMotion.slow, () {
       if (mounted) {
         Navigator.of(context).pushAndRemoveUntil(
           PageRouteBuilder(
@@ -111,7 +112,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
                 (context, animation, secondaryAnimation, child) {
               return FadeTransition(opacity: animation, child: child);
             },
-            transitionDuration: const Duration(milliseconds: 1000),
+            transitionDuration: KeroseneMotion.calm,
           ),
           (route) => false,
         );
@@ -127,7 +128,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
 
     _markWalletSetupRedirectSeen(userId);
 
-    await Future<void>.delayed(const Duration(milliseconds: 500));
+    await Future<void>.delayed(KeroseneMotion.slow);
     if (!mounted) return;
 
     await Navigator.of(context).push<void>(
@@ -139,7 +140,7 @@ class _HomeLoadingScreenState extends ConsumerState<HomeLoadingScreen> {
         transitionsBuilder: (context, animation, secondaryAnimation, child) {
           return FadeTransition(opacity: animation, child: child);
         },
-        transitionDuration: const Duration(milliseconds: 420),
+        transitionDuration: KeroseneMotion.long,
       ),
     );
 

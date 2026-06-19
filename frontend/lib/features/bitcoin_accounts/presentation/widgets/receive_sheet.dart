@@ -77,7 +77,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
           child: FilledButton.icon(
             style: colors.filledButtonStyle(),
             onPressed: _busy ? null : _createReceiveRequest,
-            icon: const Icon(LucideIcons.qrCode, size: 18),
+            icon: const Icon(KeroseneIcons.qr, size: 18),
             label: Text(
               _busy
                   ? context.tr.bitcoinReceiveGenerating
@@ -146,13 +146,13 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
               OutlinedButton.icon(
                 style: colors.outlinedButtonStyle(),
                 onPressed: _busy ? null : _copyAddress,
-                icon: const Icon(LucideIcons.copy, size: 18),
+                icon: const Icon(KeroseneIcons.copy, size: 18),
                 label: Text(context.tr.copyAddress),
               ),
               OutlinedButton.icon(
                 style: colors.outlinedButtonStyle(),
                 onPressed: _busy ? null : () => _refreshStatus(silent: false),
-                icon: const Icon(LucideIcons.refreshCw, size: 18),
+                icon: const Icon(KeroseneIcons.refresh, size: 18),
                 label: Text(context.tr.bitcoinReceiveRefresh),
               ),
             ];
@@ -248,11 +248,16 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
   void _startPolling() {
     _poller?.cancel();
     _poller = Timer.periodic(
-      const Duration(seconds: 5),
+      KeroseneMotion.notificationHold,
       (_) => _refreshStatus(silent: true),
     );
   }
 
-  bool _isTerminal(String status) =>
-      status == 'PAID' || status == 'HIDDEN' || status == 'FAILED_SAFE';
+  bool _isTerminal(String status) {
+    final normalized = status.toUpperCase();
+    return normalized == 'PAID' ||
+        normalized == 'EXPIRED' ||
+        normalized == 'HIDDEN' ||
+        normalized == 'CANCELLED';
+  }
 }

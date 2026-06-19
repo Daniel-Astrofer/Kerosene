@@ -14,6 +14,8 @@ analyzer:
   exclude:
     - build/**
     - lib/src/bridge_generated.dart
+    - lib/features/_legacy/**
+    - lib/features/_roadmap/**
     - lib/storybook/**
     - third_party/lucide_icons/test/**
     - third_party/lucide_icons/tool/**

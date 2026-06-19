@@ -26,6 +26,7 @@ class ExpenseCategoriesList extends StatelessWidget {
   }
 
   Widget _buildCategoryCard(ExpenseCategory category, int index) {
+    final amountLabel = '${category.amountBTC.toStringAsFixed(8)} BTC';
     return Expanded(
       child: GlassContainer(
         margin: const EdgeInsets.symmetric(horizontal: 4),
@@ -55,10 +56,10 @@ class ExpenseCategoriesList extends StatelessWidget {
             FittedBox(
               fit: BoxFit.scaleDown,
               child: Text(
-                '${category.amountBTC.toStringAsFixed(8)} BTC',
+                amountLabel,
                 style: AppTypography.bodySmall.copyWith(
                   fontWeight: FontWeight.bold,
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                   fontSize: 10,
                 ),
               ),

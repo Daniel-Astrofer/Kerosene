@@ -6,13 +6,17 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/providers/tor_providers.dart';
 import 'package:kerosene/core/utils/device_helper.dart';
 import '../../../auth/controller/auth_controller.dart';
 import '../../../auth/controller/auth_providers.dart';
 import '../../theme/admin_colors.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
+import 'package:kerosene/design_system/brand.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Corporate login screen with full TOTP 2FA flow.
 /// Handles: credentials → AuthRequiresLoginTotp → TOTP code entry → AuthAuthenticated
@@ -230,7 +234,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
                       borderRadius: AdminTheme.borderRadiusMd,
                     ),
                     child: AnimatedSwitcher(
-                      duration: const Duration(milliseconds: 250),
+                      duration: KeroseneMotion.medium,
                       child: isTotpStep
                           ? _buildTotpView(authState)
                           : _buildLoginView(),
@@ -262,7 +266,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           decoration: InputDecoration(
             hintText: context.tr.adminLoginUsernameHint,
             prefixIcon: const Icon(
-              Icons.person_outline,
+              KeroseneIcons.user,
               size: 18,
               color: AdminColors.textTertiary,
             ),
@@ -281,15 +285,15 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           decoration: InputDecoration(
             hintText: context.tr.adminLoginPassphraseHint,
             prefixIcon: const Icon(
-              Icons.lock_outline,
+              KeroseneIcons.lock,
               size: 18,
               color: AdminColors.textTertiary,
             ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscurePassword
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                    ? KeroseneIcons.visibilityOff
+                    : KeroseneIcons.visibility,
                 size: 18,
                 color: AdminColors.textTertiary,
               ),
@@ -310,15 +314,15 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           decoration: InputDecoration(
             hintText: context.tr.adminLoginAdminKeyHint,
             prefixIcon: const Icon(
-              Icons.vpn_key_outlined,
+              KeroseneIcons.key,
               size: 18,
               color: AdminColors.textTertiary,
             ),
             suffixIcon: IconButton(
               icon: Icon(
                 _obscureAdminKey
-                    ? Icons.visibility_off_outlined
-                    : Icons.visibility_outlined,
+                    ? KeroseneIcons.visibilityOff
+                    : KeroseneIcons.visibility,
                 size: 18,
                 color: AdminColors.textTertiary,
               ),
@@ -379,14 +383,15 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             ),
           ),
           child: const Center(
-            child: Icon(Icons.security, size: 24, color: AdminColors.warning),
+            child: Icon(KeroseneIcons.security,
+                size: 24, color: AdminColors.warning),
           ),
         ),
         const SizedBox(height: AdminTheme.spacingXl),
         Text(
           context.tr.adminLoginTotpTitle,
           style: const TextStyle(
-            fontFamily: 'IBMPlexSansHebrew',
+            fontFamily: AdminTypography.fontFamily,
             fontSize: 14,
             fontWeight: FontWeight.w700,
             color: AdminColors.textPrimary,
@@ -412,7 +417,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
           controller: _totpController,
           focusNode: _totpFocus,
           style: const TextStyle(
-            fontFamily: 'IBMPlexSansHebrew',
+            fontFamily: AdminTypography.fontFamily,
             fontSize: 28,
             fontWeight: FontWeight.w600,
             color: AdminColors.textPrimary,
@@ -429,7 +434,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             counterText: '',
             hintText: '000000',
             hintStyle: TextStyle(
-              fontFamily: 'IBMPlexSansHebrew',
+              fontFamily: AdminTypography.fontFamily,
               fontSize: 28,
               fontWeight: FontWeight.w600,
               color: AdminColors.textDisabled,
@@ -470,7 +475,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         // Back button
         TextButton.icon(
           onPressed: _isLoading ? null : _handleBackToLogin,
-          icon: const Icon(Icons.arrow_back, size: 16),
+          icon: const Icon(KeroseneIcons.back, size: 16),
           label: Text(context.tr.adminLoginBackToLoginAction),
         ),
       ],
@@ -488,26 +493,21 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
             color: AdminColors.accent,
             borderRadius: AdminTheme.borderRadiusSm,
           ),
-          child: const Center(
+          child: Center(
             child: Text(
-              'K',
-              style: TextStyle(
-                fontFamily: 'IBMPlexSansHebrew',
-                fontSize: 24,
+              AdminCopy.brandInitial,
+              style: AdminTypography.h2.copyWith(
+                color: AdminColors.background,
                 fontWeight: FontWeight.w800,
-                color: Colors.white,
               ),
             ),
           ),
         ),
         const SizedBox(height: AdminTheme.spacingXl),
-        const Text(
-          'KEROSENE',
-          style: TextStyle(
-            fontFamily: 'IBMPlexSansHebrew',
-            fontSize: 18,
+        Text(
+          KeroseneBrand.name,
+          style: AdminTypography.h3.copyWith(
             fontWeight: FontWeight.w700,
-            color: AdminColors.textPrimary,
             letterSpacing: 0,
           ),
         ),
@@ -536,7 +536,7 @@ class _AdminLoginScreenState extends ConsumerState<AdminLoginScreen> {
         child: Row(
           children: [
             const Icon(
-              Icons.error_outline,
+              KeroseneIcons.error,
               size: 16,
               color: AdminColors.negative,
             ),
@@ -666,7 +666,7 @@ class _AdminConnectionStatus {
     if (isBrowserOnion && (apiHost.isEmpty || apiHost == browserHost)) {
       return _AdminConnectionStatus(
         label: context.tr.adminConnectionOnionBrowser,
-        icon: Icons.shield_outlined,
+        icon: KeroseneIcons.shield,
         foreground: AdminColors.positive,
         background: AdminColors.positiveSubtle,
         border: AdminColors.positive.withValues(alpha: 0.3),
@@ -676,7 +676,7 @@ class _AdminConnectionStatus {
     if (isApiOnion) {
       return _AdminConnectionStatus(
         label: context.tr.adminConnectionOnionApi,
-        icon: Icons.shield_outlined,
+        icon: KeroseneIcons.shield,
         foreground: AdminColors.positive,
         background: AdminColors.positiveSubtle,
         border: AdminColors.positive.withValues(alpha: 0.3),
@@ -685,7 +685,7 @@ class _AdminConnectionStatus {
 
     return _AdminConnectionStatus(
       label: context.tr.adminConnectionGateway,
-      icon: Icons.warning_amber,
+      icon: KeroseneIcons.warning,
       foreground: AdminColors.warning,
       background: AdminColors.warningSubtle,
       border: AdminColors.warning.withValues(alpha: 0.3),

@@ -1,6 +1,7 @@
 import 'dart:async';
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:sensors_plus/sensors_plus.dart';
 import '../../domain/entities/wallet.dart';
@@ -51,7 +52,7 @@ class _SmartWalletStackState extends State<SmartWalletStack>
   StreamSubscription<AccelerometerEvent>? _accelSub;
   DateTime _lastShake = DateTime(0);
   static const double _shakeThreshold = 25.0;
-  static const Duration _shakeCooldown = Duration(milliseconds: 500);
+  static const Duration _shakeCooldown = KeroseneMotion.interactionCooldown;
 
   @override
   void initState() {
@@ -61,21 +62,21 @@ class _SmartWalletStackState extends State<SmartWalletStack>
 
     _carouselController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 450),
+      duration: KeroseneMotion.slow,
     );
     _carouselAnim = CurvedAnimation(
       parent: _carouselController,
-      curve: Curves.easeInOutCubic,
+      curve: KeroseneMotion.standard,
     );
 
     _swipeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 350),
+      duration: KeroseneMotion.long,
     );
     _swipeAnim = CurvedAnimation(
       parent: _swipeController,
-      curve: Curves.elasticOut,
-      reverseCurve: Curves.easeInCubic,
+      curve: KeroseneMotion.spring,
+      reverseCurve: KeroseneMotion.exit,
     );
 
     _pageController = PageController(
@@ -105,14 +106,14 @@ class _SmartWalletStackState extends State<SmartWalletStack>
           if (event.x < 0) {
             final next = (_carouselPage + 1) % n;
             _pageController.animateToPage(next,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic);
+                duration: KeroseneMotion.medium,
+                curve: KeroseneMotion.standard);
             setState(() => _carouselPage = next);
           } else {
             final prev = (_carouselPage - 1 + n) % n;
             _pageController.animateToPage(prev,
-                duration: const Duration(milliseconds: 300),
-                curve: Curves.easeOutCubic);
+                duration: KeroseneMotion.medium,
+                curve: KeroseneMotion.standard);
             setState(() => _carouselPage = prev);
           }
           HapticFeedback.selectionClick();

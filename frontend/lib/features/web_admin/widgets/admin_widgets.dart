@@ -1,10 +1,12 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 
 import '../theme/admin_colors.dart';
 import '../theme/admin_theme.dart';
 import '../theme/admin_typography.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class AdminResponsiveGrid extends StatelessWidget {
   final List<Widget> children;
@@ -127,9 +129,7 @@ class AdminMetricCard extends StatelessWidget {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       Icon(
-                        isPositiveTrend
-                            ? Icons.arrow_upward
-                            : Icons.arrow_downward,
+                        isPositiveTrend ? KeroseneIcons.up : KeroseneIcons.down,
                         size: 12,
                         color: isPositiveTrend
                             ? AdminColors.positive
@@ -331,7 +331,7 @@ class AdminErrorState extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Icon(
-              Icons.error_outline,
+              KeroseneIcons.error,
               size: 48,
               color: AdminColors.negative,
             ),
@@ -345,7 +345,7 @@ class AdminErrorState extends StatelessWidget {
               const SizedBox(height: AdminTheme.spacingLg),
               OutlinedButton.icon(
                 onPressed: onRetry,
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(KeroseneIcons.refresh, size: 16),
                 label: Text(context.tr.retry),
               ),
             ],
@@ -365,7 +365,7 @@ class AdminEmptyState extends StatelessWidget {
     super.key,
     required this.title,
     this.subtitle,
-    this.icon = Icons.inbox_outlined,
+    this.icon = KeroseneIcons.inbox,
   });
 
   @override
@@ -411,7 +411,7 @@ class AdminFilterChip extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 150),
+        duration: KeroseneMotion.fast,
         padding: const EdgeInsets.symmetric(
           horizontal: AdminTheme.spacingMd,
           vertical: AdminTheme.spacingSm,

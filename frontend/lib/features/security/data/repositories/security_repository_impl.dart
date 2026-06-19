@@ -7,7 +7,7 @@ import '../../domain/entities/account_security_profile.dart';
 import '../../domain/entities/admin_access.dart';
 import '../../domain/entities/passkey_inventory.dart';
 import '../../domain/entities/security_status.dart';
-import '../../domain/entities/treasury_overview.dart';
+import '../../domain/entities/kfe_reserve_overview.dart';
 import '../../domain/repositories/security_repository.dart';
 
 class SecurityRepositoryImpl implements SecurityRepository {
@@ -33,10 +33,10 @@ class SecurityRepositoryImpl implements SecurityRepository {
   }
 
   @override
-  Future<Either<Failure, TreasuryOverview>> getTreasuryOverview() async {
+  Future<Either<Failure, KfeReserveOverview>> getKfeReserveOverview() async {
     try {
-      final json = await remoteDataSource.getTreasuryOverview();
-      return Right(TreasuryOverview.fromJson(json));
+      final json = await remoteDataSource.getKfeReserveOverview();
+      return Right(KfeReserveOverview.fromJson(json));
     } on ServerException catch (e) {
       return Left(ServerFailure(
         message: e.message,

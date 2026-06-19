@@ -5,6 +5,7 @@ import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 
 import 'package:kerosene/core/providers/price_provider.dart';
@@ -23,7 +24,6 @@ import 'package:kerosene/features/web_admin/screens/notifications/notifications_
 import 'stories/admin_stories.dart';
 import 'stories/app_flow_story.dart';
 import 'stories/bitcoin_advanced_stories.dart';
-import 'stories/payment_stories.dart';
 import 'stories/receive_stories.dart';
 
 /// The root Storybook widget for Kerosene.
@@ -112,8 +112,8 @@ class KeroseneStorybook extends StatelessWidget {
                 .overrideWithValue(MockNotificationRepository()),
             sovereigntyStatusProvider
                 .overrideWith((ref) async => mockSecurityStatus),
-            treasuryOverviewProvider
-                .overrideWith((ref) async => mockTreasuryOverview),
+            kfeReserveOverviewProvider
+                .overrideWith((ref) async => mockKfeReserveOverview),
             auditStatsProvider
                 .overrideWith((ref) async => mockSecurityAuditStats),
             accountSecurityProfileProvider
@@ -168,7 +168,7 @@ class KeroseneStorybook extends StatelessWidget {
             localizationsDelegates: AppLocalizations.localizationsDelegates,
             supportedLocales: AppLocalizations.supportedLocales,
             home: Scaffold(
-              backgroundColor: const Color(0xFF050505),
+              backgroundColor: KeroseneBrandTokens.background,
               body: child ?? const SizedBox.shrink(),
             ),
           ),
@@ -177,7 +177,6 @@ class KeroseneStorybook extends StatelessWidget {
       stories: [
         appFlowStory(),
         ...bitcoinAdvancedStories(),
-        ...paymentStories(),
         ...receiveStories(),
         ...adminStories(),
       ],

@@ -1,23 +1,24 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
-const Color receiveFlowBackgroundColor = Color(0xFF050708);
-const Color receiveFlowBackgroundTopColor = Color(0xFF0A0D10);
-const Color receiveFlowBackgroundBottomColor = Color(0xFF020303);
-const Color receiveFlowPanelColor = Color(0xFF0B0F12);
-const Color receiveFlowPanelAltColor = Color(0xFF11161A);
-const Color receiveFlowPanelRaisedColor = Color(0xFF171D22);
-const Color receiveFlowBorderColor = Color(0xFF242A2F);
-const Color receiveFlowBorderStrongColor = Color(0xFF353B41);
-const Color receiveFlowDividerColor = Color(0xFF1D2328);
-const Color receiveFlowTextColor = Color(0xFFF4F4F4);
-const Color receiveFlowMutedTextColor = Color(0xFFB8BCC2);
-const Color receiveFlowFaintTextColor = Color(0xFF7D838A);
-const Color receiveFlowAccentColor = Color(0xFFD6A84F);
+const Color receiveFlowBackgroundColor = AppColors.hexFF050708;
+const Color receiveFlowBackgroundTopColor = AppColors.hexFF0A0D10;
+const Color receiveFlowBackgroundBottomColor = AppColors.hexFF020303;
+const Color receiveFlowPanelColor = AppColors.hexFF0B0F12;
+const Color receiveFlowPanelAltColor = AppColors.hexFF11161A;
+const Color receiveFlowPanelRaisedColor = AppColors.hexFF171D22;
+const Color receiveFlowBorderColor = AppColors.hexFF242A2F;
+const Color receiveFlowBorderStrongColor = AppColors.hexFF353B41;
+const Color receiveFlowDividerColor = AppColors.hexFF1D2328;
+const Color receiveFlowTextColor = AppColors.hexFFF4F4F4;
+const Color receiveFlowMutedTextColor = AppColors.hexFFB8BCC2;
+const Color receiveFlowFaintTextColor = AppColors.hexFF7D838A;
+const Color receiveFlowAccentColor = AppColors.hexFFD6A84F;
 
 class ReceiveFlowScaffold extends StatelessWidget {
   final String title;
@@ -173,12 +174,13 @@ class _ReceiveFlowBrandBar extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const brandLabel = 'KEROSENE';
     return Row(
       children: [
         const KeroseneLogo(size: 28, showText: false),
         const SizedBox(width: 9),
         Text(
-          'KEROSENE',
+          brandLabel,
           style: AppTypography.caption.copyWith(
             color: receiveFlowTextColor,
             fontSize: 12,
@@ -198,7 +200,7 @@ class _ReceiveFlowBrandBar extends StatelessWidget {
           )
         else ...[
           Icon(
-            LucideIcons.eye,
+            KeroseneIcons.eye,
             color: receiveFlowTextColor.withValues(alpha: 0.82),
             size: 17,
           ),
@@ -207,7 +209,7 @@ class _ReceiveFlowBrandBar extends StatelessWidget {
             clipBehavior: Clip.none,
             children: [
               Icon(
-                LucideIcons.bell,
+                KeroseneIcons.notifications,
                 color: receiveFlowTextColor.withValues(alpha: 0.82),
                 size: 18,
               ),
@@ -260,7 +262,7 @@ class _ReceiveFlowHeader extends StatelessWidget {
       children: [
         if (showBackButton)
           ReceiveFlowIconButton(
-            icon: LucideIcons.arrowLeft,
+            icon: KeroseneIcons.back,
             onTap: onBack ?? () => Navigator.maybePop(context),
             radius: chromeRadius == 0 ? 999 : chromeRadius,
           )
@@ -463,7 +465,7 @@ class ReceiveFlowActionTile extends StatelessWidget {
     final iconPanelColor =
         isEnabled ? receiveFlowPanelRaisedColor : receiveFlowPanelColor;
     final trailingIcon =
-        isEnabled ? LucideIcons.chevronRight : LucideIcons.lock;
+        isEnabled ? KeroseneIcons.chevronRight : KeroseneIcons.lock;
 
     return Material(
       color: Colors.transparent,
@@ -566,7 +568,7 @@ class ReceiveFlowPrimaryButton extends StatelessWidget {
   Widget build(BuildContext context) {
     final enabled = onTap != null && !isLoading;
     final foregroundColor =
-        enabled ? const Color(0xFF050505) : receiveFlowMutedTextColor;
+        enabled ? AppColors.hexFF050505 : receiveFlowMutedTextColor;
 
     return SizedBox(
       width: double.infinity,

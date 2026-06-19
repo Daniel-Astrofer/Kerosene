@@ -1,10 +1,13 @@
 import 'package:flutter/material.dart';
-import '../../theme/cyber_theme.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 void showCustomErrorDialog(
   BuildContext context,
   String message, {
-  String title = 'ERRO',
+  String title = 'Não conseguimos continuar agora',
   VoidCallback? onRetry,
   VoidCallback? onGoBack,
 }) {
@@ -35,52 +38,69 @@ class CustomErrorDialog extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    final colorScheme = theme.colorScheme;
+    final hasActions = onRetry != null || onGoBack != null;
+
     return Dialog(
       backgroundColor: Colors.transparent,
-      insetPadding: const EdgeInsets.all(24),
+      insetPadding: const EdgeInsets.all(AppSpacing.xl2),
       child: Container(
-        padding: const EdgeInsets.all(24),
+        padding: const EdgeInsets.all(AppSpacing.xl2),
         decoration: BoxDecoration(
-          color: CyberTheme.bgCard,
+          color: colorScheme.surface,
           borderRadius: BorderRadius.circular(20),
-          border: Border.all(color: CyberTheme.neonRed.withValues(alpha: 0.5)),
+          border: Border.all(
+            color: AppColors.error.withValues(alpha: 0.35),
+          ),
           boxShadow: [
             BoxShadow(
-              color: CyberTheme.neonRed.withValues(alpha: 0.1),
-              blurRadius: 20,
-              spreadRadius: 5,
+              color: Colors.black.withValues(alpha: 0.35),
+              blurRadius: 28,
+              offset: const Offset(0, 18),
             ),
           ],
         ),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
-            const Icon(
-              Icons.error_outline_rounded,
-              color: CyberTheme.neonRed,
-              size: 48,
+            Container(
+              width: 52,
+              height: 52,
+              decoration: BoxDecoration(
+                color: AppColors.error.withValues(alpha: 0.12),
+                shape: BoxShape.circle,
+                border: Border.all(
+                  color: AppColors.error.withValues(alpha: 0.28),
+                ),
+              ),
+              alignment: Alignment.center,
+              child: const Icon(
+                KeroseneIcons.error,
+                color: AppColors.error,
+                size: 28,
+              ),
             ),
-            const SizedBox(height: 20),
+            const SizedBox(height: AppSpacing.lg),
             Text(
-              title.toUpperCase(),
-              style: CyberTheme.heading(size: 20, color: CyberTheme.neonRed),
+              title,
+              style: theme.textTheme.titleLarge?.copyWith(
+                color: colorScheme.onSurface,
+                fontWeight: FontWeight.w700,
+              ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 12),
+            const SizedBox(height: AppSpacing.md),
             Text(
               message,
-              style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.7),
-                fontSize: 14,
+              style: theme.textTheme.bodyMedium?.copyWith(
+                color: colorScheme.onSurface.withValues(alpha: 0.72),
                 height: 1.5,
               ),
               textAlign: TextAlign.center,
             ),
-            const SizedBox(height: 32),
-            if (onRetry != null || onGoBack != null)
+            const SizedBox(height: AppSpacing.xl2),
+            if (hasActions)
               Row(
                 children: [
                   if (onGoBack != null)
@@ -90,35 +110,19 @@ class CustomErrorDialog extends StatelessWidget {
                           Navigator.pop(context);
                           onGoBack!();
                         },
-                        style: OutlinedButton.styleFrom(
-                          foregroundColor: Theme.of(context)
-                              .colorScheme
-                              .onPrimary
-                              .withValues(alpha: 0.7),
-                          side: BorderSide(
-                              color: Theme.of(context)
-                                  .colorScheme
-                                  .onPrimary
-                                  .withValues(alpha: 0.24)),
-                          padding: const EdgeInsets.symmetric(vertical: 16),
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(12),
-                          ),
-                        ),
-                        child: const Text('VOLTAR'),
+                        child: Text(context.tr.goBack),
                       ),
                     ),
                   if (onGoBack != null && onRetry != null)
-                    const SizedBox(width: 12),
+                    const SizedBox(width: AppSpacing.md),
                   if (onRetry != null)
                     Expanded(
-                      child: ElevatedButton(
+                      child: FilledButton(
                         onPressed: () {
                           Navigator.pop(context);
                           onRetry!();
                         },
-                        style: CyberTheme.neonButton(CyberTheme.neonRed),
-                        child: const Text('TENTAR NOVAMENTE'),
+                        child: Text(context.tr.retry),
                       ),
                     ),
                 ],
@@ -126,10 +130,9 @@ class CustomErrorDialog extends StatelessWidget {
             else
               SizedBox(
                 width: double.infinity,
-                child: ElevatedButton(
+                child: FilledButton(
                   onPressed: () => Navigator.pop(context),
-                  style: CyberTheme.neonButton(CyberTheme.neonRed),
-                  child: const Text('ENTENDIDO'),
+                  child: Text(MaterialLocalizations.of(context).okButtonLabel),
                 ),
               ),
           ],

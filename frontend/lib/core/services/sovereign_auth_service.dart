@@ -290,7 +290,7 @@ class DefaultSovereignDeviceNameProvider
 
   @override
   Future<String> getDeviceName() async {
-    return 'CyberDevice ${_clock().year}';
+    return 'KeroseneDevice ${_clock().year}';
   }
 }
 

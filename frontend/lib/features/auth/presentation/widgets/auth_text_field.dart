@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 
 class AuthTextField extends StatelessWidget {
   final TextEditingController? controller;
@@ -40,7 +41,7 @@ class AuthTextField extends StatelessWidget {
         const SizedBox(height: 8),
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF141414),
+            color: AppColors.hexFF141414,
             borderRadius: BorderRadius.circular(16),
             border: Border.all(
               color: Theme.of(context)

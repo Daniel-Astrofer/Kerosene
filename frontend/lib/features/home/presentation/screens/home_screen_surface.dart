@@ -29,11 +29,11 @@ class _HomeEntryTransitionState extends State<_HomeEntryTransition>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: KeroseneMotion.slow,
     )..forward();
     final curve = CurvedAnimation(
       parent: _controller,
-      curve: Curves.easeOutCubic,
+      curve: KeroseneMotion.standard,
     );
     _opacity = curve;
     _offset = Tween<Offset>(
@@ -465,7 +465,7 @@ class _HomeHeaderIconButton extends StatelessWidget {
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
                 color: _homeAmberColor,
-                border: Border.all(color: const Color(0xFF06090B), width: 1.5),
+                border: Border.all(color: AppColors.hexFF06090B, width: 1.5),
               ),
             ),
           ),
@@ -634,7 +634,7 @@ class _HomeSetupNotice extends StatelessWidget {
                 SizedBox(height: _homeSize(12)),
                 TextButton.icon(
                   onPressed: onAction,
-                  icon: Icon(LucideIcons.arrowRight, size: _homeSize(15)),
+                  icon: Icon(KeroseneIcons.next, size: _homeSize(15)),
                   label: Text(actionLabel),
                   style: TextButton.styleFrom(
                     foregroundColor: _homeAmberColor,

@@ -485,6 +485,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_is_local:5432/kerosene?ssl=false
       - REGION=IS
       - MPC_SIDECAR_HOST=mpc-sidecar-is
@@ -703,6 +704,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_ch_local:5432/kerosene?ssl=false
       - REGION=CH
       - MPC_SIDECAR_HOST=mpc-sidecar-ch
@@ -921,6 +923,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_sg_local:5432/kerosene?ssl=false
       - REGION=SG
       - MPC_SIDECAR_HOST=mpc-sidecar-sg

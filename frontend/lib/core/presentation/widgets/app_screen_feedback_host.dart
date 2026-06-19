@@ -1,8 +1,10 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
 class AppScreenFeedbackHost extends StatelessWidget {
@@ -21,8 +23,8 @@ class AppScreenFeedbackHost extends StatelessWidget {
         return Column(
           children: [
             AnimatedSize(
-              duration: const Duration(milliseconds: 220),
-              curve: Curves.easeOutCubic,
+              duration: KeroseneMotion.medium,
+              curve: KeroseneMotion.standard,
               alignment: Alignment.topCenter,
               child: message == null
                   ? const SizedBox(width: double.infinity)
@@ -57,7 +59,7 @@ class _ScreenFeedbackPanel extends StatelessWidget {
         constraints: BoxConstraints(maxHeight: maxPanelHeight),
         child: DecoratedBox(
           decoration: BoxDecoration(
-            color: const Color(0xFF050505),
+            color: KeroseneBrandTokens.background,
             border: Border(
               bottom: BorderSide(color: Colors.white.withValues(alpha: 0.10)),
             ),
@@ -84,7 +86,7 @@ class _ScreenFeedbackPanel extends StatelessWidget {
                           maxLines: 2,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.bodyMedium.copyWith(
-                            color: Colors.white,
+                            color: KeroseneBrandTokens.textPrimary,
                             fontSize: 14,
                             fontWeight: FontWeight.w800,
                             height: 1.16,
@@ -98,7 +100,7 @@ class _ScreenFeedbackPanel extends StatelessWidget {
                           maxLines: 4,
                           overflow: TextOverflow.ellipsis,
                           style: AppTypography.bodySmall.copyWith(
-                            color: Colors.white.withValues(alpha: 0.68),
+                            color: KeroseneBrandTokens.textSecondary,
                             fontSize: 12,
                             height: 1.34,
                             letterSpacing: 0,
@@ -116,7 +118,7 @@ class _ScreenFeedbackPanel extends StatelessWidget {
                       onPressed: () => AppScreenFeedbackBus.clear(
                         sequence: message.sequence,
                       ),
-                      icon: const Icon(LucideIcons.x),
+                      icon: const Icon(KeroseneIcons.close),
                       color: Colors.white.withValues(alpha: 0.58),
                       iconSize: 16,
                       padding: EdgeInsets.zero,
@@ -141,19 +143,19 @@ class _ScreenFeedbackPanel extends StatelessWidget {
 
   static IconData _iconFor(AppNoticeType type) {
     return switch (type) {
-      AppNoticeType.success => LucideIcons.checkCircle2,
-      AppNoticeType.error => LucideIcons.alertTriangle,
-      AppNoticeType.info => LucideIcons.info,
-      AppNoticeType.warning => LucideIcons.alertCircle,
+      AppNoticeType.success => KeroseneIcons.success,
+      AppNoticeType.error => KeroseneIcons.error,
+      AppNoticeType.info => KeroseneIcons.info,
+      AppNoticeType.warning => KeroseneIcons.warning,
     };
   }
 
   static Color _accentFor(AppNoticeType type) {
     return switch (type) {
-      AppNoticeType.success => const Color(0xFFE5E7EB),
-      AppNoticeType.error => const Color(0xFFF8312F),
-      AppNoticeType.info => const Color(0xFFD4D4D8),
-      AppNoticeType.warning => const Color(0xFFF8312F),
+      AppNoticeType.success => KeroseneBrandTokens.success,
+      AppNoticeType.error => KeroseneBrandTokens.error,
+      AppNoticeType.info => KeroseneBrandTokens.info,
+      AppNoticeType.warning => KeroseneBrandTokens.warning,
     };
   }
 }

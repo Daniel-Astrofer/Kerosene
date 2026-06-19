@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class QrScannerOverlay extends StatefulWidget {
   final Function(String) onScan;
@@ -87,7 +89,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Scan a QR Code',
+                      context.tr.scanQR,
                       style: TextStyle(
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 18,
@@ -96,7 +98,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                     ),
                     const SizedBox(height: 8),
                     Text(
-                      'Align the QR code within the frame to scan',
+                      context.tr.qrScannerInstruction,
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -123,7 +125,7 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
                           borderRadius: BorderRadius.circular(15),
                         ),
                       ),
-                      child: const Text('Cancel'),
+                      child: Text(context.tr.cancel),
                     ),
                   ],
                 ),
@@ -138,12 +140,12 @@ class _QrScannerOverlayState extends State<QrScannerOverlay> {
             child: Row(
               children: [
                 IconButton(
-                  icon: Icon(Icons.flash_on,
+                  icon: Icon(KeroseneIcons.lightning,
                       color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.toggleTorch(),
                 ),
                 IconButton(
-                  icon: Icon(Icons.cameraswitch,
+                  icon: Icon(KeroseneIcons.scanner,
                       color: Theme.of(context).colorScheme.onPrimary),
                   onPressed: () => controller.switchCamera(),
                 ),

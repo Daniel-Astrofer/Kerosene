@@ -33,7 +33,7 @@ void main() {
           ),
         ),
       );
-      await tester.pump();
+      await tester.pumpAndSettle();
 
       expect(
         find.text('Module unavailable in this build.'),
@@ -44,6 +44,7 @@ void main() {
       expect(tester.takeException(), isNull);
 
       await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pumpAndSettle();
       container.dispose();
     }
   });
@@ -103,7 +104,7 @@ final _paymentLink = PaymentLink(
   createdAt: DateTime(2026, 5, 29, 12),
   paidAt: DateTime(2026, 5, 29, 12, 4),
   paymentRail: 'ONCHAIN',
-  paymentIntentStatus: 'SETTLED',
+  settlementStatus: 'SETTLED',
   terminal: true,
 );
 

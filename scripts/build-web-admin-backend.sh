@@ -45,11 +45,18 @@ fi
 
 FRONTEND_PASSKEY_RP_ID="${FRONTEND_PASSKEY_RP_ID:-${WEBAUTHN_RP_ID:-kerosene-device}}"
 FRONTEND_PASSKEY_ORIGIN="${FRONTEND_PASSKEY_ORIGIN:-android:apk-key-hash:kerosene}"
+FRONTEND_API_URL="${FRONTEND_API_URL:-}"
 
 mkdir -p "$FRONTEND_LOG_DIR" "$BACKEND_WEB_ADMIN_BUILD_DIR"
 kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR"
 
-info "Building Flutter web admin for backend-served same-origin onion access."
+WEB_API_DEFINE=()
+if [[ -n "$FRONTEND_API_URL" ]]; then
+  WEB_API_DEFINE+=(--dart-define="WEB_API_URL=$FRONTEND_API_URL")
+  info "Building Flutter web admin for API $FRONTEND_API_URL."
+else
+  info "Building Flutter web admin for backend-served same-origin onion access."
+fi
 (
   cd "$FRONTEND_DIR"
   FLUTTER_BUILD_ARGS=(web --release --csp --no-web-resources-cdn --target lib/web_main.dart)
@@ -57,6 +64,7 @@ info "Building Flutter web admin for backend-served same-origin onion access."
     FLUTTER_BUILD_ARGS+=(--no-pub)
   fi
   kerosene_run_flutter "$FLUTTER_BIN" build "${FLUTTER_BUILD_ARGS[@]}" \
+    "${WEB_API_DEFINE[@]}" \
     --dart-define="PASSKEY_RP_ID=$FRONTEND_PASSKEY_RP_ID" \
     --dart-define="PASSKEY_ORIGIN=$FRONTEND_PASSKEY_ORIGIN"
 ) > "$FRONTEND_BUILD_LOG_FILE" 2>&1 || {

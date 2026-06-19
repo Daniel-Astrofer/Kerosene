@@ -16,7 +16,9 @@ class _SignupTotpRepository implements AuthRepository {
   Future<bool> isAuthenticated() async => false;
 
   @override
-  Future<Either<Failure, User>> getCurrentUser() async =>
+  Future<Either<Failure, User>> getCurrentUser({
+    bool forceRemote = false,
+  }) async =>
       const Left(AuthFailure(message: 'unauthenticated'));
 
   @override

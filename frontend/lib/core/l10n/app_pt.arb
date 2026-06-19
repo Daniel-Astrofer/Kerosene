@@ -91,6 +91,7 @@
   "retry": "Tentar Novamente",
   "cancel": "Cancelar",
   "goBack": "Voltar",
+  "goToHome": "Ir para o início",
   "done": "Concluído",
   "save": "Salvar",
   "continueButton": "CONTINUAR",
@@ -143,6 +144,7 @@
   "passphrase": "Frase secreta",
   "required": "Obrigatório",
   "settingsTitle": "Configurações",
+  "settingsScreenSubtitle": "Gerencie sua conta, segurança e dispositivos",
   "currency": "Moeda",
   "selectLanguage": "Selecionar Idioma",
   "selectCurrency": "Selecionar Moeda",
@@ -395,6 +397,15 @@
   "passkeyErrorFinishing": "Erro ao finalizar registro: {message}",
   "passkeyAuthFailed": "Autenticação cancelada ou falhou.",
   "passkeyUnexpectedError": "Erro inesperado: {error}",
+  "passkeyVerificationUserNotFound": "Usuário não encontrado",
+  "passkeyVerificationNoLocal": "Sem passkey neste aparelho",
+  "passkeyVerificationCancelled": "Verificação cancelada",
+  "passkeyVerificationChallengeExpired": "Tempo expirado",
+  "passkeyVerificationRejected": "Passkey rejeitada",
+  "passkeyVerificationFailed": "Falha ao validar a passkey",
+  "passkeyVerificationBodyPreparing": "Iniciando confirmação segura.",
+  "passkeyVerificationBodySending": "Aguardando aprovação neste aparelho.",
+  "passkeyVerificationBodySuccess": "Credencial aceita. Continuando automaticamente.",
   "passkeyLoadingInitBiom": "Inicializando Biometria...",
   "passkeyLoadingSecuring": "Protegendo Dispositivo...",
   "passkeyLoadingRegistering": "Ativando chave do dispositivo...",
@@ -663,8 +674,8 @@
   "bitcoinAdvancedPsbtRejectedTitle": "PSBT rejeitada",
   "bitcoinAdvancedPsbtRejectedMessage": "A assinatura não passou nas validações de segurança.",
   "bitcoinTaxReportsTitle": "Relatórios fiscais",
-  "bitcoinTaxEventsUnavailableTitle": "Eventos indisponíveis",
-  "bitcoinTaxEventsUnavailableMessage": "Não foi possível carregar os eventos temporários.",
+  "taxEventsUnavailableTitle": "Eventos indisponíveis",
+  "taxEventsUnavailableMessage": "Não foi possível carregar os eventos temporários.",
   "bitcoinTaxNoEventsTitle": "Nenhum evento temporário.",
   "bitcoinTaxNoEventsMessage": "Depósitos, envios e taxas recentes aparecerão aqui por tempo limitado.",
   "bitcoinTaxHiddenEvents": "+{count} eventos ocultos.",
@@ -1019,51 +1030,6 @@
   "bitcoinReceiveRequestsEmptyMessage": "Pedidos de recebimento Bitcoin gerados aparecerão aqui.",
   "bitcoinReceiveRequestsFlexibleAmount": "Valor flexível",
   "bitcoinReceiveRequestsNoExpiry": "sem expiração",
-  "paymentIntentScreenTitle": "Intenção de pagamento",
-  "paymentIntentScreenSubtitle": "Cotação, confirmação e status",
-  "paymentIntentRecipientHint": "username, e-mail ou endereço",
-  "paymentIntentSearchAction": "Buscar",
-  "paymentIntentAmountFeeTitle": "Valor e taxa",
-  "paymentIntentGenerateQuoteAction": "Gerar cotação",
-  "paymentIntentQuoteTitle": "Cotação",
-  "paymentIntentMetricReceiver": "Recebedor",
-  "paymentIntentMetricRoute": "Rota",
-  "paymentIntentMetricReceives": "Recebe",
-  "paymentIntentMetricNetworkFee": "Taxa de rede",
-  "paymentIntentMetricKeroseneFee": "Taxa Kerosene",
-  "paymentIntentMetricTotalDebit": "Total debitado",
-  "paymentIntentConfirmPaymentAction": "Confirmar pagamento",
-  "paymentIntentStatusTitle": "Status",
-  "paymentIntentNotCompleted": "Pagamento não concluído.",
-  "paymentIntentReviewTitle": "Revisar envio",
-  "paymentIntentReviewDebitMessage": "{total} serão debitados para {receiver}.",
-  "@paymentIntentReviewDebitMessage": {
-    "placeholders": {
-      "total": {},
-      "receiver": {}
-    }
-  },
-  "paymentIntentAuthorizeAction": "Autorizar",
-  "paymentIntentValidationRecipientRequired": "Informe o recebedor.",
-  "paymentIntentValidationAmountRequired": "Informe o valor.",
-  "paymentIntentRailInternal": "Kerosene",
-  "paymentIntentRailLightning": "Lightning",
-  "paymentIntentRailOnchain": "On-chain",
-  "paymentIntentFeeSenderPays": "Pagador paga",
-  "paymentIntentFeeRecipientPays": "Recebedor paga",
-  "paymentIntentSpeedEconomy": "Econômica",
-  "paymentIntentSpeedNormal": "Normal",
-  "paymentIntentSpeedFast": "Rápida",
-  "paymentIntentStatusCreated": "Criado",
-  "paymentIntentStatusQuoted": "Cotado",
-  "paymentIntentStatusConfirmed": "Confirmado",
-  "paymentIntentStatusProcessing": "Processando",
-  "paymentIntentStatusAcceptedByProvider": "Aceito pelo provedor",
-  "paymentIntentStatusRequiresReconciliation": "Requer conciliação",
-  "paymentIntentStatusSettled": "Liquidado",
-  "paymentIntentStatusFailed": "Falhou",
-  "paymentIntentStatusCanceled": "Cancelado",
-  "paymentIntentStatusExpired": "Expirado",
   "bitcoinReceiveStatusDetected": "Detectado",
   "bitcoinReceiveStatusConfirming": "Confirmando",
   "bitcoinReceiveStatusPaid": "Pago",
@@ -2519,6 +2485,50 @@
   "sendMoneyRequestExpired": "Esta solicitação de pagamento expirou.",
   "sendMoneyLockedDestination": "Destino protegido",
   "sendMoneyPaymentRequestLoaded": "Solicitação de pagamento carregada.",
+  "authReasonTransactionConfirm": "Confirme no dispositivo para autorizar esta transação.",
+  "transactionAuthVaultTitle": "Confirmação do cofre",
+  "transactionAuthOperationTitle": "Confirmação da operação",
+  "transactionAuthPassphraseLabel": "Passphrase",
+  "transactionAuthConfirmationPassphraseLabel": "Passphrase de confirmação",
+  "transactionAuthEnterPassphrase": "Informe sua passphrase para continuar.",
+  "transactionAuthTotpCodeLabel": "Código TOTP",
+  "transactionAuthEnterAuthenticatorDigits": "Informe os 6 dígitos do autenticador.",
+  "transactionAuthContinue": "Continuar",
+  "transactionAuthProfileSubtitleMultisigFull": "Esta política usa passphrase, TOTP e passkey para liberar operações críticas.",
+  "transactionAuthProfileSubtitleMultisigStandard": "Esta política usa passphrase e TOTP para liberar operações críticas.",
+  "transactionAuthProfileSubtitlePasskeyOnly": "A confirmação final será solicitada com sua passkey.",
+  "transactionAuthProfileSubtitleDefault": "Confirme os fatores necessários para concluir esta operação.",
+  "transactionAuthShamirRecoveryError": "Informe {threshold} shares completas para reconstruir a passphrase.",
+  "@transactionAuthShamirRecoveryError": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShamirReconstructFailed": "Não foi possível reconstruir a passphrase. Revise as shares e tente novamente.",
+  "transactionAuthShamirTitle": "Autorização Shamir",
+  "transactionAuthShamirSubtitle": "Reconstrua a passphrase com {threshold} de {totalShares} shares antes de liberar a operação.",
+  "@transactionAuthShamirSubtitle": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      },
+      "totalShares": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShareLabel": "Share {index}",
+  "@transactionAuthShareLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthReconstructAndContinue": "Reconstruir e continuar",
+  "transactionAuthShareHint": "Cole a share completa aqui",
   "walletConfigAddressCopiedMessage": "O endereço da carteira foi copiado com sucesso.",
   "walletConfigAddressCopiedTitle": "Endereço copiado",
   "walletConfigExportNoticeMessage": "A exportação da chave privada depende da verificação de segurança do dispositivo.",
@@ -2777,6 +2787,22 @@
   "landingStatusRegion": "Região",
   "landingStatusBuild": "Build",
   "landingStatusManifest": "Manifesto",
+  "landingNetworkStatusLabel": "STATUS DA REDE",
+  "landingNetworkOnlineDetail": "100% On-chain & Tor",
+  "landingNetworkFallbackDetail": "On-chain & Tor",
+  "landingApiAccessTitle": "API ACCESS",
+  "landingApiAccessBody": "Documentação técnica disponível via portal de desenvolvedores em rede Onion.",
+  "landingStatusLine": "{label}: {status}",
+  "@landingStatusLine": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "homeFundsDistributionTitle": "Distribuição de Fundos",
   "homeRecentActivitiesTitle": "Atividades",
   "homeViewStatementShortLabel": "Extrato",

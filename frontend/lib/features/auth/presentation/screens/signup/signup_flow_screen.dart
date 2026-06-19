@@ -1,28 +1,29 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/auth/presentation/widgets/auth_motion.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 
-const Color _signupInk = Color(0xFF000000);
-const Color _signupSurface = Color(0xFF0A0A0A);
-const Color _signupPanel = Color(0xFF111111);
-const Color _signupField = Color(0xFF1A1A1A);
-const Color _signupBorder = Color(0xFF333333);
-const Color _signupBorderSoft = Color(0xFF27272A);
-const Color _signupMuted = Color(0xFFA1A1AA);
-const Color _signupDim = Color(0xFF71717A);
-const Color _signupText = Color(0xFFFFFFFF);
+const Color _signupInk = AppColors.hexFF000000;
+const Color _signupSurface = AppColors.hexFF0A0A0A;
+const Color _signupPanel = AppColors.hexFF111111;
+const Color _signupField = AppColors.hexFF1A1A1A;
+const Color _signupBorder = AppColors.hexFF333333;
+const Color _signupBorderSoft = AppColors.hexFF27272A;
+const Color _signupMuted = AppColors.hexFFA1A1AA;
+const Color _signupDim = AppColors.hexFF71717A;
+const Color _signupText = AppColors.hexFFFFFFFF;
 
 enum _SignupErrorTarget {
   username,
@@ -48,22 +49,19 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
   ProviderSubscription<AuthState>? _authSubscription;
   Timer? _totpTransitionTimer;
-  Timer? _redirectTimer;
 
   int _step = 0;
   bool _isForward = true;
   bool _acceptedPasswordRisk = false;
   bool _obscurePassword = true;
   bool _obscureConfirmPassword = true;
-  bool _creationCompleted = false;
-  bool _successRedirectScheduled = false;
   String _sessionId = '';
   String _totpSecret = '';
   String _qrCodeUri = '';
   List<String> _backupCodes = const [];
   String? _inlineFeedbackTitle;
   String? _inlineFeedbackMessage;
-  IconData _inlineFeedbackIcon = LucideIcons.alertTriangle;
+  IconData _inlineFeedbackIcon = KeroseneIcons.error;
   _SignupErrorTarget? _inlineFeedbackTarget;
   int _inlineFeedbackPulseKey = 0;
 
@@ -80,7 +78,6 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   void dispose() {
     _authSubscription?.close();
     _totpTransitionTimer?.cancel();
-    _redirectTimer?.cancel();
     _usernameController.dispose();
     _passwordController.dispose();
     _confirmPasswordController.dispose();
@@ -91,7 +88,6 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   String get _username => _usernameController.text.trim();
   String get _password => _passwordController.text;
   String get _totpCode => _totpController.text.replaceAll(RegExp(r'\D'), '');
-  String get _totpCountdownHint => '25';
 
   bool get _usernameLooksValid =>
       _username.length >= 3 && RegExp(r'^[a-z0-9_]+$').hasMatch(_username);
@@ -118,10 +114,9 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       _totpSecret = next.totpSecret;
       _qrCodeUri = next.qrCodeUri;
       _backupCodes = next.backupCodes;
-      _creationCompleted = true;
       setState(() {});
       _totpTransitionTimer?.cancel();
-      _totpTransitionTimer = Timer(const Duration(milliseconds: 850), () {
+      _totpTransitionTimer = Timer(KeroseneMotion.totpTransition, () {
         if (mounted && _step == 3) {
           _goToStep(4);
         }
@@ -137,21 +132,17 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
 
     if (next is AuthAuthenticated) {
       _goToStep(6);
-      _scheduleSuccessRedirect();
       return;
     }
 
     if (next is AuthError) {
       _totpTransitionTimer?.cancel();
-      _creationCompleted = false;
       final wasTotpOrPasskeyStep = _step == 4 || _step == 5;
       if (_step == 3 || wasTotpOrPasskeyStep) {
         _sessionId = '';
         _totpSecret = '';
         _qrCodeUri = '';
         _backupCodes = const [];
-        _successRedirectScheduled = false;
-        _redirectTimer?.cancel();
         _goToStep(wasTotpOrPasskeyStep ? 0 : 2);
       }
       _showInlineFeedback(
@@ -162,22 +153,12 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     }
   }
 
-  void _scheduleSuccessRedirect() {
-    if (_successRedirectScheduled) {
-      return;
-    }
-    _successRedirectScheduled = true;
-    _redirectTimer?.cancel();
-    _redirectTimer = Timer(const Duration(milliseconds: 5200), () {
-      if (!mounted) {
-        return;
-      }
-      AppScreenFeedbackBus.clear();
-      Navigator.of(context).pushNamedAndRemoveUntil(
-        '/home',
-        (route) => false,
-      );
-    });
+  void _startAppAfterSuccess() {
+    AppScreenFeedbackBus.clear();
+    Navigator.of(context).pushNamedAndRemoveUntil(
+      '/home',
+      (route) => false,
+    );
   }
 
   String? _usernameError(BuildContext context, String value) {
@@ -223,7 +204,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
   void _showInlineFeedback({
     required String title,
     required String message,
-    IconData icon = LucideIcons.alertTriangle,
+    IconData icon = KeroseneIcons.error,
     _SignupErrorTarget target = _SignupErrorTarget.general,
   }) {
     HapticFeedback.lightImpact();
@@ -255,7 +236,6 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     if (_step == 3) {
       ref.read(authControllerProvider.notifier).clearError();
       _totpTransitionTimer?.cancel();
-      _creationCompleted = false;
       _goToStep(2);
       return;
     }
@@ -327,7 +307,6 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       return;
     }
 
-    _creationCompleted = false;
     _goToStep(3);
     ref.read(authControllerProvider.notifier).signup(
           username: _username,
@@ -362,7 +341,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       _showInlineFeedback(
         title: context.tr.authSecurityPreparingTitle,
         message: context.tr.authSecurityPreparingMessage,
-        icon: LucideIcons.info,
+        icon: KeroseneIcons.info,
         target: _SignupErrorTarget.general,
       );
       return;
@@ -498,8 +477,8 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                     duration: AuthMotion.entrance,
                     child: Icon(
                       _usernameLooksValid
-                          ? LucideIcons.checkCircle2
-                          : LucideIcons.alertCircle,
+                          ? KeroseneIcons.success
+                          : KeroseneIcons.warning,
                       key: ValueKey<bool>(_usernameLooksValid),
                       size: 18,
                       color: _usernameLooksValid ? _signupText : _signupMuted,
@@ -558,7 +537,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                 _obscurePassword = !_obscurePassword;
               }),
               icon: Icon(
-                _obscurePassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                _obscurePassword ? KeroseneIcons.eye : KeroseneIcons.eyeOff,
                 size: 18,
                 color: _signupMuted,
               ),
@@ -622,7 +601,9 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
                 _obscureConfirmPassword = !_obscureConfirmPassword;
               }),
               icon: Icon(
-                _obscureConfirmPassword ? LucideIcons.eye : LucideIcons.eyeOff,
+                _obscureConfirmPassword
+                    ? KeroseneIcons.eye
+                    : KeroseneIcons.eyeOff,
                 size: 18,
                 color: _signupMuted,
               ),
@@ -658,23 +639,23 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     return AuthMotionStagger(
       crossAxisAlignment: CrossAxisAlignment.center,
       children: [
-        const SizedBox(height: 26),
+        const SizedBox(height: 30),
         SizedBox(
-          width: 82,
-          height: 82,
+          width: 72,
+          height: 88,
           child: Stack(
             alignment: Alignment.center,
             children: [
               Icon(
-                LucideIcons.shield,
-                size: 74,
+                KeroseneIcons.shield,
+                size: 82,
                 color: Colors.white.withValues(alpha: 0.92),
               ),
               Padding(
-                padding: const EdgeInsets.only(top: 10),
+                padding: const EdgeInsets.only(top: 14),
                 child: Icon(
-                  LucideIcons.lock,
-                  size: 30,
+                  KeroseneIcons.lock,
+                  size: 28,
                   color: Colors.white.withValues(alpha: 0.92),
                 ),
               ),
@@ -683,75 +664,23 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         ),
         const SizedBox(height: 26),
         Text(
-          _signupCreatingTitle(context),
+          _signupCreatingAlmostReadyTitle(context),
           textAlign: TextAlign.center,
           style: _SignupTypography.title(),
         ),
-        const SizedBox(height: 8),
+        const SizedBox(height: 12),
         Text(
-          _signupCreatingSubtitle(context),
+          _signupCreatingAlmostReadySubtitle(context),
           textAlign: TextAlign.center,
           style: _SignupTypography.subtitle(),
         ),
-        const SizedBox(height: 28),
-        _SignupPanel(
-          padding: const EdgeInsets.all(20),
-          borderRadius: 16,
-          child: Column(
-            children: [
-              _SignupProcessingRow(
-                icon: LucideIcons.badgeCheck,
-                text: _signupCreatingSecureConnection(context),
-                status: _creationCompleted
-                    ? _SignupProcessingStatus.done
-                    : _SignupProcessingStatus.done,
-              ),
-              _SignupProcessingRow(
-                icon: LucideIcons.terminal,
-                text: _signupCreatingHumanCheck(context),
-                status: _creationCompleted
-                    ? _SignupProcessingStatus.done
-                    : _SignupProcessingStatus.loading,
-              ),
-              _SignupProcessingRow(
-                icon: LucideIcons.server,
-                text: _signupCreatingProfile(context),
-                status: _creationCompleted
-                    ? _SignupProcessingStatus.done
-                    : _SignupProcessingStatus.pending,
-              ),
-            ],
-          ),
-        ),
-        const SizedBox(height: 14),
-        _SignupPanel(
-          padding: const EdgeInsets.all(16),
-          borderRadius: 12,
-          child: Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Container(
-                width: 28,
-                height: 28,
-                decoration: BoxDecoration(
-                  color: Colors.transparent,
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  LucideIcons.lock,
-                  color: _signupMuted,
-                  size: 16,
-                ),
-              ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  _signupCreatingSecurityNote(context),
-                  style: _SignupTypography.bodySmall(),
-                ),
-              ),
-            ],
-          ),
+        const SizedBox(height: 70),
+        const _SignupSpinner(size: 64, strokeWidth: 4),
+        const SizedBox(height: 26),
+        Text(
+          _signupCreatingSecurityProgress(context),
+          textAlign: TextAlign.center,
+          style: _SignupTypography.bodySmall(color: _signupMuted),
         ),
       ],
     );
@@ -762,43 +691,34 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
       title: _signupTotpTitle(context),
       subtitle: _signupTotpSubtitle(context),
       children: [
-        Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
-          children: [
-            _TotpQrBox(data: _qrCodeUri),
-            const SizedBox(width: 18),
-            Expanded(
-              child: Column(
-                children: [
-                  _NumberedInstruction(
-                    number: 1,
-                    text: context.tr.authSignupTotpScanInstruction,
-                  ),
-                  const SizedBox(height: 12),
-                  _NumberedInstruction(
-                    number: 2,
-                    text: context.tr.authSignupTotpCodeLabel,
-                  ),
-                  const SizedBox(height: 8),
-                  AuthMotionShake(
-                    triggerKey: _inlineFeedbackPulseKey,
-                    enabled: _inlineFeedbackTarget == _SignupErrorTarget.totp,
-                    child: _TotpCodeField(
-                      controller: _totpController,
-                      countdownText: _totpCountdownHint,
-                      onChanged: (_) {
-                        _clearInlineFeedback();
-                        setState(() {});
-                      },
-                      onSubmitted: (_) => isLoading ? null : _verifyTotp(),
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          ],
+        _NumberedInstruction(
+          number: 1,
+          text: context.tr.authSignupTotpScanInstruction,
         ),
-        const SizedBox(height: 22),
+        const SizedBox(height: 18),
+        Center(
+          child: _TotpQrBox(data: _qrCodeUri, size: 160),
+        ),
+        const SizedBox(height: 26),
+        _NumberedInstruction(
+          number: 2,
+          text: _signupTotpCodeInstruction(context),
+        ),
+        const SizedBox(height: 14),
+        AuthMotionShake(
+          triggerKey: _inlineFeedbackPulseKey,
+          enabled: _inlineFeedbackTarget == _SignupErrorTarget.totp,
+          child: _TotpDigitBoxes(
+            controller: _totpController,
+            enabled: !isLoading,
+            onChanged: (_) {
+              _clearInlineFeedback();
+              setState(() {});
+            },
+            onSubmitted: (_) => isLoading ? null : _verifyTotp(),
+          ),
+        ),
+        const SizedBox(height: 34),
         Text(
           _signupRecoveryCodesTitle(context),
           style: _SignupTypography.sectionTitle(),
@@ -809,8 +729,11 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
           style: _SignupTypography.bodySmall(),
         ),
         const SizedBox(height: 14),
-        _RecoveryCodeGrid(codes: _backupCodes),
-        const SizedBox(height: 22),
+        _RecoveryCodesCopyButton(
+          codes: _backupCodes,
+          onCopied: _showRecoveryCodesCopied,
+        ),
+        const SizedBox(height: 28),
         Row(
           children: [
             Expanded(
@@ -852,7 +775,7 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
               color: _signupPanel,
             ),
             child: const Icon(
-              LucideIcons.userCheck,
+              KeroseneIcons.userCheck,
               size: 48,
               color: _signupText,
             ),
@@ -861,15 +784,15 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
         const SizedBox(height: 28),
         _SignupBullet(
           text: context.tr.authSignupPasskeyBiometricBullet,
-          icon: LucideIcons.fingerprint,
+          icon: KeroseneIcons.biometric,
         ),
         _SignupBullet(
           text: context.tr.authSignupPasskeyPasswordBullet,
-          icon: LucideIcons.shieldCheck,
+          icon: KeroseneIcons.security,
         ),
         _SignupBullet(
           text: context.tr.authSignupPasskeyDeviceBullet,
-          icon: LucideIcons.shieldCheck,
+          icon: KeroseneIcons.security,
         ),
         const SizedBox(height: 46),
         _SignupPrimaryButton(
@@ -886,9 +809,33 @@ class _SignupFlowScreenState extends ConsumerState<SignupFlowScreen> {
     return _SignupSuccessScene(
       appTitle: context.tr.appTitle,
       title: context.tr.authSignupSuccessTitle,
-      preparingSubtitle: context.tr.authSignupSuccessPreparingSubtitle,
-      redirectSubtitle: context.tr.authSignupSuccessSubtitle,
+      subtitle: _signupSuccessBody(context),
+      actionLabel: _signupStartAction(context),
+      onContinue: _startAppAfterSuccess,
     );
+  }
+
+  void _showRecoveryCodesCopied() {
+    final codes = _backupCodes.where((code) => code.trim().isNotEmpty).toList();
+    if (codes.isEmpty) {
+      _showInlineFeedback(
+        title: _signupRecoveryCodesUnavailableTitle(context),
+        message: _signupRecoveryCodesUnavailableMessage(context),
+        icon: KeroseneIcons.info,
+      );
+      return;
+    }
+    Clipboard.setData(ClipboardData(text: codes.join('\n')));
+    HapticFeedback.selectionClick();
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(_signupRecoveryCodesCopiedMessage(context)),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: _signupField,
+        ),
+      );
   }
 }
 
@@ -1002,54 +949,27 @@ String _signupFinishCreateAccountAction(BuildContext context) {
   };
 }
 
-String _signupCreatingTitle(BuildContext context) {
+String _signupCreatingAlmostReadyTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
-    'en' => 'Creating your account.',
-    'es' => 'Creando tu cuenta.',
-    _ => 'Criando sua conta.',
+    'en' => 'Almost ready',
+    'es' => 'Casi listo',
+    _ => 'Quase pronto',
   };
 }
 
-String _signupCreatingSubtitle(BuildContext context) {
+String _signupCreatingAlmostReadySubtitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
-    'en' => 'Please wait a moment.',
-    'es' => 'Por favor, espera un momento.',
-    _ => 'Por gentileza, aguarde um instante.',
+    'en' => 'We are configuring the final details with maximum security.',
+    'es' => 'Estamos configurando los últimos detalles con máxima seguridad.',
+    _ => 'Estamos configurando os últimos detalhes com segurança máxima.',
   };
 }
 
-String _signupCreatingSecureConnection(BuildContext context) {
+String _signupCreatingSecurityProgress(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
-    'en' => 'Establishing secure connection',
-    'es' => 'Estableciendo conexión segura',
-    _ => 'Estabelecendo conexão segura',
-  };
-}
-
-String _signupCreatingHumanCheck(BuildContext context) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'en' => 'Verifying that you are human.',
-    'es' => 'Verificando que eres humano.',
-    _ => 'Verificando se você é humano.',
-  };
-}
-
-String _signupCreatingProfile(BuildContext context) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'en' => 'Completing profile setup',
-    'es' => 'Concluyendo configuración del perfil',
-    _ => 'Concluindo configuração do perfil',
-  };
-}
-
-String _signupCreatingSecurityNote(BuildContext context) {
-  return switch (Localizations.localeOf(context).languageCode) {
-    'en' =>
-      'Our advanced security protocols preserve the integrity of your experience.',
-    'es' =>
-      'Nuestros protocolos avanzados de seguridad garantizan la integridad de tu experiencia.',
-    _ =>
-      'Nossos protocolos avançados de segurança garantem a integridade da sua experiência.',
+    'en' => 'Securing your account...',
+    'es' => 'Protegiendo tu cuenta...',
+    _ => 'Garantindo a segurança da sua conta...',
   };
 }
 
@@ -1077,6 +997,39 @@ String _signupRecoveryCodesTitle(BuildContext context) {
     'en' => 'Recovery codes',
     'es' => 'Códigos de recuperación',
     _ => 'Códigos de Recuperação',
+  };
+}
+
+String _signupTotpCodeInstruction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Enter the 6-digit code',
+    'es' => 'Ingresa el código de 6 dígitos',
+    _ => 'Insira o código de 6 dígitos',
+  };
+}
+
+String _signupRecoveryCodesCopiedMessage(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Recovery codes copied.',
+    'es' => 'Códigos de recuperación copiados.',
+    _ => 'Códigos de recuperação copiados.',
+  };
+}
+
+String _signupRecoveryCodesUnavailableTitle(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Codes unavailable',
+    'es' => 'Códigos no disponibles',
+    _ => 'Códigos indisponíveis',
+  };
+}
+
+String _signupRecoveryCodesUnavailableMessage(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Wait for account creation to finish and try again.',
+    'es' =>
+      'Espera a que termine la creación de la cuenta e inténtalo otra vez.',
+    _ => 'Aguarde a criação da conta terminar e tente novamente.',
   };
 }
 
@@ -1123,11 +1076,27 @@ String _signupAuthorizeDeviceAction(BuildContext context) {
   };
 }
 
+String _signupSuccessBody(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'You are now a Kerosene user. You can start moving funds.',
+    'es' => 'Ahora eres usuario de Kerosene. Ya puedes realizar movimientos.',
+    _ => 'Agora você é um usuário da Kerosene. Já pode realizar movimentações.',
+  };
+}
+
+String _signupStartAction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Start',
+    'es' => 'Comenzar',
+    _ => 'Começar',
+  };
+}
+
 class _SignupTypography {
   const _SignupTypography._();
 
   static TextStyle title() {
-    return GoogleFonts.ibmPlexSerif(
+    return AppTypography.newsreader(
       color: _signupText,
       fontSize: 32,
       fontWeight: FontWeight.w500,
@@ -1214,7 +1183,7 @@ class _SignupTypography {
   }
 
   static TextStyle successTitle() {
-    return GoogleFonts.ibmPlexSerif(
+    return AppTypography.newsreader(
       color: _signupText,
       fontSize: 31,
       fontWeight: FontWeight.w500,
@@ -1233,30 +1202,21 @@ class _SignupTypography {
       letterSpacing: 0,
     );
   }
-
-  static TextStyle percent() {
-    return const TextStyle(
-      fontFamily: AppTypography.numericFontFamily,
-      color: _signupText,
-      fontSize: 18,
-      fontWeight: FontWeight.w500,
-      height: 1,
-      letterSpacing: 0,
-    );
-  }
 }
 
 class _SignupSuccessScene extends StatefulWidget {
   final String appTitle;
   final String title;
-  final String preparingSubtitle;
-  final String redirectSubtitle;
+  final String subtitle;
+  final String actionLabel;
+  final VoidCallback onContinue;
 
   const _SignupSuccessScene({
     required this.appTitle,
     required this.title,
-    required this.preparingSubtitle,
-    required this.redirectSubtitle,
+    required this.subtitle,
+    required this.actionLabel,
+    required this.onContinue,
   });
 
   @override
@@ -1297,11 +1257,15 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
     return AnimatedBuilder(
       animation: _controller,
       builder: (context, _) {
-        final progress = _easeInOut(_interval(_controller.value, 0, 1));
         final badgeProgress = AuthMotion.reduce(context)
             ? 1.0
             : _easeInOut(_interval(_controller.value, 0, 0.32));
-        final showRedirect = _controller.value >= 0.72;
+        final headingProgress =
+            _easeInOut(_interval(_controller.value, 0.18, 0.62));
+        final bodyProgress =
+            _easeInOut(_interval(_controller.value, 0.32, 0.82));
+        final buttonProgress =
+            _easeInOut(_interval(_controller.value, 0.56, 1));
 
         return SafeArea(
           child: LayoutBuilder(
@@ -1319,6 +1283,7 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
                       child: Column(
                         mainAxisAlignment: MainAxisAlignment.center,
                         children: [
+                          const Spacer(flex: 2),
                           Opacity(
                             opacity: badgeProgress,
                             child: Transform.scale(
@@ -1328,45 +1293,74 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
                                 height: 96,
                                 decoration: BoxDecoration(
                                   shape: BoxShape.circle,
-                                  border: Border.all(
-                                    color: _signupText,
-                                    width: 2,
-                                  ),
+                                  color: _signupPanel,
+                                  border: Border.all(color: _signupBorderSoft),
+                                  boxShadow: [
+                                    BoxShadow(
+                                      color: AppColors.hexFF63FEA7
+                                          .withValues(alpha: 0.15),
+                                      blurRadius: 60,
+                                      spreadRadius: 2,
+                                    ),
+                                  ],
                                 ),
-                                child: const Icon(
-                                  LucideIcons.check,
-                                  color: _signupText,
-                                  size: 42,
+                                child: Stack(
+                                  alignment: Alignment.center,
+                                  children: [
+                                    Container(
+                                      decoration: BoxDecoration(
+                                        shape: BoxShape.circle,
+                                        color: AppColors.hexFF63FEA7
+                                            .withValues(alpha: 0.10),
+                                      ),
+                                    ),
+                                    const Icon(
+                                      KeroseneIcons.success,
+                                      color: AppColors.hexFF63FEA7,
+                                      size: 52,
+                                    ),
+                                  ],
                                 ),
                               ),
                             ),
                           ),
                           const SizedBox(height: 34),
-                          Text(
-                            _withTrailingPeriod(widget.title),
-                            textAlign: TextAlign.center,
-                            style: _SignupTypography.successTitle(),
+                          Opacity(
+                            opacity: headingProgress,
+                            child: Transform.translate(
+                              offset: Offset(0, 18 * (1 - headingProgress)),
+                              child: Text(
+                                _withSuccessBang(widget.title),
+                                textAlign: TextAlign.center,
+                                style: _SignupTypography.successTitle(),
+                              ),
+                            ),
                           ),
                           const SizedBox(height: 16),
-                          AnimatedSwitcher(
-                            duration: const Duration(milliseconds: 240),
-                            child: Text(
-                              showRedirect
-                                  ? widget.redirectSubtitle
-                                  : widget.preparingSubtitle,
-                              key: ValueKey<bool>(showRedirect),
-                              textAlign: TextAlign.center,
-                              style: _SignupTypography.successSubtitle(),
+                          Opacity(
+                            opacity: bodyProgress,
+                            child: Transform.translate(
+                              offset: Offset(0, 18 * (1 - bodyProgress)),
+                              child: Text(
+                                widget.subtitle,
+                                textAlign: TextAlign.center,
+                                style: _SignupTypography.successSubtitle(),
+                              ),
                             ),
                           ),
-                          const SizedBox(height: 44),
-                          SizedBox(
-                            width: 210,
-                            child: _SignupSuccessProgress(
-                              progress: progress,
-                              showPercent: false,
+                          const Spacer(flex: 3),
+                          Opacity(
+                            opacity: buttonProgress,
+                            child: Transform.translate(
+                              offset: Offset(0, 12 * (1 - buttonProgress)),
+                              child: _SignupPrimaryButton(
+                                text: widget.actionLabel,
+                                onPressed: widget.onContinue,
+                                borderRadius: 999,
+                              ),
                             ),
                           ),
+                          const SizedBox(height: 28),
                         ],
                       ),
                     ),
@@ -1391,93 +1385,15 @@ class _SignupSuccessSceneState extends State<_SignupSuccessScene>
   }
 
   static double _easeInOut(double value) {
-    return Curves.easeInOutCubic.transform(value.clamp(0.0, 1.0));
+    return KeroseneMotion.standard.transform(value.clamp(0.0, 1.0));
   }
 
-  static String _withTrailingPeriod(String value) {
+  static String _withSuccessBang(String value) {
     final trimmed = value.trim();
-    if (trimmed.endsWith('.')) {
+    if (trimmed.endsWith('!')) {
       return trimmed;
     }
-    return '$trimmed.';
-  }
-}
-
-class _SignupSuccessProgress extends StatelessWidget {
-  final double progress;
-  final bool showPercent;
-
-  const _SignupSuccessProgress({
-    required this.progress,
-    required this.showPercent,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final percent = (progress * 100).round().clamp(0, 100);
-
-    return Row(
-      children: [
-        Expanded(
-          child: SizedBox(
-            height: 10,
-            child: CustomPaint(
-              painter: _SignupSuccessProgressPainter(progress: progress),
-            ),
-          ),
-        ),
-        AnimatedSize(
-          duration: const Duration(milliseconds: 220),
-          curve: Curves.easeOutCubic,
-          child: showPercent
-              ? Padding(
-                  padding: const EdgeInsets.only(left: 18),
-                  child: Text(
-                    '$percent%',
-                    style: _SignupTypography.percent(),
-                  ),
-                )
-              : const SizedBox.shrink(),
-        ),
-      ],
-    );
-  }
-}
-
-class _SignupSuccessProgressPainter extends CustomPainter {
-  final double progress;
-
-  const _SignupSuccessProgressPainter({required this.progress});
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final centerY = size.height / 2;
-    final start = Offset(0, centerY);
-    final end = Offset(size.width, centerY);
-    final trackPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.13)
-      ..strokeWidth = 3
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(start, end, trackPaint);
-
-    final progressEnd = Offset(size.width * progress.clamp(0, 1), centerY);
-    final glowPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.42)
-      ..strokeWidth = 7
-      ..strokeCap = StrokeCap.round
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 5);
-    canvas.drawLine(start, progressEnd, glowPaint);
-
-    final progressPaint = Paint()
-      ..color = Colors.white.withValues(alpha: 0.98)
-      ..strokeWidth = 3.4
-      ..strokeCap = StrokeCap.round;
-    canvas.drawLine(start, progressEnd, progressPaint);
-  }
-
-  @override
-  bool shouldRepaint(covariant _SignupSuccessProgressPainter oldDelegate) {
-    return oldDelegate.progress != progress;
+    return '$trimmed!';
   }
 }
 
@@ -1503,7 +1419,7 @@ class _SignupTopBar extends StatelessWidget {
             alignment: Alignment.centerLeft,
             child: IconButton(
               onPressed: onBack,
-              icon: const Icon(LucideIcons.arrowLeft, size: 24),
+              icon: const Icon(KeroseneIcons.back, size: 24),
               color: _signupText.withValues(alpha: 0.86),
               padding: EdgeInsets.zero,
               constraints: const BoxConstraints.tightFor(width: 44, height: 44),
@@ -1519,7 +1435,7 @@ class _SignupTopBar extends StatelessWidget {
                   child: Center(
                     child: AnimatedContainer(
                       duration: AuthMotion.step,
-                      curve: Curves.easeOutCubic,
+                      curve: KeroseneMotion.standard,
                       width: index == step ? 30 : (index < step ? 18 : 8),
                       height: 4,
                       decoration: BoxDecoration(
@@ -1726,7 +1642,7 @@ class _SignupRuleRow extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Icon(
-            passed ? LucideIcons.checkCircle2 : LucideIcons.circle,
+            passed ? KeroseneIcons.success : KeroseneIcons.circle,
             size: 18,
             color: passed
                 ? _signupText.withValues(alpha: 0.82)
@@ -1777,7 +1693,7 @@ class _SignupRiskAcknowledgement extends StatelessWidget {
               border: Border.all(color: checked ? _signupText : _signupDim),
             ),
             child: checked
-                ? const Icon(LucideIcons.check, size: 13, color: _signupInk)
+                ? const Icon(KeroseneIcons.check, size: 13, color: _signupInk)
                 : null,
           ),
           const SizedBox(width: 12),
@@ -1884,81 +1800,241 @@ class _SignupPanel extends StatelessWidget {
   }
 }
 
-enum _SignupProcessingStatus { done, loading, pending }
+class _SignupSpinner extends StatefulWidget {
+  final double size;
+  final double strokeWidth;
 
-class _SignupProcessingRow extends StatelessWidget {
-  final IconData icon;
-  final String text;
-  final _SignupProcessingStatus status;
-
-  const _SignupProcessingRow({
-    required this.icon,
-    required this.text,
-    required this.status,
+  const _SignupSpinner({
+    required this.size,
+    required this.strokeWidth,
   });
 
   @override
-  Widget build(BuildContext context) {
-    final trailing = switch (status) {
-      _SignupProcessingStatus.done => const Icon(
-          LucideIcons.checkCircle2,
-          color: _signupText,
-          size: 20,
-        ),
-      _SignupProcessingStatus.loading => const SizedBox(
-          width: 20,
-          height: 20,
-          child: CircularProgressIndicator(
-            strokeWidth: 2,
-            color: _signupText,
-          ),
-        ),
-      _SignupProcessingStatus.pending => Icon(
-          LucideIcons.circle,
-          color: Colors.white.withValues(alpha: 0.35),
-          size: 20,
-        ),
-    };
+  State<_SignupSpinner> createState() => _SignupSpinnerState();
+}
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 10),
-      child: Row(
-        children: [
-          Icon(icon, color: _signupMuted, size: 20),
-          const SizedBox(width: 14),
-          Expanded(
-            child: Text(
-              text,
-              style: _SignupTypography.bodySmall(color: _signupText),
-            ),
-          ),
-          trailing,
-        ],
+class _SignupSpinnerState extends State<_SignupSpinner>
+    with SingleTickerProviderStateMixin {
+  late final AnimationController _controller;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      vsync: this,
+      duration: KeroseneMotion.calm,
+    )..repeat();
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (AuthMotion.reduce(context)) {
+      return SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: CircularProgressIndicator(
+          strokeWidth: widget.strokeWidth,
+          color: _signupText,
+          backgroundColor: Colors.white.withValues(alpha: 0.08),
+        ),
+      );
+    }
+
+    return RotationTransition(
+      turns: _controller,
+      child: SizedBox(
+        width: widget.size,
+        height: widget.size,
+        child: CustomPaint(
+          painter: _SignupSpinnerPainter(strokeWidth: widget.strokeWidth),
+        ),
       ),
     );
   }
 }
 
+class _SignupSpinnerPainter extends CustomPainter {
+  final double strokeWidth;
+
+  const _SignupSpinnerPainter({required this.strokeWidth});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final rect = Offset.zero & size;
+    final paint = Paint()
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..color = _signupText;
+    canvas.drawArc(
+      rect.deflate(strokeWidth / 2),
+      -1.57,
+      4.7,
+      false,
+      paint,
+    );
+  }
+
+  @override
+  bool shouldRepaint(covariant _SignupSpinnerPainter oldDelegate) {
+    return oldDelegate.strokeWidth != strokeWidth;
+  }
+}
+
 class _TotpQrBox extends StatelessWidget {
   final String data;
+  final double size;
 
-  const _TotpQrBox({required this.data});
+  const _TotpQrBox({
+    required this.data,
+    this.size = 112,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Container(
-      width: 112,
-      height: 112,
-      padding: const EdgeInsets.all(8),
+      width: size,
+      height: size,
+      padding: EdgeInsets.all(size >= 150 ? 12 : 8),
       decoration: BoxDecoration(
         color: _signupText,
         borderRadius: BorderRadius.circular(12),
       ),
       child: data.isEmpty
           ? const Center(
-              child: Icon(LucideIcons.qrCode, color: _signupInk, size: 42),
+              child: Icon(KeroseneIcons.qr, color: _signupInk, size: 42),
             )
           : QrImageView(data: data, version: QrVersions.auto),
+    );
+  }
+}
+
+class _TotpDigitBoxes extends StatefulWidget {
+  final TextEditingController controller;
+  final bool enabled;
+  final ValueChanged<String>? onChanged;
+  final ValueChanged<String>? onSubmitted;
+
+  const _TotpDigitBoxes({
+    required this.controller,
+    required this.enabled,
+    this.onChanged,
+    this.onSubmitted,
+  });
+
+  @override
+  State<_TotpDigitBoxes> createState() => _TotpDigitBoxesState();
+}
+
+class _TotpDigitBoxesState extends State<_TotpDigitBoxes> {
+  late final FocusNode _focusNode;
+
+  @override
+  void initState() {
+    super.initState();
+    _focusNode = FocusNode();
+    widget.controller.addListener(_handleControllerChanged);
+  }
+
+  @override
+  void didUpdateWidget(covariant _TotpDigitBoxes oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.controller != widget.controller) {
+      oldWidget.controller.removeListener(_handleControllerChanged);
+      widget.controller.addListener(_handleControllerChanged);
+    }
+  }
+
+  @override
+  void dispose() {
+    widget.controller.removeListener(_handleControllerChanged);
+    _focusNode.dispose();
+    super.dispose();
+  }
+
+  void _handleControllerChanged() {
+    if (mounted) {
+      setState(() {});
+    }
+  }
+
+  void _focus() {
+    if (widget.enabled) {
+      _focusNode.requestFocus();
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final code = widget.controller.text.replaceAll(RegExp(r'\D'), '');
+
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: _focus,
+      child: Stack(
+        alignment: Alignment.center,
+        children: [
+          Opacity(
+            opacity: 0.01,
+            child: SizedBox(
+              height: 1,
+              child: TextField(
+                controller: widget.controller,
+                focusNode: _focusNode,
+                enabled: widget.enabled,
+                autofocus: true,
+                keyboardType: TextInputType.number,
+                textInputAction: TextInputAction.done,
+                inputFormatters: [
+                  FilteringTextInputFormatter.digitsOnly,
+                  LengthLimitingTextInputFormatter(6),
+                ],
+                onChanged: widget.onChanged,
+                onSubmitted: widget.onSubmitted,
+              ),
+            ),
+          ),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: List.generate(6, (index) {
+              final digit = index < code.length ? code[index] : '';
+              final active = _focusNode.hasFocus && index == code.length;
+              return AnimatedContainer(
+                duration: AuthMotion.step,
+                curve: KeroseneMotion.standard,
+                width: 48,
+                height: 56,
+                alignment: Alignment.center,
+                decoration: BoxDecoration(
+                  color: _signupField,
+                  borderRadius: BorderRadius.circular(8),
+                  border: Border.all(
+                    color: active
+                        ? _signupText.withValues(alpha: 0.72)
+                        : _signupBorder,
+                  ),
+                ),
+                child: Text(
+                  digit,
+                  style: AppTypography.bodyLarge.copyWith(
+                    fontFamily: AppTypography.numericFontFamily,
+                    color: _signupText,
+                    fontSize: 21,
+                    fontWeight: FontWeight.w600,
+                    letterSpacing: 0,
+                  ),
+                ),
+              );
+            }),
+          ),
+        ],
+      ),
     );
   }
 }
@@ -2003,126 +2079,45 @@ class _NumberedInstruction extends StatelessWidget {
   }
 }
 
-class _TotpCodeField extends StatelessWidget {
-  final TextEditingController controller;
-  final String countdownText;
-  final ValueChanged<String>? onChanged;
-  final ValueChanged<String>? onSubmitted;
+class _RecoveryCodesCopyButton extends StatelessWidget {
+  final List<String> codes;
+  final VoidCallback onCopied;
 
-  const _TotpCodeField({
-    required this.controller,
-    required this.countdownText,
-    this.onChanged,
-    this.onSubmitted,
+  const _RecoveryCodesCopyButton({
+    required this.codes,
+    required this.onCopied,
   });
 
   @override
   Widget build(BuildContext context) {
-    final border = OutlineInputBorder(
-      borderRadius: BorderRadius.circular(12),
-      borderSide: const BorderSide(color: _signupBorderSoft),
-    );
-
-    return TextField(
-      controller: controller,
-      keyboardType: TextInputType.number,
-      textInputAction: TextInputAction.done,
-      inputFormatters: [
-        FilteringTextInputFormatter.digitsOnly,
-        LengthLimitingTextInputFormatter(6),
-      ],
-      onChanged: onChanged,
-      onSubmitted: onSubmitted,
-      cursorColor: _signupText,
-      style: AppTypography.bodyMedium.copyWith(
-        fontFamily: AppTypography.numericFontFamily,
-        color: _signupText,
-        fontWeight: FontWeight.w700,
-        letterSpacing: 0,
-      ),
-      decoration: InputDecoration(
-        filled: true,
-        fillColor: Colors.transparent,
-        hintText: '123 456',
-        hintStyle: AppTypography.bodyMedium.copyWith(
-          color: _signupDim,
-          letterSpacing: 1.6,
-        ),
-        contentPadding:
-            const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
-        suffixIcon: Container(
-          width: 30,
-          height: 30,
-          margin: const EdgeInsets.all(9),
-          decoration: BoxDecoration(
-            shape: BoxShape.circle,
-            border: Border.all(color: Colors.white.withValues(alpha: 0.3)),
+    return AuthMotionPressScale(
+      enabled: true,
+      child: OutlinedButton.icon(
+        onPressed: onCopied,
+        icon: const Icon(KeroseneIcons.copy, size: 20),
+        label: Text(_signupCopyRecoveryCodesAction(context)),
+        style: OutlinedButton.styleFrom(
+          minimumSize: const Size.fromHeight(56),
+          foregroundColor: _signupText,
+          backgroundColor: _signupField,
+          side: const BorderSide(color: _signupBorder),
+          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(8)),
+          textStyle: _SignupTypography.button(color: _signupText).copyWith(
+            fontSize: 14,
+            letterSpacing: 0,
           ),
-          alignment: Alignment.center,
-          child: Text(
-            countdownText,
-            style: _SignupTypography.bodySmall(color: _signupMuted).copyWith(
-              color: _signupMuted,
-              fontSize: 10,
-              height: 1,
-            ),
-          ),
-        ),
-        enabledBorder: border,
-        focusedBorder: border.copyWith(
-          borderSide: BorderSide(color: Colors.white.withValues(alpha: 0.42)),
         ),
       ),
     );
   }
 }
 
-class _RecoveryCodeGrid extends StatelessWidget {
-  final List<String> codes;
-
-  const _RecoveryCodeGrid({required this.codes});
-
-  @override
-  Widget build(BuildContext context) {
-    final visibleCodes = codes.isEmpty
-        ? const <String>[
-            'VZ38 - 7RVK - K9N0',
-            'PY05 - 2LTM - R15X',
-            'V42T - 828M - K6JP',
-            'Y9NF - 3D7S - L8QW',
-          ]
-        : codes.take(4).toList(growable: false);
-
-    return GridView.count(
-      crossAxisCount: 2,
-      mainAxisSpacing: 10,
-      crossAxisSpacing: 10,
-      shrinkWrap: true,
-      physics: const NeverScrollableScrollPhysics(),
-      childAspectRatio: 2.75,
-      children: [
-        for (final code in visibleCodes)
-          Container(
-            padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 8),
-            decoration: BoxDecoration(
-              color: _signupField,
-              borderRadius: BorderRadius.circular(8),
-              border: Border.all(color: _signupBorderSoft),
-            ),
-            child: Text(
-              code,
-              textAlign: TextAlign.center,
-              style: AppTypography.technicalMono(
-                color: _signupMuted,
-                fontSize: 11,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 0.6,
-              ),
-            ),
-          ),
-      ],
-    );
-  }
+String _signupCopyRecoveryCodesAction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Copy recovery codes',
+    'es' => 'Copiar códigos de recuperación',
+    _ => 'Copiar códigos de recuperação',
+  };
 }
 
 class _SignupBullet extends StatelessWidget {

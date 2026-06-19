@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 enum AppNotificationTone { neutral, success, error, info, warning }
 
@@ -16,31 +18,31 @@ class AppNotificationAction {
 }
 
 class AppNotificationStyle {
-  static const Color surfaceColor = Color(0xFF07090C);
-  static const Color borderColor = Color(0xFF252A31);
-  static const Color buttonColor = Color(0xFF171B20);
-  static const Color closeButtonColor = Color(0xFF11151A);
-  static const Color titleColor = Color(0xFFF1F3F5);
-  static const Color bodyColor = Color(0xFFB8BFC7);
-  static const Color metaColor = Color(0xFF7F8790);
+  static const Color surfaceColor = KeroseneBrandTokens.surface;
+  static const Color borderColor = KeroseneBrandTokens.border;
+  static const Color buttonColor = KeroseneBrandTokens.surfaceHigh;
+  static const Color closeButtonColor = KeroseneBrandTokens.surfaceElevated;
+  static const Color titleColor = KeroseneBrandTokens.textPrimary;
+  static const Color bodyColor = KeroseneBrandTokens.textSecondary;
+  static const Color metaColor = KeroseneBrandTokens.textMuted;
 
   static Color accentFor(AppNotificationTone tone) {
     return switch (tone) {
-      AppNotificationTone.success => const Color(0xFFE5E8E6),
-      AppNotificationTone.error => const Color(0xFFD9D9D9),
-      AppNotificationTone.warning => const Color(0xFFC9CED3),
-      AppNotificationTone.info => const Color(0xFFB9C2CC),
-      AppNotificationTone.neutral => const Color(0xFFD8DDE2),
+      AppNotificationTone.success => KeroseneBrandTokens.success,
+      AppNotificationTone.error => KeroseneBrandTokens.error,
+      AppNotificationTone.warning => KeroseneBrandTokens.warning,
+      AppNotificationTone.info => KeroseneBrandTokens.info,
+      AppNotificationTone.neutral => KeroseneBrandTokens.textSecondary,
     };
   }
 
   static IconData iconFor(AppNotificationTone tone) {
     return switch (tone) {
-      AppNotificationTone.success => Icons.check_circle_outline,
-      AppNotificationTone.error => Icons.error_outline,
-      AppNotificationTone.warning => Icons.report_problem_outlined,
-      AppNotificationTone.info => Icons.info_outline,
-      AppNotificationTone.neutral => Icons.notifications_none,
+      AppNotificationTone.success => KeroseneIcons.success,
+      AppNotificationTone.error => KeroseneIcons.error,
+      AppNotificationTone.warning => KeroseneIcons.warning,
+      AppNotificationTone.info => KeroseneIcons.info,
+      AppNotificationTone.neutral => KeroseneIcons.pending,
     };
   }
 }
@@ -115,7 +117,7 @@ class AppNotificationSurface extends StatelessWidget {
                     height: 30,
                     alignment: Alignment.center,
                     decoration: BoxDecoration(
-                      color: const Color(0xFF0D1014),
+                      color: KeroseneBrandTokens.surfaceMuted,
                       border: Border.all(
                         color: Colors.white.withValues(alpha: 0.08),
                       ),
@@ -239,7 +241,7 @@ class _NotificationCloseButton extends StatelessWidget {
       height: 24,
       child: IconButton(
         onPressed: onPressed,
-        icon: const Icon(Icons.close_rounded),
+        icon: const Icon(KeroseneIcons.close),
         color: Colors.white.withValues(alpha: 0.86),
         iconSize: 15,
         padding: EdgeInsets.zero,

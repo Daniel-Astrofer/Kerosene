@@ -62,10 +62,6 @@ class ExternalTransfer extends Equatable {
       transferType.toUpperCase() == 'INBOUND_INVOICE';
   bool get hasDetectedOnchainTransaction =>
       blockchainTxid.trim().isNotEmpty || confirmations > 0;
-  bool get canCancelPendingReceive =>
-      isInboundTransfer &&
-      status.toUpperCase() == 'PENDING' &&
-      !hasDetectedOnchainTransaction;
 
   Transaction toTransaction() {
     final normalizedStatus = status.toUpperCase();

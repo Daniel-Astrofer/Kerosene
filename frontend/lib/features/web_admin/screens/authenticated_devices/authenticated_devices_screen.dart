@@ -4,8 +4,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class AuthenticatedDevicesScreen extends ConsumerWidget {
   const AuthenticatedDevicesScreen({super.key});
@@ -44,8 +46,8 @@ class AuthenticatedDevicesScreen extends ConsumerWidget {
                   ref.invalidate(adminMobileDevicesProvider);
                   ref.invalidate(adminWebDevicesProvider);
                 },
-                icon: const Icon(Icons.refresh, size: 16),
-                label: const Text('Refresh'),
+                icon: const Icon(KeroseneIcons.refresh, size: 16),
+                label: const Text(AdminCopy.refresh),
               ),
             ),
             AdminResponsiveGrid(
@@ -54,26 +56,26 @@ class AuthenticatedDevicesScreen extends ConsumerWidget {
                   label: 'Active Devices',
                   value: '$activeCount',
                   subtitle: 'web and mobile',
-                  icon: Icons.verified_user_outlined,
+                  icon: KeroseneIcons.security,
                   accentColor: AdminColors.positive,
                 ),
                 AdminMetricCard(
                   label: 'Web Sessions',
                   value: '$webCount',
                   subtitle: 'admin browser access',
-                  icon: Icons.language_outlined,
+                  icon: KeroseneIcons.language,
                 ),
                 AdminMetricCard(
                   label: 'Mobile Devices',
                   value: '$mobileCount',
                   subtitle: 'passkey/device-bound access',
-                  icon: Icons.phone_android_outlined,
+                  icon: KeroseneIcons.phone,
                 ),
                 AdminMetricCard(
                   label: 'Revocation',
                   value: 'Step-up',
                   subtitle: 'sensitive actions require confirmation',
-                  icon: Icons.lock_outline,
+                  icon: KeroseneIcons.lock,
                   accentColor: AdminColors.warning,
                 ),
               ],
@@ -83,14 +85,14 @@ class AuthenticatedDevicesScreen extends ConsumerWidget {
               builder: (context, constraints) {
                 final webPanel = _DevicesPanel(
                   title: 'Web devices',
-                  icon: Icons.language_outlined,
+                  icon: KeroseneIcons.language,
                   asyncValue: web,
                   platformFallback: 'Web',
                   onRetry: () => ref.invalidate(adminWebDevicesProvider),
                 );
                 final mobilePanel = _DevicesPanel(
                   title: 'Mobile devices',
-                  icon: Icons.phone_android_outlined,
+                  icon: KeroseneIcons.phone,
                   asyncValue: mobile,
                   platformFallback: 'Mobile',
                   onRetry: () => ref.invalidate(adminMobileDevicesProvider),
@@ -158,7 +160,7 @@ class _DevicesPanel extends StatelessWidget {
         data: (devices) {
           if (devices.isEmpty) {
             return AdminEmptyState(
-              title: 'No $platformFallback devices',
+              title: AdminCopy.emptyDevices(platformFallback),
               subtitle: 'Authenticated devices appear here after sign-in.',
               icon: icon,
             );
@@ -188,12 +190,12 @@ class _DevicesPanel extends StatelessWidget {
                     onPressed: () => ScaffoldMessenger.of(context).showSnackBar(
                       const SnackBar(
                         content: Text(
-                          'Revocation requires step-up confirmation.',
+                          AdminCopy.revocationRequiresStepUp,
                         ),
                       ),
                     ),
-                    icon: const Icon(Icons.block, size: 14),
-                    label: const Text('Revoke'),
+                    icon: const Icon(KeroseneIcons.blocked, size: 14),
+                    label: const Text(AdminCopy.revoke),
                   ),
                 ],
             ],

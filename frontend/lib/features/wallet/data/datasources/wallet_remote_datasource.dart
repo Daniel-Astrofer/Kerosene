@@ -6,8 +6,6 @@ import '../../../../core/network/api_client.dart';
 abstract class WalletRemoteDataSource {
   Future<Map<String, dynamic>> createWallet({
     required String name,
-    required String passphrase,
-    String accountSecurity = 'STANDARD',
     String? xpub,
     String walletMode = 'KEROSENE',
   });
@@ -16,17 +14,6 @@ abstract class WalletRemoteDataSource {
 
   // Wallet CRUD
   Future<Map<String, dynamic>> findWallet({required String name});
-
-  Future<String> updateWallet({
-    required String name,
-    required String newName,
-    required String passphrase,
-  });
-
-  Future<String> deleteWallet({
-    required String name,
-    required String passphrase,
-  });
 }
 
 class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
@@ -45,44 +32,18 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     required String? xpub,
   }) {
     final normalizedMode = walletMode.trim().toUpperCase();
-    if (normalizedMode == 'SELF_CUSTODY') {
-      return 'WATCH_ONLY';
-    }
+    final hasXpub = xpub != null && xpub.trim().isNotEmpty;
     if (normalizedMode == 'CUSTODIAL_ONCHAIN') {
       return 'CUSTODIAL_ONCHAIN';
+    }
+    if (normalizedMode == 'SELF_CUSTODY' || hasXpub) {
+      return 'WATCH_ONLY';
     }
     return 'INTERNAL';
   }
 
-  String _kfeWalletName(String value) {
-    final normalized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll('í', 'i')
-        .replaceAll('é', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('á', 'a')
-        .replaceAll('ã', 'a')
-        .replaceAll('ç', 'c')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-    return switch (normalized) {
-      'investimento' || 'investment' || 'reserva' => 'INVESTMENT',
-      'veiculo' || 'vehicle' => 'VEHICLE',
-      'futuros_gastos' ||
-      'futuro_gastos' ||
-      'gastos_futuros' ||
-      'gastos_mensais' =>
-        'FUTURE_EXPENSES',
-      'dia_a_dia' || 'daily' => 'DAILY',
-      _ => 'DAILY',
-    };
-  }
-
   Map<String, dynamic> _kfeCreatePayload({
     required String name,
-    required String passphrase,
-    required String accountSecurity,
     required String? xpub,
     required String walletMode,
   }) {
@@ -90,33 +51,24 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     final kind = _kfeKind(walletMode: walletMode, xpub: normalizedXpub);
     return {
       'kind': kind,
-      'name': _kfeWalletName(name),
-      'label': name,
+      'label': name.trim(),
       if (normalizedXpub != null && normalizedXpub.isNotEmpty)
         'xpub': normalizedXpub,
-      if (kind == 'CUSTODIAL_ONCHAIN' &&
-          normalizedXpub != null &&
-          normalizedXpub.isNotEmpty)
-        'issueInitialAddress': true,
-      if (kind == 'INTERNAL') 'issueInitialAddress': false,
+      'issueInitialAddress': normalizedXpub != null && normalizedXpub.isNotEmpty,
     };
   }
 
   @override
   Future<Map<String, dynamic>> createWallet({
     required String name,
-    required String passphrase,
-    String accountSecurity = 'STANDARD',
     String? xpub,
     String walletMode = 'KEROSENE',
   }) async {
     try {
       final response = await apiClient.post(
-        AppConfig.walletCreate,
+        AppConfig.kfeWallets,
         data: _kfeCreatePayload(
           name: name,
-          passphrase: passphrase,
-          accountSecurity: accountSecurity,
           xpub: xpub,
           walletMode: walletMode,
         ),
@@ -140,7 +92,7 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
   @override
   Future<List<dynamic>> getWallets() async {
     try {
-      final response = await apiClient.get(AppConfig.walletAll);
+      final response = await apiClient.get(AppConfig.kfeDashboard);
       final data = response.data;
       if (data is List) {
         return data;
@@ -191,28 +143,4 @@ class WalletRemoteDataSourceImpl implements WalletRemoteDataSource {
     }
   }
 
-  @override
-  Future<String> updateWallet({
-    required String name,
-    required String newName,
-    required String passphrase,
-  }) async {
-    throw const ValidationException(
-      message: 'Atualização de carteira ainda não está disponível no KFE.',
-      statusCode: 405,
-      errorCode: 'ERR_KFE_WALLET_UPDATE_UNAVAILABLE',
-    );
-  }
-
-  @override
-  Future<String> deleteWallet({
-    required String name,
-    required String passphrase,
-  }) async {
-    throw const ValidationException(
-      message: 'Arquivamento de carteira ainda não está disponível no KFE.',
-      statusCode: 405,
-      errorCode: 'ERR_KFE_WALLET_DELETE_UNAVAILABLE',
-    );
-  }
 }

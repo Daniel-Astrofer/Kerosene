@@ -26,31 +26,6 @@ abstract class LedgerRemoteDataSource {
     required String idempotencyKey,
     required int requestTimestamp,
   });
-
-  // 3.1 Payment Requests (Internal)
-
-  /// Creates an internal payment request link.
-  Future<Map<String, dynamic>> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-  });
-
-  /// Gets public details of a payment request.
-  Future<Map<String, dynamic>> getPaymentRequest(String linkId);
-
-  /// Pays an internal payment request.
-  Future<Map<String, dynamic>> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
-    int? requestTimestamp,
-  });
-
-  /// Deletes a ledger account.
-  Future<String> deleteLedger({required String walletName});
 }
 
 class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
@@ -236,50 +211,4 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
     }
   }
 
-  @override
-  Future<Map<String, dynamic>> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-  }) async {
-    throw const ValidationException(
-      message: 'Links de pagamento legados não estão disponíveis no KFE.',
-      statusCode: 410,
-      errorCode: 'ERR_KFE_PAYMENT_REQUEST_LEGACY_DISABLED',
-    );
-  }
-
-  @override
-  Future<Map<String, dynamic>> getPaymentRequest(String linkId) async {
-    throw const ValidationException(
-      message: 'Links de pagamento legados não estão disponíveis no KFE.',
-      statusCode: 410,
-      errorCode: 'ERR_KFE_PAYMENT_REQUEST_LEGACY_DISABLED',
-    );
-  }
-
-  @override
-  Future<Map<String, dynamic>> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
-    int? requestTimestamp,
-  }) async {
-    throw const ValidationException(
-      message: 'Links de pagamento legados não estão disponíveis no KFE.',
-      statusCode: 410,
-      errorCode: 'ERR_KFE_PAYMENT_REQUEST_LEGACY_DISABLED',
-    );
-  }
-
-  @override
-  Future<String> deleteLedger({required String walletName}) async {
-    throw const ValidationException(
-      message: 'Exclusão de ledger legado não está disponível no KFE.',
-      statusCode: 410,
-      errorCode: 'ERR_KFE_LEDGER_DELETE_DISABLED',
-    );
-  }
 }

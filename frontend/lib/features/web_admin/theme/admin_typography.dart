@@ -1,15 +1,16 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+
 import 'admin_colors.dart';
 
-/// Kerosene Enterprise — Typography Scale
-/// Uses IBM Plex for data-dense dashboards.
+/// Kerosene Enterprise — Typography Scale.
+/// Uses the shared Kerosene font families: Newsreader, Inter and IBM Plex Mono.
 class AdminTypography {
   AdminTypography._();
 
-  static const String fontFamily = 'IBMPlexSansHebrew';
-  static const String titleFontFamily = 'IBMPlexSerif';
-  static const String monoFontFamily = 'IBMPlexSansHebrew';
+  static const String fontFamily = AppTypography.bodyFontFamily;
+  static const String titleFontFamily = AppTypography.displayFontFamily;
+  static const String monoFontFamily = AppTypography.financialFontFamily;
 
   static TextStyle _sans({
     required double fontSize,
@@ -18,7 +19,8 @@ class AdminTypography {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.ibmPlexSansHebrew(
+    return TextStyle(
+      fontFamily: fontFamily,
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
@@ -33,9 +35,10 @@ class AdminTypography {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.ibmPlexSerif(
+    return TextStyle(
+      fontFamily: titleFontFamily,
       fontSize: fontSize,
-      fontWeight: FontWeight.w300,
+      fontWeight: FontWeight.w500,
       color: color,
       height: height,
       letterSpacing: letterSpacing,
@@ -49,7 +52,8 @@ class AdminTypography {
     double? height,
     double? letterSpacing,
   }) {
-    return GoogleFonts.ibmPlexSansHebrew(
+    return TextStyle(
+      fontFamily: monoFontFamily,
       fontSize: fontSize,
       fontWeight: fontWeight,
       color: color,
@@ -58,33 +62,27 @@ class AdminTypography {
     );
   }
 
-  // ─── Display ─────────────────────────────────────
   static final TextStyle displayLarge = _title(
     fontSize: 48,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.1,
   );
 
   static final TextStyle displayMedium = _title(
     fontSize: 36,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.15,
   );
 
-  // ─── Headings ────────────────────────────────────
   static final TextStyle h1 = _title(
     fontSize: 28,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.2,
   );
 
   static final TextStyle h2 = _title(
     fontSize: 22,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.25,
   );
 
@@ -97,11 +95,9 @@ class AdminTypography {
   static final TextStyle h4 = _title(
     fontSize: 15,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.35,
   );
 
-  // ─── Body ────────────────────────────────────────
   static final TextStyle bodyLarge = _sans(
     fontSize: 15,
     fontWeight: FontWeight.w400,
@@ -123,12 +119,10 @@ class AdminTypography {
     height: 1.4,
   );
 
-  // ─── Labels & Captions ──────────────────────────
   static final TextStyle label = _sans(
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: AdminColors.textTertiary,
-    letterSpacing: 0,
     height: 1.3,
   );
 
@@ -139,12 +133,10 @@ class AdminTypography {
     height: 1.3,
   );
 
-  // ─── Numeric / Data ─────────────────────────────
   static final TextStyle metric = _mono(
     fontSize: 28,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.1,
   );
 
@@ -152,7 +144,6 @@ class AdminTypography {
     fontSize: 20,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.15,
   );
 
@@ -160,31 +151,25 @@ class AdminTypography {
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AdminColors.textSecondary,
-    letterSpacing: 0,
     height: 1.4,
   );
 
-  // ─── Button ─────────────────────────────────────
   static final TextStyle button = _sans(
     fontSize: 13,
     fontWeight: FontWeight.w600,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
   );
 
   static final TextStyle buttonSmall = _sans(
     fontSize: 12,
     fontWeight: FontWeight.w500,
     color: AdminColors.textSecondary,
-    letterSpacing: 0,
   );
 
-  // ─── Table ──────────────────────────────────────
   static final TextStyle tableHeader = _sans(
     fontSize: 11,
     fontWeight: FontWeight.w600,
     color: AdminColors.textTertiary,
-    letterSpacing: 0,
     height: 1.3,
   );
 
@@ -199,7 +184,6 @@ class AdminTypography {
     fontSize: 13,
     fontWeight: FontWeight.w400,
     color: AdminColors.textPrimary,
-    letterSpacing: 0,
     height: 1.4,
   );
 }

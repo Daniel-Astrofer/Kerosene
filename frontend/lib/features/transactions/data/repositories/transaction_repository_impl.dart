@@ -6,11 +6,9 @@ import '../../domain/entities/fee_estimate.dart';
 import '../../domain/entities/tx_status.dart';
 import '../../domain/entities/deposit.dart';
 import '../../domain/entities/external_transfer.dart';
-import '../../domain/entities/lightning_invoice.dart';
 import '../../domain/entities/onchain_address_allocation.dart';
 import '../../domain/entities/payment_link.dart';
 import '../../domain/entities/wallet_network_address.dart';
-import '../../../wallet/domain/entities/unsigned_transaction.dart';
 import '../../domain/repositories/transaction_repository.dart';
 import '../datasources/transaction_remote_datasource.dart';
 
@@ -44,7 +42,7 @@ class TransactionRepositoryImpl implements TransactionRepository {
     return remoteDataSource.getTransactionStatus(txid);
   }
 
-  // ==================== Send & Broadcast ====================
+  // ==================== Send ====================
 
   @override
   Future<TxStatus> sendTransaction({
@@ -82,63 +80,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
       idempotencyKey: idempotencyKey,
       requestTimestamp: requestTimestamp,
     );
-  }
-
-  @override
-  Future<Either<Failure, TxStatus>> broadcastTransaction({
-    required String rawTxHex,
-    required String toAddress,
-    required double amount,
-    String? message,
-  }) async {
-    try {
-      final result = await remoteDataSource.broadcastTransaction(
-        rawTxHex: rawTxHex,
-        toAddress: toAddress,
-        amount: amount,
-        message: message,
-      );
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(
-        ServerFailure(
-          message: e.message,
-          statusCode: e.statusCode,
-          errorCode: e.errorCode,
-          data: e.data,
-        ),
-      );
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao transmitir transação: $e'));
-    }
-  }
-
-  @override
-  Future<Either<Failure, UnsignedTransaction>> createUnsignedTransaction({
-    required String toAddress,
-    required double amount,
-    required String feeLevel,
-  }) async {
-    try {
-      await _checkAuth();
-      final result = await remoteDataSource.createUnsignedTransaction(
-        toAddress: toAddress,
-        amount: amount,
-        feeLevel: feeLevel,
-      );
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(
-        ServerFailure(
-          message: e.message,
-          statusCode: e.statusCode,
-          errorCode: e.errorCode,
-          data: e.data,
-        ),
-      );
-    } catch (e) {
-      return Left(UnknownFailure(message: 'Erro ao criar transação: $e'));
-    }
   }
 
   // ==================== Deposits ====================
@@ -181,20 +122,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao obter links de onramp: $e'));
     }
-  }
-
-  @override
-  Future<Deposit> confirmDeposit({
-    required String txid,
-    required String fromAddress,
-    required double amount,
-  }) async {
-    await _checkAuth();
-    return remoteDataSource.confirmDeposit(
-      txid: txid,
-      fromAddress: fromAddress,
-      amount: amount,
-    );
   }
 
   @override
@@ -252,15 +179,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<PaymentLink> cancelPaymentLink({
-    required String linkId,
-    String? reason,
-  }) async {
-    await _checkAuth();
-    return remoteDataSource.cancelPaymentLink(linkId: linkId, reason: reason);
-  }
-
-  @override
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   }) async {
@@ -281,24 +199,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
   }
 
   @override
-  Future<LightningInvoice> createLightningInvoice({
-    required String idempotencyKey,
-    required String walletName,
-    required double amount,
-    String? memo,
-    int expiresInSeconds = 900,
-  }) async {
-    await _checkAuth();
-    return remoteDataSource.createLightningInvoice(
-      idempotencyKey: idempotencyKey,
-      walletName: walletName,
-      amount: amount,
-      memo: memo,
-      expiresInSeconds: expiresInSeconds,
-    );
-  }
-
-  @override
   Future<List<ExternalTransfer>> getExternalTransfers() async {
     await _checkAuth();
     return remoteDataSource.getExternalTransfers();
@@ -308,12 +208,6 @@ class TransactionRepositoryImpl implements TransactionRepository {
   Future<ExternalTransfer> getExternalTransfer(String transferId) async {
     await _checkAuth();
     return remoteDataSource.getExternalTransfer(transferId);
-  }
-
-  @override
-  Future<ExternalTransfer> cancelInboundTransfer(String transferId) async {
-    await _checkAuth();
-    return remoteDataSource.cancelInboundTransfer(transferId);
   }
 
   @override

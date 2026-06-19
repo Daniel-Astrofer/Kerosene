@@ -1,4 +1,8 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Kerosene Error Types — matches Figma error variants
 enum KeroErrorType {
@@ -79,30 +83,30 @@ extension KeroErrorTypeExt on KeroErrorType {
   Color get accentColor {
     switch (this) {
       case KeroErrorType.ledgerPaymentReceived:
-        return const Color(0xFF00C896);
+        return KeroseneBrandTokens.success;
       default:
-        return const Color(0xFFFF3B5C);
+        return KeroseneBrandTokens.error;
     }
   }
 
   IconData get icon {
     switch (this) {
       case KeroErrorType.ledgerInsufficientBalance:
-        return Icons.account_balance_wallet_outlined;
+        return KeroseneIcons.wallet;
       case KeroErrorType.authUserAlreadyExists:
-        return Icons.person_outline_rounded;
+        return KeroseneIcons.address;
       case KeroErrorType.authInvalidCredentials:
-        return Icons.lock_outline_rounded;
+        return KeroseneIcons.lock;
       case KeroErrorType.authTotpTimeout:
-        return Icons.timer_off_outlined;
+        return KeroseneIcons.pending;
       case KeroErrorType.ledgerPaymentRequestError:
-        return Icons.receipt_long_outlined;
+        return KeroseneIcons.quote;
       case KeroErrorType.walletNotFound:
-        return Icons.search_off_rounded;
+        return KeroseneIcons.search;
       case KeroErrorType.internalServer:
-        return Icons.cloud_off_rounded;
+        return KeroseneIcons.unavailable;
       case KeroErrorType.ledgerPaymentReceived:
-        return Icons.check_circle_outline_rounded;
+        return KeroseneIcons.success;
     }
   }
 }
@@ -168,7 +172,7 @@ class KeroErrorDialog extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.all(28),
         decoration: BoxDecoration(
-          color: const Color(0xFF0D0D0D),
+          color: KeroseneBrandTokens.surface,
           borderRadius: BorderRadius.circular(28),
           border: Border.all(color: color.withValues(alpha: 0.25), width: 1),
           boxShadow: [
@@ -207,7 +211,7 @@ class KeroErrorDialog extends StatelessWidget {
                 fontSize: 10,
                 fontWeight: FontWeight.w700,
                 letterSpacing: 1.5,
-                fontFamily: 'IBMPlexSansHebrew',
+                fontFamily: AppTypography.financialFontFamily,
               ),
             ),
 
@@ -217,7 +221,7 @@ class KeroErrorDialog extends StatelessWidget {
             Text(
               errorType.title,
               style: TextStyle(
-                color: Theme.of(context).colorScheme.onPrimary,
+                color: KeroseneBrandTokens.textPrimary,
                 fontSize: 20,
                 fontWeight: FontWeight.w800,
               ),
@@ -230,10 +234,7 @@ class KeroErrorDialog extends StatelessWidget {
             Text(
               description,
               style: TextStyle(
-                color: Theme.of(context)
-                    .colorScheme
-                    .onPrimary
-                    .withValues(alpha: 0.55),
+                color: KeroseneBrandTokens.textSecondary,
                 fontSize: 14,
                 height: 1.5,
               ),
@@ -258,7 +259,7 @@ class KeroErrorDialog extends StatelessWidget {
                   ),
                 ),
                 child: const Text(
-                  'Voltar',
+                  KeroseneUiCopy.goBack,
                   style: TextStyle(
                     fontSize: 15,
                     fontWeight: FontWeight.w700,
@@ -280,18 +281,15 @@ class KeroErrorDialog extends StatelessWidget {
                     onSecondaryAction!();
                   },
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: Theme.of(context)
-                        .colorScheme
-                        .onPrimary
-                        .withValues(alpha: 0.06),
-                    foregroundColor: Theme.of(context).colorScheme.onPrimary,
+                    backgroundColor: KeroseneBrandTokens.surfaceHigh,
+                    foregroundColor: KeroseneBrandTokens.textPrimary,
                     elevation: 0,
                     shape: RoundedRectangleBorder(
                       borderRadius: BorderRadius.circular(16),
                     ),
                   ),
                   child: Text(
-                    secondaryLabel ?? 'Depositar',
+                    secondaryLabel ?? KeroseneUiCopy.deposit,
                     style: const TextStyle(
                       fontSize: 15,
                       fontWeight: FontWeight.w600,

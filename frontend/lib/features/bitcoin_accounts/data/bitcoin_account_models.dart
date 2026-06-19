@@ -38,10 +38,22 @@ class BitcoinAccount {
   });
 
   bool get isInternal =>
-      type == 'INTERNAL_CARD' || custody.contains('KEROSENE');
+      type == 'INTERNAL_CARD' ||
+      custody == 'KEROSENE_CUSTODIAL' ||
+      custody == 'INTERNAL';
+
+  bool get isCustodialOnchain => custody == 'CUSTODIAL_ONCHAIN';
 
   bool get isWatchOnly =>
       type == 'WATCH_ONLY_COLD_WALLET' || custody == 'WATCH_ONLY';
+
+  bool get isActive => status == 'ACTIVE';
+
+  String get custodyDisplayLabel {
+    if (isWatchOnly) return 'Cold wallet';
+    if (isCustodialOnchain) return 'Custodial on-chain';
+    return 'Carteira global';
+  }
 
   int get totalSats =>
       balanceAvailableSats +
@@ -226,11 +238,13 @@ class ColdWalletUtxoView {
   bool get isSpendable => status.toUpperCase() == 'UNSPENT';
 
   factory ColdWalletUtxoView.fromJson(Map<String, dynamic> json) {
+    final txid = (json['txidRef'] ?? json['txid'] ?? '').toString();
+    final vout = _intFromJson(json['vout']);
     return ColdWalletUtxoView(
-      id: (json['id'] ?? '').toString(),
-      txidRef: (json['txidRef'] ?? json['txid'] ?? '').toString(),
-      vout: _intFromJson(json['vout']),
-      amountSats: _intFromJson(json['amountSats']),
+      id: (json['id'] ?? '$txid:$vout').toString(),
+      txidRef: txid,
+      vout: vout,
+      amountSats: _intFromJson(json['amountSats'] ?? json['valueSats']),
       confirmations: _intFromJson(json['confirmations']),
       status: (json['status'] ?? 'UNSPENT').toString(),
     );
@@ -275,20 +289,23 @@ class PsbtWorkflowView {
 
   bool get awaitsSignature {
     final normalized = status.toUpperCase();
-    return normalized == 'WAITING_EXTERNAL_SIGNATURE' ||
+    return normalized == 'CREATED' ||
+        normalized == 'WAITING_EXTERNAL_SIGNATURE' ||
         normalized == 'UNSIGNED_CREATED' ||
         normalized == 'DRAFT';
   }
 
   factory PsbtWorkflowView.fromJson(Map<String, dynamic> json) {
     return PsbtWorkflowView(
-      id: (json['id'] ?? '').toString(),
-      coldWalletId: (json['coldWalletId'] ?? '').toString(),
-      unsignedPsbt: (json['unsignedPsbt'] ?? '').toString(),
+      id: (json['workflowId'] ?? json['id'] ?? json['psbtHash'] ?? '').toString(),
+      coldWalletId: (json['coldWalletId'] ?? json['walletId'] ?? '').toString(),
+      unsignedPsbt: (json['unsignedPsbt'] ?? json['psbt'] ?? '').toString(),
       status: (json['status'] ?? 'WAITING_EXTERNAL_SIGNATURE').toString(),
       destinationAddress: (json['destinationAddress'] ?? '').toString(),
       amountSats: _intFromJson(json['amountSats']),
-      estimatedFeeSats: _intFromJson(json['estimatedFeeSats']),
+      estimatedFeeSats: _intFromJson(
+        json['estimatedFeeSats'] ?? json['feeSats'],
+      ),
       broadcastTxid: json['broadcastTxid']?.toString(),
       broadcastTxidRef: json['broadcastTxidRef']?.toString(),
       expiresAt: (json['expiresAt'] ?? '').toString(),

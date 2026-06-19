@@ -1,7 +1,9 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 
 /// 6-digit TOTP input using absolute CustomPaint fidelity and a hidden TextField.
@@ -53,11 +55,11 @@ class _TotpInputContainerState extends State<TotpInputContainer>
     _focusNode = widget.focusNode ?? FocusNode();
     _focusController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1400),
+      duration: KeroseneMotion.status,
     );
     _shakeController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 460),
+      duration: KeroseneMotion.long,
     );
 
     _controller.addListener(_handleTextChanged);
@@ -141,8 +143,8 @@ class _TotpInputContainerState extends State<TotpInputContainer>
   @override
   Widget build(BuildContext context) {
     final accent = widget.hasError
-        ? const Color(0xFFD6D6D0)
-        : (widget.accentColor ?? const Color(0xFFF1F1ED));
+        ? AppColors.hexFFD6D6D0
+        : (widget.accentColor ?? AppColors.hexFFF1F1ED);
     final text = _controller.text;
     final activeIndex = text.length.clamp(0, 5);
 
@@ -184,8 +186,8 @@ class _TotpInputContainerState extends State<TotpInputContainer>
                       child: Padding(
                         padding: EdgeInsets.only(right: index == 5 ? 0 : 10),
                         child: AnimatedContainer(
-                          duration: const Duration(milliseconds: 170),
-                          curve: Curves.easeOutCubic,
+                          duration: KeroseneMotion.short,
+                          curve: KeroseneMotion.standard,
                           height: 72,
                           decoration: BoxDecoration(
                             color: Colors.white.withValues(
@@ -226,8 +228,8 @@ class _TotpInputContainerState extends State<TotpInputContainer>
                                   ),
                                 ),
                               AnimatedDefaultTextStyle(
-                                duration: const Duration(milliseconds: 150),
-                                curve: Curves.easeOut,
+                                duration: KeroseneMotion.fast,
+                                curve: KeroseneMotion.standard,
                                 style: AppTypography.number.copyWith(
                                   fontSize: 28,
                                   fontWeight: FontWeight.w800,

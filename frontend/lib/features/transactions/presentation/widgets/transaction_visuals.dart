@@ -1,6 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 enum TransactionVisualFamily {
   onChain,
@@ -50,9 +52,9 @@ enum TransactionVisualLabel {
 }
 
 class TransactionVisualSpec {
-  static const Color _creditColor = Color(0xFFA8C7B1);
-  static const Color _debitColor = Color(0xFFD59A9A);
-  static const Color _neutralAmountColor = Color(0xFF8FA7C2);
+  static const Color _creditColor = AppColors.hexFFA8C7B1;
+  static const Color _debitColor = AppColors.hexFFD59A9A;
+  static const Color _neutralAmountColor = AppColors.hexFF8FA7C2;
 
   final TransactionVisualFamily family;
   final TransactionVisualDirection direction;
@@ -120,8 +122,8 @@ class TransactionVisualSpec {
         direction: TransactionVisualDirection.neutral,
         labelKey: TransactionVisualLabel.cancelled,
         prefix: '',
-        icon: Icons.block_rounded,
-        iconColor: Color(0xFFB38A8A),
+        icon: KeroseneIcons.blocked,
+        iconColor: AppColors.hexFFB38A8A,
         amountColor: _neutralAmountColor,
       );
     }
@@ -132,8 +134,8 @@ class TransactionVisualSpec {
         isOutgoing: false,
         incomingLabelKey: TransactionVisualLabel.refund,
         outgoingLabelKey: TransactionVisualLabel.refund,
-        icon: Icons.undo_rounded,
-        iconColor: const Color(0xFFA9B3C3),
+        icon: KeroseneIcons.undo,
+        iconColor: AppColors.hexFFA9B3C3,
       );
     }
 
@@ -143,8 +145,8 @@ class TransactionVisualSpec {
         direction: TransactionVisualDirection.neutral,
         labelKey: TransactionVisualLabel.failed,
         prefix: '',
-        icon: Icons.error_outline_rounded,
-        iconColor: Color(0xFFD59A9A),
+        icon: KeroseneIcons.error,
+        iconColor: AppColors.hexFFD59A9A,
         amountColor: _debitColor,
       );
     }
@@ -156,8 +158,8 @@ class TransactionVisualSpec {
           direction: TransactionVisualDirection.neutral,
           labelKey: TransactionVisualLabel.swap,
           prefix: '',
-          icon: Icons.swap_horiz_rounded,
-          iconColor: Color(0xFF8FA7C2),
+          icon: KeroseneIcons.moveHorizontal,
+          iconColor: AppColors.hexFF8FA7C2,
           amountColor: _neutralAmountColor,
         );
       case TransactionType.fee:
@@ -166,8 +168,8 @@ class TransactionVisualSpec {
           direction: TransactionVisualDirection.neutral,
           labelKey: TransactionVisualLabel.fee,
           prefix: '-',
-          icon: Icons.receipt_long_rounded,
-          iconColor: Color(0xFF9AA3AE),
+          icon: KeroseneIcons.receipt,
+          iconColor: AppColors.hexFF9AA3AE,
           amountColor: _debitColor,
         );
       case TransactionType.deposit:
@@ -177,8 +179,8 @@ class TransactionVisualSpec {
             isOutgoing: false,
             incomingLabelKey: TransactionVisualLabel.lightningDeposit,
             outgoingLabelKey: TransactionVisualLabel.lightningPayment,
-            icon: Icons.flash_on_rounded,
-            iconColor: const Color(0xFFE3B85A),
+            icon: KeroseneIcons.lightning,
+            iconColor: AppColors.hexFFE3B85A,
           );
         }
         return _pair(
@@ -186,8 +188,8 @@ class TransactionVisualSpec {
           isOutgoing: false,
           incomingLabelKey: TransactionVisualLabel.deposit,
           outgoingLabelKey: TransactionVisualLabel.deposit,
-          icon: Icons.download_for_offline_rounded,
-          iconColor: const Color(0xFF9EB3A4),
+          icon: KeroseneIcons.download,
+          iconColor: AppColors.hexFF9EB3A4,
         );
       case TransactionType.withdrawal:
         if (_looksLikeLightning(transaction)) {
@@ -196,8 +198,8 @@ class TransactionVisualSpec {
             isOutgoing: true,
             incomingLabelKey: TransactionVisualLabel.lightningReceive,
             outgoingLabelKey: TransactionVisualLabel.lightningPayment,
-            icon: Icons.flash_on_rounded,
-            iconColor: const Color(0xFFE3B85A),
+            icon: KeroseneIcons.lightning,
+            iconColor: AppColors.hexFFE3B85A,
           );
         }
         if (_looksLikeCashWithdrawal(transaction)) {
@@ -206,8 +208,8 @@ class TransactionVisualSpec {
             isOutgoing: true,
             incomingLabelKey: TransactionVisualLabel.withdrawal,
             outgoingLabelKey: TransactionVisualLabel.withdrawal,
-            icon: Icons.upload_rounded,
-            iconColor: const Color(0xFFB9A08A),
+            icon: KeroseneIcons.upload,
+            iconColor: AppColors.hexFFB9A08A,
           );
         }
         break;
@@ -222,8 +224,8 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabelKey: TransactionVisualLabel.nfcReceive,
         outgoingLabelKey: TransactionVisualLabel.nfcPayment,
-        icon: Icons.nfc_rounded,
-        iconColor: const Color(0xFF93A5B5),
+        icon: KeroseneIcons.nfc,
+        iconColor: AppColors.hexFF93A5B5,
       );
     }
 
@@ -233,8 +235,8 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabelKey: TransactionVisualLabel.qrReceive,
         outgoingLabelKey: TransactionVisualLabel.qrPayment,
-        icon: Icons.qr_code_2_rounded,
-        iconColor: const Color(0xFF9AA6B2),
+        icon: KeroseneIcons.qr,
+        iconColor: AppColors.hexFF9AA6B2,
       );
     }
 
@@ -244,8 +246,8 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabelKey: TransactionVisualLabel.paymentLinkReceive,
         outgoingLabelKey: TransactionVisualLabel.paymentLinkPayment,
-        icon: Icons.link_rounded,
-        iconColor: const Color(0xFF9FA8B3),
+        icon: KeroseneIcons.onchain,
+        iconColor: AppColors.hexFF9FA8B3,
       );
     }
 
@@ -255,8 +257,8 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabelKey: TransactionVisualLabel.internalReceive,
         outgoingLabelKey: TransactionVisualLabel.internalSend,
-        icon: Icons.compare_arrows_rounded,
-        iconColor: const Color(0xFF8794A3),
+        icon: KeroseneIcons.moveHorizontal,
+        iconColor: AppColors.hexFF8794A3,
       );
     }
 
@@ -266,8 +268,8 @@ class TransactionVisualSpec {
         isOutgoing: isOutgoing,
         incomingLabelKey: TransactionVisualLabel.lightningReceive,
         outgoingLabelKey: TransactionVisualLabel.lightningPayment,
-        icon: Icons.flash_on_rounded,
-        iconColor: const Color(0xFFB89B64),
+        icon: KeroseneIcons.lightning,
+        iconColor: AppColors.hexFFB89B64,
       );
     }
 
@@ -279,8 +281,8 @@ class TransactionVisualSpec {
         direction: TransactionVisualDirection.neutral,
         labelKey: TransactionVisualLabel.event,
         prefix: '',
-        icon: Icons.help_outline_rounded,
-        iconColor: Color(0xFF9CA8B4),
+        icon: KeroseneIcons.help,
+        iconColor: AppColors.hexFF9CA8B4,
         amountColor: _neutralAmountColor,
       );
     }
@@ -290,8 +292,8 @@ class TransactionVisualSpec {
       isOutgoing: isOutgoing,
       incomingLabelKey: TransactionVisualLabel.onChainReceive,
       outgoingLabelKey: TransactionVisualLabel.onChainSend,
-      icon: Icons.hub_rounded,
-      iconColor: const Color(0xFF9CA8B4),
+      icon: KeroseneIcons.hub,
+      iconColor: AppColors.hexFF9CA8B4,
     );
   }
 
@@ -420,8 +422,8 @@ class TransactionTypeIconBadge extends StatelessWidget {
     this.size = 34,
     this.iconSize = 18,
     this.borderRadius = 8,
-    this.backgroundColor = const Color(0xFF171B20),
-    this.borderColor = const Color(0xFF262B31),
+    this.backgroundColor = AppColors.hexFF171B20,
+    this.borderColor = AppColors.hexFF262B31,
   });
 
   @override

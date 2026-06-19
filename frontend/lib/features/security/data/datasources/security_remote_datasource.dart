@@ -8,7 +8,7 @@ import '../../domain/entities/passkey_inventory.dart';
 
 abstract class SecurityRemoteDataSource {
   Future<Map<String, dynamic>> getSovereigntyStatus();
-  Future<Map<String, dynamic>> getTreasuryOverview();
+  Future<Map<String, dynamic>> getKfeReserveOverview();
   Future<bool> pingSovereignty();
   Future<void> sendTelemetry(Map<String, dynamic> data);
   Future<Map<String, dynamic>> reattest();
@@ -76,14 +76,14 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> getTreasuryOverview() async {
+  Future<Map<String, dynamic>> getKfeReserveOverview() async {
     try {
-      final response = await apiClient.get(AppConfig.treasuryOverview);
+      final response = await apiClient.get(AppConfig.kfeReserveOverview);
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
       throw ServerException(
-          message: 'Erro ao buscar overview da tesouraria: $e');
+          message: 'Erro ao buscar overview de reservas KFE: $e');
     }
   }
 

@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/features/wallet/presentation/send/send_money_copy.dart';
 
 /// The top navigation bar for the internal Send Money flow.
 ///
@@ -30,7 +31,7 @@ class InternalTopBar extends StatelessWidget {
           children: [
             IconButton(
               onPressed: onBack,
-              icon: const Icon(LucideIcons.arrowLeft, size: 22),
+              icon: const Icon(KeroseneIcons.back, size: 22),
               tooltip: context.tr.authBackAction,
               style: IconButton.styleFrom(
                 foregroundColor: textColor,
@@ -40,9 +41,9 @@ class InternalTopBar extends StatelessWidget {
             ),
             Expanded(
               child: Text(
-                'Enviar',
+                SendMoneyCopy.sendTitle(context),
                 textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSerif(
+                style: AppTypography.newsreader(
                   color: textColor,
                   fontSize: 24,
                   fontWeight: FontWeight.w500,
@@ -103,14 +104,14 @@ class InternalKeypad extends StatelessWidget {
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
             ),
-            textStyle: GoogleFonts.ibmPlexSerif(
+            textStyle: AppTypography.newsreader(
               fontSize: 24,
               fontWeight: FontWeight.w500,
               letterSpacing: 0,
             ),
           ),
           child: isBackspace
-              ? const Icon(LucideIcons.delete, size: 24)
+              ? const Icon(KeroseneIcons.backspace, size: 24)
               : Text(display),
         ),
       ),

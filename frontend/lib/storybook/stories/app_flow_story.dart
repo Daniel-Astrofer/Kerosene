@@ -2,7 +2,8 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 import 'package:kerosene/features/auth/presentation/screens/login_screen.dart';
 import 'package:kerosene/features/auth/presentation/screens/emergency_recovery_screen.dart';
@@ -20,11 +21,9 @@ import 'package:kerosene/features/profile/presentation/screens/security_settings
 import 'package:kerosene/features/security/presentation/screens/sovereignty_status_screen.dart';
 import 'package:kerosene/features/settings/presentation/screens/settings_screen.dart';
 import 'package:kerosene/features/transactions/presentation/screens/deposits_screen.dart';
-import 'package:kerosene/features/transactions/presentation/screens/withdraw_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_amount_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/receive_payment_link_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/receive_request_flow_screen.dart';
 import 'package:kerosene/features/wallet/presentation/screens/send_money_screen.dart';
 import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
@@ -34,7 +33,6 @@ import 'package:kerosene/features/web_admin/shell/admin_shell.dart';
 import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
 
 import '../storybook_mocks.dart';
-import 'payment_stories.dart';
 import 'receive_stories.dart';
 
 Story appFlowStory() {
@@ -69,7 +67,7 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
         _flowItems.indexWhere((item) => item.id == _selectedId);
 
     return Material(
-      color: const Color(0xFF050505),
+      color: KeroseneBrandTokens.background,
       child: LayoutBuilder(
         builder: (context, constraints) {
           final compact = constraints.maxWidth < 960;
@@ -187,13 +185,13 @@ class _FlowNavigation extends StatelessWidget {
 
     return Container(
       decoration: BoxDecoration(
-        color: const Color(0xFF0B0B0C),
+        color: KeroseneBrandTokens.backgroundSoft,
         border: Border(
           right: compact
               ? BorderSide.none
-              : const BorderSide(color: Color(0xFF222224)),
+              : const BorderSide(color: KeroseneBrandTokens.border),
           bottom: compact
-              ? const BorderSide(color: Color(0xFF222224))
+              ? const BorderSide(color: KeroseneBrandTokens.border)
               : BorderSide.none,
         ),
       ),
@@ -203,31 +201,36 @@ class _FlowNavigation extends StatelessWidget {
             padding: const EdgeInsets.fromLTRB(18, 16, 18, 10),
             child: TextField(
               onChanged: onQueryChanged,
-              style: const TextStyle(color: Colors.white, fontSize: 13),
+              style: const TextStyle(
+                  color: KeroseneBrandTokens.textPrimary, fontSize: 13),
               decoration: InputDecoration(
                 prefixIcon: const Icon(
-                  LucideIcons.search,
-                  color: Color(0xFF8E8E93),
+                  KeroseneIcons.search,
+                  color: KeroseneBrandTokens.textMuted,
                   size: 18,
                 ),
                 hintText: 'Buscar tela',
-                hintStyle: const TextStyle(color: Color(0xFF6F6F74)),
+                hintStyle:
+                    const TextStyle(color: KeroseneBrandTokens.textMuted),
                 filled: true,
-                fillColor: const Color(0xFF151517),
+                fillColor: KeroseneBrandTokens.surfaceHigh,
                 isDense: true,
                 contentPadding:
                     const EdgeInsets.symmetric(horizontal: 12, vertical: 12),
                 border: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2D)),
+                  borderSide:
+                      const BorderSide(color: KeroseneBrandTokens.borderStrong),
                 ),
                 enabledBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFF2A2A2D)),
+                  borderSide:
+                      const BorderSide(color: KeroseneBrandTokens.borderStrong),
                 ),
                 focusedBorder: OutlineInputBorder(
                   borderRadius: BorderRadius.circular(8),
-                  borderSide: const BorderSide(color: Color(0xFFE5E5E5)),
+                  borderSide:
+                      const BorderSide(color: KeroseneBrandTokens.textPrimary),
                 ),
               ),
             ),
@@ -237,7 +240,7 @@ class _FlowNavigation extends StatelessWidget {
                 ? const Center(
                     child: Text(
                       'Nenhuma tela encontrada',
-                      style: TextStyle(color: Color(0xFF8E8E93)),
+                      style: TextStyle(color: KeroseneBrandTokens.textMuted),
                     ),
                   )
                 : ListView(
@@ -282,7 +285,7 @@ class _SectionLabel extends StatelessWidget {
         label.toUpperCase(),
         overflow: TextOverflow.ellipsis,
         style: const TextStyle(
-          color: Color(0xFF77777C),
+          color: KeroseneBrandTokens.textMuted,
           fontSize: 11,
           fontWeight: FontWeight.w700,
         ),
@@ -306,7 +309,8 @@ class _FlowNavigationTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final foreground = selected ? Colors.white : const Color(0xFFB8B8BE);
+    final foreground =
+        selected ? Colors.white : KeroseneBrandTokens.textSecondary;
     final child = InkWell(
       onTap: onTap,
       borderRadius: BorderRadius.circular(8),
@@ -318,10 +322,14 @@ class _FlowNavigationTile extends StatelessWidget {
         ),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 10),
         decoration: BoxDecoration(
-          color: selected ? const Color(0xFF222226) : Colors.transparent,
+          color: selected
+              ? KeroseneBrandTokens.surfaceElevated
+              : Colors.transparent,
           borderRadius: BorderRadius.circular(8),
           border: Border.all(
-            color: selected ? const Color(0xFF3E3E44) : Colors.transparent,
+            color: selected
+                ? KeroseneBrandTokens.borderStrong
+                : Colors.transparent,
           ),
         ),
         child: Row(
@@ -349,7 +357,7 @@ class _FlowNavigationTile extends StatelessWidget {
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: const TextStyle(
-                      color: Color(0xFF6F6F74),
+                      color: KeroseneBrandTokens.textMuted,
                       fontSize: 11,
                     ),
                   ),
@@ -386,8 +394,8 @@ class _FlowHeader extends StatelessWidget {
       height: 78,
       padding: const EdgeInsets.symmetric(horizontal: 22),
       decoration: const BoxDecoration(
-        color: Color(0xFF080809),
-        border: Border(bottom: BorderSide(color: Color(0xFF222224))),
+        color: KeroseneBrandTokens.backgroundSoft,
+        border: Border(bottom: BorderSide(color: KeroseneBrandTokens.border)),
       ),
       child: Row(
         children: [
@@ -395,11 +403,12 @@ class _FlowHeader extends StatelessWidget {
             width: 38,
             height: 38,
             decoration: BoxDecoration(
-              color: const Color(0xFF18181B),
-              border: Border.all(color: const Color(0xFF2A2A2D)),
+              color: KeroseneBrandTokens.surfaceHigh,
+              border: Border.all(color: KeroseneBrandTokens.borderStrong),
               borderRadius: BorderRadius.circular(8),
             ),
-            child: Icon(item.icon, color: Colors.white, size: 19),
+            child: Icon(item.icon,
+                color: KeroseneBrandTokens.textPrimary, size: 19),
           ),
           const SizedBox(width: 14),
           Expanded(
@@ -412,7 +421,7 @@ class _FlowHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Colors.white,
+                    color: KeroseneBrandTokens.textPrimary,
                     fontSize: 17,
                     fontWeight: FontWeight.w700,
                   ),
@@ -423,7 +432,7 @@ class _FlowHeader extends StatelessWidget {
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: const TextStyle(
-                    color: Color(0xFF8E8E93),
+                    color: KeroseneBrandTokens.textMuted,
                     fontSize: 12,
                   ),
                 ),
@@ -434,16 +443,16 @@ class _FlowHeader extends StatelessWidget {
             message: 'Tela anterior',
             child: IconButton(
               onPressed: onPrevious,
-              icon: const Icon(LucideIcons.chevronLeft),
-              color: Colors.white,
+              icon: const Icon(KeroseneIcons.chevronLeft),
+              color: KeroseneBrandTokens.textPrimary,
             ),
           ),
           Tooltip(
             message: 'Próxima tela',
             child: IconButton(
               onPressed: onNext,
-              icon: const Icon(LucideIcons.chevronRight),
-              color: Colors.white,
+              icon: const Icon(KeroseneIcons.chevronRight),
+              color: KeroseneBrandTokens.textPrimary,
             ),
           ),
         ],
@@ -473,7 +482,7 @@ class _FlowPreview extends StatelessWidget {
         );
 
         return ColoredBox(
-          color: const Color(0xFF050505),
+          color: KeroseneBrandTokens.background,
           child: Center(
             child: SizedBox(
               width: targetSize.width * scale,
@@ -506,12 +515,12 @@ class _DeviceFrame extends StatelessWidget {
     );
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: Colors.black,
+        color: KeroseneBrandTokens.background,
         borderRadius: borderRadius,
-        border: Border.all(color: const Color(0xFF2D2D31)),
+        border: Border.all(color: KeroseneBrandTokens.borderStrong),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withValues(alpha: 0.45),
+            color: KeroseneBrandTokens.background.withValues(alpha: 0.45),
             blurRadius: 30,
             offset: const Offset(0, 18),
           ),
@@ -544,12 +553,6 @@ class _DeviceFrame extends StatelessWidget {
 Map<String, WidgetBuilder> _routeBuilders() {
   final primaryWallet = mockWallets.first;
   final coldWallet = mockWallets.length > 1 ? mockWallets[1] : primaryWallet;
-  final pendingPaymentLink = mockPaymentLink();
-  final paidPaymentLink = mockPaymentLink(
-    id: 'storybook-payment-link-paid',
-    status: 'paid',
-    amountBtc: 0.018,
-  );
 
   return {
     '/welcome': (_) => const WelcomeScreen(),
@@ -576,27 +579,6 @@ Map<String, WidgetBuilder> _routeBuilders() {
     '/send-money': (_) => SendMoneyScreen(
           walletId: primaryWallet.id,
           initialAddress: 'bc1qstorybookrecipient00000000000000000',
-          initialAmountBtc: 0.0015,
-        ),
-    '/payments/intent': (_) => const PaymentIntentScenarioPreview(
-          scenario: PaymentIntentStoryScenario.quote,
-        ),
-    '/payments/intent-settled': (_) => const PaymentIntentScenarioPreview(
-          scenario: PaymentIntentStoryScenario.settled,
-        ),
-    '/payments/intent-failed': (_) => const PaymentIntentScenarioPreview(
-          scenario: PaymentIntentStoryScenario.failed,
-        ),
-    '/withdraw/onchain': (_) => WithdrawScreen(
-          wallet: primaryWallet,
-          entryMode: WithdrawEntryMode.onChain,
-          initialDestination: 'bc1qstorybookrecipient00000000000000000',
-          initialAmountBtc: 0.0015,
-        ),
-    '/withdraw/lightning': (_) => WithdrawScreen(
-          wallet: primaryWallet,
-          entryMode: WithdrawEntryMode.lightning,
-          initialDestination: 'lnbc150000n1storybook',
           initialAmountBtc: 0.0015,
         ),
     '/receive': (_) => DepositsScreen(initialWallet: primaryWallet),
@@ -646,24 +628,6 @@ Map<String, WidgetBuilder> _routeBuilders() {
           initialAddress: primaryWallet.address,
           initialPaymentUri:
               'kerosene:pay?address=${primaryWallet.address}&amount=0.02500000',
-        ),
-    '/receive/payment-link': (_) => ReceivePaymentLinkScreen(
-          initialLink: pendingPaymentLink,
-          requestedAmountLabel: '0.00420000 BTC',
-          btcAmountLabel: '0.00420000 BTC',
-          walletLabel: primaryWallet.name,
-          cardTypeLabel: 'Kerosene',
-          depositFeeLabel: '0.00000000 BTC',
-          netAmountLabel: '0.00420000 BTC',
-        ),
-    '/receive/payment-link-paid': (_) => ReceivePaymentLinkScreen(
-          initialLink: paidPaymentLink,
-          requestedAmountLabel: '0.01800000 BTC',
-          btcAmountLabel: '0.01800000 BTC',
-          walletLabel: primaryWallet.name,
-          cardTypeLabel: 'Kerosene',
-          depositFeeLabel: '0.00000000 BTC',
-          netAmountLabel: '0.01800000 BTC',
         ),
     '/receive/onchain-confirming': (_) => ReceiveRequestFlowScreen(
           wallet: coldWallet,
@@ -785,20 +749,21 @@ class _UnknownRoutePane extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.black,
+      backgroundColor: KeroseneBrandTokens.background,
       body: Center(
         child: ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 360),
           child: Column(
             mainAxisSize: MainAxisSize.min,
             children: [
-              const Icon(LucideIcons.alertTriangle, color: Colors.white70),
+              const Icon(KeroseneIcons.error,
+                  color: KeroseneBrandTokens.textSecondary),
               const SizedBox(height: 12),
               Text(
                 routeName.isEmpty ? 'Rota sem nome' : routeName,
                 textAlign: TextAlign.center,
                 style: const TextStyle(
-                  color: Colors.white,
+                  color: KeroseneBrandTokens.textPrimary,
                   fontSize: 16,
                   fontWeight: FontWeight.w700,
                 ),
@@ -807,7 +772,8 @@ class _UnknownRoutePane extends StatelessWidget {
               const Text(
                 'Rota ainda não registrada no fluxo Storybook.',
                 textAlign: TextAlign.center,
-                style: TextStyle(color: Color(0xFF8E8E93), fontSize: 13),
+                style: TextStyle(
+                    color: KeroseneBrandTokens.textMuted, fontSize: 13),
               ),
             ],
           ),
@@ -851,7 +817,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Boas-vindas',
     routeName: '/welcome',
-    icon: LucideIcons.home,
+    icon: KeroseneIcons.home,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -859,7 +825,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Login',
     routeName: '/login',
-    icon: LucideIcons.user,
+    icon: KeroseneIcons.user,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -867,7 +833,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Recovery emergencial',
     routeName: '/recovery/emergency',
-    icon: LucideIcons.keyRound,
+    icon: KeroseneIcons.passkey,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -875,7 +841,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Passkey',
     routeName: '/passkey',
-    icon: LucideIcons.fingerprint,
+    icon: KeroseneIcons.biometric,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -883,7 +849,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Cadastro',
     routeName: '/signup',
-    icon: LucideIcons.userCheck,
+    icon: KeroseneIcons.userCheck,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -891,7 +857,7 @@ const _flowItems = [
     section: 'Entrada',
     title: 'Servidor indisponível',
     routeName: '/server-unavailable',
-    icon: LucideIcons.serverOff,
+    icon: KeroseneIcons.serverUnavailable,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -899,7 +865,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Carregamento',
     routeName: '/home_loading',
-    icon: LucideIcons.loader2,
+    icon: KeroseneIcons.pending,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -907,7 +873,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Home',
     routeName: '/home',
-    icon: LucideIcons.wallet,
+    icon: KeroseneIcons.wallet,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -915,7 +881,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Contas Bitcoin',
     routeName: '/card',
-    icon: LucideIcons.walletCards,
+    icon: KeroseneIcons.wallet,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -923,7 +889,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Bitcoin Advanced',
     routeName: '/bitcoin/advanced',
-    icon: LucideIcons.fileText,
+    icon: KeroseneIcons.invoice,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -931,7 +897,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Extrato',
     routeName: '/history',
-    icon: LucideIcons.receipt,
+    icon: KeroseneIcons.history,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -939,47 +905,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Enviar',
     routeName: '/send-money',
-    icon: LucideIcons.arrowUpRight,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'payments-intent',
-    section: 'Payments',
-    title: 'Payment Intent quote',
-    routeName: '/payments/intent',
-    icon: LucideIcons.router,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'payments-intent-settled',
-    section: 'Payments',
-    title: 'Payment settled',
-    routeName: '/payments/intent-settled',
-    icon: LucideIcons.checkCircle2,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'payments-intent-failed',
-    section: 'Payments',
-    title: 'Payment failed',
-    routeName: '/payments/intent-failed',
-    icon: LucideIcons.alertTriangle,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-withdraw-onchain',
-    section: 'App Mobile',
-    title: 'Saque on-chain',
-    routeName: '/withdraw/onchain',
-    icon: LucideIcons.link,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-withdraw-lightning',
-    section: 'App Mobile',
-    title: 'Saque Lightning',
-    routeName: '/withdraw/lightning',
-    icon: LucideIcons.zap,
+    icon: KeroseneIcons.send,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -987,7 +913,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Configurações',
     routeName: '/settings',
-    icon: LucideIcons.settings,
+    icon: KeroseneIcons.settings,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -995,7 +921,7 @@ const _flowItems = [
     section: 'App Mobile',
     title: 'Notificações',
     routeName: '/notifications',
-    icon: LucideIcons.bell,
+    icon: KeroseneIcons.notifications,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1003,7 +929,7 @@ const _flowItems = [
     section: 'Conta',
     title: 'Segurança',
     routeName: '/account/security',
-    icon: LucideIcons.shieldCheck,
+    icon: KeroseneIcons.security,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1011,7 +937,7 @@ const _flowItems = [
     section: 'Conta',
     title: 'Preferências de notificação',
     routeName: '/account/notifications',
-    icon: LucideIcons.bell,
+    icon: KeroseneIcons.notifications,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1019,7 +945,7 @@ const _flowItems = [
     section: 'Conta',
     title: 'Status soberano',
     routeName: '/security/sovereignty',
-    icon: LucideIcons.shield,
+    icon: KeroseneIcons.shield,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1027,7 +953,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Seleção',
     routeName: '/receive',
-    icon: LucideIcons.arrowDown,
+    icon: KeroseneIcons.down,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1035,7 +961,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Provedores',
     routeName: '/receive/providers',
-    icon: LucideIcons.creditCard,
+    icon: KeroseneIcons.creditCard,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1043,7 +969,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Requests carregando',
     routeName: '/receive/requests/loading',
-    icon: LucideIcons.loader2,
+    icon: KeroseneIcons.pending,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1051,7 +977,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Requests vazio',
     routeName: '/receive/requests/empty',
-    icon: LucideIcons.inbox,
+    icon: KeroseneIcons.inbox,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1059,7 +985,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Request pendente',
     routeName: '/receive/requests/pending',
-    icon: LucideIcons.clock3,
+    icon: KeroseneIcons.pending,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1067,7 +993,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Request pago',
     routeName: '/receive/requests/paid',
-    icon: LucideIcons.checkCircle2,
+    icon: KeroseneIcons.success2,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1075,7 +1001,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Request expirado',
     routeName: '/receive/requests/expired',
-    icon: LucideIcons.timerOff,
+    icon: KeroseneIcons.timerOff,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1083,7 +1009,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Requests erro',
     routeName: '/receive/requests/error',
-    icon: LucideIcons.alertTriangle,
+    icon: KeroseneIcons.error,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1091,7 +1017,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Valor para QR',
     routeName: '/receive/amount/qr',
-    icon: LucideIcons.qrCode,
+    icon: KeroseneIcons.qr,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1099,7 +1025,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Valor para link',
     routeName: '/receive/amount/link',
-    icon: LucideIcons.link2,
+    icon: KeroseneIcons.onchain,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1107,7 +1033,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Valor para NFC',
     routeName: '/receive/amount/nfc',
-    icon: LucideIcons.nfc,
+    icon: KeroseneIcons.nfc,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1115,23 +1041,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'QR e dados',
     routeName: '/receive/qr',
-    icon: LucideIcons.qrCode,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-link',
-    section: 'Receber',
-    title: 'Link pendente',
-    routeName: '/receive/payment-link',
-    icon: LucideIcons.link2,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-link-paid',
-    section: 'Receber',
-    title: 'Link pago',
-    routeName: '/receive/payment-link-paid',
-    icon: LucideIcons.checkCircle2,
+    icon: KeroseneIcons.qr,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1139,7 +1049,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Confirmações',
     routeName: '/receive/onchain-confirming',
-    icon: LucideIcons.clock3,
+    icon: KeroseneIcons.pending,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1147,7 +1057,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'Pagamento identificado',
     routeName: '/receive/onchain-identified',
-    icon: LucideIcons.checkCircle,
+    icon: KeroseneIcons.success,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1155,7 +1065,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'NFC Kerosene',
     routeName: '/receive/nfc',
-    icon: LucideIcons.nfc,
+    icon: KeroseneIcons.nfc,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1163,7 +1073,7 @@ const _flowItems = [
     section: 'Receber',
     title: 'NFC on-chain',
     routeName: '/receive/onchain-nfc',
-    icon: LucideIcons.nfc,
+    icon: KeroseneIcons.nfc,
     surface: _FlowSurface.mobile,
   ),
   _FlowItem(
@@ -1171,7 +1081,7 @@ const _flowItems = [
     section: 'Web Público',
     title: 'Landing',
     routeName: '/public/landing',
-    icon: LucideIcons.globe2,
+    icon: KeroseneIcons.globe,
     surface: _FlowSurface.public,
   ),
   _FlowItem(
@@ -1179,7 +1089,7 @@ const _flowItems = [
     section: 'Web Público',
     title: 'Download',
     routeName: '/public/download',
-    icon: LucideIcons.download,
+    icon: KeroseneIcons.download,
     surface: _FlowSurface.public,
   ),
   _FlowItem(
@@ -1187,7 +1097,7 @@ const _flowItems = [
     section: 'Web Público',
     title: 'Status',
     routeName: '/public/status',
-    icon: LucideIcons.activity,
+    icon: KeroseneIcons.activity,
     surface: _FlowSurface.public,
   ),
   _FlowItem(
@@ -1195,7 +1105,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Login admin',
     routeName: '/admin/login',
-    icon: LucideIcons.keyRound,
+    icon: KeroseneIcons.passkey,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1203,7 +1113,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Dashboard',
     routeName: '/admin/dashboard',
-    icon: LucideIcons.layoutGrid,
+    icon: KeroseneIcons.shares,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1211,7 +1121,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Monitoring',
     routeName: '/admin/monitoring',
-    icon: LucideIcons.activity,
+    icon: KeroseneIcons.activity,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1219,7 +1129,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Integrity Proofs',
     routeName: '/admin/transactions',
-    icon: LucideIcons.fingerprint,
+    icon: KeroseneIcons.biometric,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1227,7 +1137,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Lightning',
     routeName: '/admin/lightning',
-    icon: LucideIcons.zap,
+    icon: KeroseneIcons.lightning,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1235,7 +1145,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'On-chain',
     routeName: '/admin/onchain',
-    icon: LucideIcons.link,
+    icon: KeroseneIcons.onchain,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1243,7 +1153,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Hash Chain',
     routeName: '/admin/checks',
-    icon: LucideIcons.network,
+    icon: KeroseneIcons.network,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1251,7 +1161,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Payment Metrics',
     routeName: '/admin/payment-links',
-    icon: LucideIcons.qrCode,
+    icon: KeroseneIcons.qr,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1259,7 +1169,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Analytics',
     routeName: '/admin/analytics',
-    icon: LucideIcons.gauge,
+    icon: KeroseneIcons.gauge,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1267,7 +1177,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Volatility',
     routeName: '/admin/volatility',
-    icon: LucideIcons.trendingUp,
+    icon: KeroseneIcons.trendUp,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1275,7 +1185,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Infrastructure',
     routeName: '/admin/companies',
-    icon: LucideIcons.building2,
+    icon: KeroseneIcons.business,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1283,7 +1193,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Audit & Security',
     routeName: '/admin/audit',
-    icon: LucideIcons.shieldCheck,
+    icon: KeroseneIcons.security,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1291,7 +1201,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Authenticated Devices',
     routeName: '/admin/authenticated-devices',
-    icon: LucideIcons.smartphone,
+    icon: KeroseneIcons.device,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1299,7 +1209,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Notifications',
     routeName: '/admin/notifications',
-    icon: LucideIcons.bell,
+    icon: KeroseneIcons.notifications,
     surface: _FlowSurface.desktop,
   ),
   _FlowItem(
@@ -1307,7 +1217,7 @@ const _flowItems = [
     section: 'Admin Web',
     title: 'Settings',
     routeName: '/admin/settings',
-    icon: LucideIcons.settings,
+    icon: KeroseneIcons.settings,
     surface: _FlowSurface.desktop,
   ),
 ];

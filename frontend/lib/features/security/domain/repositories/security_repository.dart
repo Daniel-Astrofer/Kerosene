@@ -5,11 +5,11 @@ import '../entities/account_security_profile.dart';
 import '../entities/admin_access.dart';
 import '../entities/passkey_inventory.dart';
 import '../entities/security_status.dart';
-import '../entities/treasury_overview.dart';
+import '../entities/kfe_reserve_overview.dart';
 
 abstract class SecurityRepository {
   Future<Either<Failure, SecurityStatus>> getSovereigntyStatus();
-  Future<Either<Failure, TreasuryOverview>> getTreasuryOverview();
+  Future<Either<Failure, KfeReserveOverview>> getKfeReserveOverview();
   Future<Either<Failure, bool>> checkSovereignty();
   Future<Either<Failure, void>> sendTelemetry(Map<String, dynamic> data);
   Future<Either<Failure, Map<String, dynamic>>> reattest();

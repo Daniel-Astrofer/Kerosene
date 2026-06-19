@@ -1,12 +1,18 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/utils/safe_display_text.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import '../../domain/entities/wallet.dart';
 
 import 'package:kerosene/shared/widgets/brushed_metal_container.dart';
+
+import 'package:kerosene/core/theme/app_typography.dart';
+
+const _bitcoinGlyph = '₿';
+const _bitcoinNetworkLabel = 'BITCOIN';
 
 /// Premium Wallet Card Component - Refactored
 class WalletCard extends StatefulWidget {
@@ -46,7 +52,7 @@ class _WalletCardState extends State<WalletCard>
     super.initState();
     _rotationController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 4),
+      duration: KeroseneMotion.walletLoop,
     );
   }
 
@@ -119,7 +125,7 @@ class _WalletCardState extends State<WalletCard>
             ),
             const SizedBox(height: AppSpacing.md),
             ListTile(
-              leading: Icon(LucideIcons.edit,
+              leading: Icon(KeroseneIcons.edit,
                   color: Theme.of(context).colorScheme.onPrimary),
               title: Text(context.tr.walletEditNameAction.toUpperCase(),
                   style: Theme.of(context)
@@ -132,7 +138,7 @@ class _WalletCardState extends State<WalletCard>
               },
             ),
             ListTile(
-              leading: Icon(LucideIcons.trash2,
+              leading: Icon(KeroseneIcons.trash,
                   color: Theme.of(context).colorScheme.error),
               title: Text(context.tr.removeWallet.toUpperCase(),
                   style: Theme.of(context).textTheme.bodySmall!.copyWith(
@@ -225,14 +231,14 @@ class _WalletCardState extends State<WalletCard>
                     Positioned(
                       right: AppSpacing.lg,
                       bottom: AppSpacing.lg,
-                      child: Icon(LucideIcons.zap,
+                      child: Icon(KeroseneIcons.lightning,
                           color: primaryColor.withValues(alpha: 0.4), size: 40),
                     ),
 
                     // ── Shine on selection ──
                     Positioned.fill(
                       child: AnimatedOpacity(
-                        duration: const Duration(milliseconds: 150),
+                        duration: KeroseneMotion.fast,
                         opacity: widget.isSelected ? 1.0 : 0.0,
                         child: Container(
                           decoration: BoxDecoration(
@@ -290,7 +296,7 @@ class _WalletCardState extends State<WalletCard>
                                 child: Row(
                                   mainAxisSize: MainAxisSize.min,
                                   children: [
-                                    Text('₿',
+                                    Text(_bitcoinGlyph,
                                         style: TextStyle(
                                             color: Theme.of(context)
                                                 .colorScheme
@@ -298,7 +304,7 @@ class _WalletCardState extends State<WalletCard>
                                             fontSize: 18,
                                             fontWeight: FontWeight.bold)),
                                     SizedBox(width: 4),
-                                    Text('BITCOIN',
+                                    Text(_bitcoinNetworkLabel,
                                         style: Theme.of(context)
                                             .textTheme
                                             .labelSmall!
@@ -340,7 +346,8 @@ class _WalletCardState extends State<WalletCard>
                                                 .colorScheme
                                                 .onPrimary
                                                 .withValues(alpha: 0.5),
-                                            fontFamily: 'IBMPlexSansHebrew',
+                                            fontFamily: AppTypography
+                                                .financialFontFamily,
                                           ),
                                       overflow: TextOverflow.ellipsis,
                                     ),
@@ -352,7 +359,7 @@ class _WalletCardState extends State<WalletCard>
                                           text: widget.wallet.address));
                                       widget.onAddressCopied?.call();
                                     },
-                                    icon: Icon(LucideIcons.copy,
+                                    icon: Icon(KeroseneIcons.copy,
                                         size: 14,
                                         color: Theme.of(context)
                                             .colorScheme

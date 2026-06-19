@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/design_system/icons.dart';
 import '../l10n/l10n_extension.dart';
 import 'app_colors.dart';
 import 'app_spacing.dart';
@@ -14,18 +15,22 @@ import 'monochrome_theme.dart';
 /// OFFICIAL TYPOGRAPHY - ONLY 3 FONT FAMILIES ARE ALLOWED
 ///
 /// - Inter: body text, buttons, labels, captions, form fields.
-///   Use AppTypography.bodyLarge/bodyMedium/bodySmall/buttonText/caption or the
-///   active Theme.of(context).textTheme body/label slots.
+///   H2: 24-30 mobile / 36-44 web, weight 650-700, height 1.12,
+///   letter spacing -0.5.
+///   H3: 18-22, weight 600, height 1.18, letter spacing -0.2.
+///   Body: 15-17, weight 400-450, height 1.45-1.60, letter spacing 0.
+///   Caption: 12-13, weight 500, height 1.35, letter spacing 0.1.
 ///
-/// - IBM Plex Sans Hebrew: numerical titles, balances, BTC amounts, hashes,
-///   technical data and dense secondary headings.
-///   Use AppTypography.h2/h3/number/amountInput/technicalMono.
+/// - Newsreader: H1 only for primary screens, onboarding, hero and large calls.
+///   H1: 36-44 mobile / 56-72 web, weight 500-600, height 1.02-1.10,
+///   letter spacing -0.8 to -1.4.
 ///
-/// - IBM Plex Serif: primary h1/display headings.
-///   Use AppTypography.h1 or Theme.of(context).textTheme.displayLarge/headlineLarge.
+/// - IBM Plex Mono: financial values, BTC, sats, balances, fees and hashes.
+///   Use AppTypography.financial/number/amountInput/technicalMono with tabular
+///   figures.
 ///
-/// Do not introduce Playfair, Garamond, Space Grotesk, Hubot, Geist, JetBrains
-/// Mono, generic monospace or any other family outside the three above.
+/// Do not call GoogleFonts in features and do not use raw `fontFamily: '...'`.
+/// CI enforces AppTypography/AppTheme usage.
 ///
 /// OTHER RULES
 ///
@@ -122,7 +127,7 @@ class DesignSystemTemplateScreen extends StatelessWidget {
                         ),
                       ),
                       const Icon(
-                        Icons.security,
+                        KeroseneIcons.security,
                         color: AppColors.primary,
                         size: 16,
                       ),
@@ -169,7 +174,7 @@ class DesignSystemTemplateScreen extends StatelessWidget {
               decoration: monochromeInputDecoration(
                 label: context.tr.recipient.toUpperCase(),
                 hintText: context.tr.recipientHint,
-                prefixIcon: const Icon(Icons.alternate_email, size: 18),
+                prefixIcon: const Icon(KeroseneIcons.address, size: 18),
               ),
               style: AppTypography.bodyMedium,
             ),

@@ -1,6 +1,6 @@
 import 'package:flutter/material.dart';
-import 'package:google_fonts/google_fonts.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 
 /// A custom keypad for the Lightning network flow.
 ///
@@ -93,14 +93,14 @@ class _LightningKeypadButton extends StatelessWidget {
           shape: RoundedRectangleBorder(
             borderRadius: BorderRadius.circular(16),
           ),
-          textStyle: GoogleFonts.ibmPlexSerif(
+          textStyle: AppTypography.newsreader(
             fontSize: 24,
             fontWeight: FontWeight.w500,
             letterSpacing: 0,
           ),
         ),
         child: isBackspace
-            ? const Icon(LucideIcons.delete, size: 22)
+            ? const Icon(KeroseneIcons.backspace, size: 22)
             : Text(label),
       ),
     );

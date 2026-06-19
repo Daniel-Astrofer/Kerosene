@@ -7,16 +7,15 @@ import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/core/utils/api_display_text.dart';
-import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/safe_display_text.dart';
 import 'package:kerosene/core/utils/transaction_address_display.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
-import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/financial_status_badge.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/transaction_visuals.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 String _financialCopy(
   BuildContext context, {
@@ -117,7 +116,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
         (_lightningInvoice != null && _lightningInvoice!.trim().isNotEmpty) ||
         (_description != null && _description!.trim().isNotEmpty);
     final leadingIcon = paymentLink != null
-        ? Icons.link_rounded
+        ? KeroseneIcons.onchain
         : TransactionVisualSpec.fromTransaction(transaction!).icon;
 
     return SafeArea(
@@ -244,10 +243,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
                       ),
                   ],
                 ),
-              ],
-              if (transaction?.canCancelPendingReceive == true) ...[
-                const SizedBox(height: 12),
-                _CancelReceiveButton(transaction: transaction!),
               ],
             ],
           ),
@@ -401,77 +396,6 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
   }
 }
 
-class _CancelReceiveButton extends ConsumerWidget {
-  final Transaction transaction;
-
-  const _CancelReceiveButton({required this.transaction});
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    return SizedBox(
-      width: double.infinity,
-      child: OutlinedButton.icon(
-        onPressed: () => _cancel(context, ref),
-        icon: const Icon(Icons.block_rounded),
-        label: Text(context.tr.onchainDepositCancelAction),
-      ),
-    );
-  }
-
-  Future<void> _cancel(BuildContext context, WidgetRef ref) async {
-    final transferId = transaction.externalTransferId?.trim() ?? '';
-    if (transferId.isEmpty || !transaction.canCancelPendingReceive) {
-      return;
-    }
-
-    final confirmed = await showDialog<bool>(
-          context: context,
-          builder: (context) => AlertDialog(
-            title: Text(context.tr.onchainDepositCancelTitle),
-            content: Text(context.tr.onchainDepositCancelMessage),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.of(context).pop(false),
-                child: Text(context.tr.goBack),
-              ),
-              FilledButton(
-                onPressed: () => Navigator.of(context).pop(true),
-                child: Text(context.tr.onchainDepositCancelAction),
-              ),
-            ],
-          ),
-        ) ??
-        false;
-
-    if (!confirmed) {
-      return;
-    }
-
-    try {
-      await ref
-          .read(transactionRepositoryProvider)
-          .cancelInboundTransfer(transferId);
-      ref.invalidate(transactionHistoryProvider);
-      ref.invalidate(pagedTransactionHistoryProvider);
-      ref.invalidate(externalTransfersProvider);
-      if (context.mounted) {
-        Navigator.of(context).maybePop();
-        AppNotice.showSuccess(
-          context,
-          message: context.tr.apiDisplayReceiveCancelled,
-        );
-      }
-    } catch (error) {
-      if (context.mounted) {
-        AppNotice.showError(
-          context,
-          message: ErrorTranslator.translate(context.tr, error.toString()),
-        );
-      }
-    }
-  }
-}
-
 class _ContextChip extends StatelessWidget {
   final String label;
 
@@ -584,7 +508,7 @@ class _CopyablePanel extends StatelessWidget {
                 message: context.tr.apiDisplayCopied,
               );
             },
-            icon: const Icon(Icons.copy_rounded),
+            icon: const Icon(KeroseneIcons.copy),
             color: monoTextColor,
             style: IconButton.styleFrom(
               backgroundColor: monoSurfaceRaisedColor,

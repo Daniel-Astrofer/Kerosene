@@ -3,7 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/services/balance_websocket_service.dart';
 import 'package:kerosene/core/services/notification_orchestrator.dart';
 import 'package:kerosene/features/web_admin/theme/admin_colors.dart';
+import 'package:kerosene/features/web_admin/theme/admin_typography.dart';
 import 'package:timeago/timeago.dart' as timeago;
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 final notificationsListProvider =
     FutureProvider.autoDispose<List<RealtimeNotificationEvent>>((ref) async {
@@ -23,10 +26,10 @@ class NotificationsScreen extends ConsumerWidget {
       appBar: AppBar(
         backgroundColor: Colors.transparent,
         elevation: 0,
-        title: const Text(
-          'Notifications Inbox',
+        title: Text(
+          AdminCopy.notificationsInboxTitle,
           style: TextStyle(
-            fontFamily: 'IBMPlexSansHebrew',
+            fontFamily: AdminTypography.fontFamily,
             fontSize: 20,
             fontWeight: FontWeight.bold,
             color: Colors.white,
@@ -34,7 +37,8 @@ class NotificationsScreen extends ConsumerWidget {
         ),
         actions: [
           IconButton(
-            icon: const Icon(Icons.refresh, color: AdminColors.textSecondary),
+            icon: const Icon(KeroseneIcons.refresh,
+                color: AdminColors.textSecondary),
             onPressed: () {
               ref.invalidate(notificationsListProvider);
             },
@@ -46,7 +50,7 @@ class NotificationsScreen extends ConsumerWidget {
           if (notifications.isEmpty) {
             return const Center(
               child: Text(
-                'No notifications found.',
+                AdminCopy.noNotifications,
                 style: TextStyle(color: AdminColors.textSecondary),
               ),
             );
@@ -64,7 +68,7 @@ class NotificationsScreen extends ConsumerWidget {
         loading: () => const Center(child: CircularProgressIndicator()),
         error: (err, stack) => Center(
           child: Text(
-            'Failed to load notifications: $err',
+            AdminCopy.loadFailure('notificações'),
             style: const TextStyle(color: Colors.redAccent),
           ),
         ),
@@ -86,19 +90,19 @@ class _NotificationCard extends ConsumerWidget {
     switch (notification.severity) {
       case 'success':
         severityColor = Colors.green;
-        icon = Icons.check_circle_outline;
+        icon = KeroseneIcons.success;
         break;
       case 'warning':
         severityColor = Colors.orangeAccent;
-        icon = Icons.warning_amber_outlined;
+        icon = KeroseneIcons.warning;
         break;
       case 'error':
         severityColor = Colors.redAccent;
-        icon = Icons.error_outline;
+        icon = KeroseneIcons.error;
         break;
       default:
         severityColor = Colors.blueAccent;
-        icon = Icons.info_outline;
+        icon = KeroseneIcons.info;
     }
 
     return Card(
@@ -152,7 +156,7 @@ class _NotificationCard extends ConsumerWidget {
                       notification.kind,
                       style: const TextStyle(
                         fontSize: 10,
-                        fontFamily: 'IBMPlexSansHebrew',
+                        fontFamily: AdminTypography.fontFamily,
                         color: AdminColors.textSecondary,
                       ),
                     ),
@@ -163,7 +167,8 @@ class _NotificationCard extends ConsumerWidget {
           ],
         ),
         trailing: IconButton(
-          icon: const Icon(Icons.check, color: AdminColors.textSecondary),
+          icon:
+              const Icon(KeroseneIcons.check, color: AdminColors.textSecondary),
           tooltip: 'Mark as read',
           onPressed: () async {
             await ref

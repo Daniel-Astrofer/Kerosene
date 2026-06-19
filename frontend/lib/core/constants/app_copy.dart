@@ -26,10 +26,11 @@ extension LocalizedCopyX on LocalizedCopy {
   }
 }
 
-/// Central source for copy that has not yet been migrated to ARB-backed l10n.
+/// Legacy source for copy that has not yet been migrated to ARB-backed l10n.
 ///
-/// English is the canonical source language. UI code should reference entries
-/// here instead of embedding visible strings directly in widgets.
+/// New active UI copy must be added to ARB files and accessed through
+/// `context.tr`. Existing entries should be migrated or moved to legacy/roadmap
+/// with the feature that still needs them.
 class AppCopy {
   AppCopy._();
 

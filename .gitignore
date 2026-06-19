@@ -128,6 +128,7 @@
 !/backend/**/docs/**/*.md
 !/backend/adapters/**/*.md
 !/backend/kerosene/*.md
+!/frontend/lib/FRONTEND_CLEANUP_RULES.md
 !/.gitignore
 !/.gitattributes
 frontend/*.txt

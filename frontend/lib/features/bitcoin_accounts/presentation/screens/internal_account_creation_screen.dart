@@ -11,21 +11,27 @@ class _InternalAccountCreationFlow extends ConsumerStatefulWidget {
 class _InternalAccountCreationFlowState
     extends ConsumerState<_InternalAccountCreationFlow> {
   _InternalAccountStep _step = _InternalAccountStep.custody;
-  _WalletPurpose? _purpose;
+  final TextEditingController _walletNameController = TextEditingController();
   bool _busy = false;
-  int _selectedCustodyIndex = 1;
+  int? _selectedCustodyIndex;
+
+  @override
+  void dispose() {
+    _walletNameController.dispose();
+    super.dispose();
+  }
 
   void _onCustodyContinue() {
-    HapticFeedback.selectionClick();
-    if (_selectedCustodyIndex == 2) {
-      Navigator.of(context).pushReplacement(
-        MaterialPageRoute<void>(
-          builder: (_) => const ColdWalletCreationScreen(),
-        ),
+    if (_selectedCustodyIndex == null) {
+      AppNotice.showWarning(
+        context,
+        title: 'Selecione a custódia',
+        message: 'Escolha como essa carteira será custodiada antes de seguir.',
       );
-    } else {
-      _continueFromCustody();
+      return;
     }
+    HapticFeedback.selectionClick();
+    _continueFromCustody();
   }
 
   void _goBack() {
@@ -41,16 +47,25 @@ class _InternalAccountCreationFlowState
 
   void _continueFromCustody() {
     if (_busy) return;
-    setState(() => _step = _InternalAccountStep.purpose);
-  }
-
-  void _continueFromPurpose() {
-    if (_busy) return;
-    if (_purpose == null) {
+    if (!_availableCustodyOptions
+        .any((option) => option.index == _selectedCustodyIndex)) {
       AppNotice.showWarning(
         context,
-        title: 'Selecione a finalidade',
-        message: 'Escolha para que essa conta interna será usada.',
+        title: 'Custódia indisponível',
+        message: 'Essa custódia já possui uma carteira ativa.',
+      );
+      return;
+    }
+    setState(() => _step = _InternalAccountStep.details);
+  }
+
+  void _continueFromDetails() {
+    if (_busy) return;
+    if (_walletNameController.text.trim().isEmpty) {
+      AppNotice.showWarning(
+        context,
+        title: context.tr.createWalletNameRequired,
+        message: 'Digite o nome que essa carteira deve receber.',
       );
       return;
     }
@@ -62,8 +77,9 @@ class _InternalAccountCreationFlowState
 
     setState(() => _busy = true);
     try {
-      await ref.read(bitcoinAccountsProvider.notifier).createInternalCard(
-            label: _purpose?.label ?? 'Kerosene BTC Card',
+      await ref.read(bitcoinAccountsProvider.notifier).createWallet(
+            label: _walletNameController.text.trim(),
+            custody: _selectedCustody,
           );
       final state = ref.read(bitcoinAccountsProvider);
       if (state.hasError) {
@@ -106,9 +122,9 @@ class _InternalAccountCreationFlowState
             Padding(
               padding: EdgeInsets.fromLTRB(
                 16,
-                _step == _InternalAccountStep.purpose ? 14 : 24,
+                _step == _InternalAccountStep.details ? 14 : 24,
                 16,
-                _step == _InternalAccountStep.purpose ? 2 : 8,
+                _step == _InternalAccountStep.details ? 2 : 8,
               ),
               child: Align(
                 alignment: Alignment.centerLeft,
@@ -116,7 +132,7 @@ class _InternalAccountCreationFlowState
                   visualDensity: VisualDensity.compact,
                   onPressed: _goBack,
                   icon: Icon(
-                    LucideIcons.arrowLeft,
+                    KeroseneIcons.back,
                     color: colors.text,
                     size: 24,
                   ),
@@ -125,10 +141,10 @@ class _InternalAccountCreationFlowState
             ),
             Expanded(
               child: AnimatedSwitcher(
-                duration: const Duration(milliseconds: 180),
+                duration: KeroseneMotion.short,
                 child: switch (_step) {
                   _InternalAccountStep.custody => const SizedBox.shrink(),
-                  _InternalAccountStep.purpose => _buildPurposeStep(),
+                  _InternalAccountStep.details => _buildDetailsStep(),
                 },
               ),
             ),
@@ -139,6 +155,8 @@ class _InternalAccountCreationFlowState
   }
 
   Widget _buildCustodySelectionScaffold(_BitcoinAccountsColors colors) {
+    final options = _availableCustodyOptions;
+
     return Scaffold(
       resizeToAvoidBottomInset: false,
       backgroundColor: colors.isLight ? colors.background : Colors.black,
@@ -158,34 +176,24 @@ class _InternalAccountCreationFlowState
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        _CustodySelectionTile(
-                          selected: _selectedCustodyIndex == 0,
-                          icon: LucideIcons.walletCards,
-                          title: context.tr.bitcoinAccountsCustodyInternalTitle,
-                          subtitle:
-                              context.tr.bitcoinAccountsCustodyInternalSubtitle,
-                          onTap: () =>
-                              setState(() => _selectedCustodyIndex = 0),
-                        ),
-                        _CustodySelectionTile(
-                          selected: _selectedCustodyIndex == 1,
-                          icon: LucideIcons.shield,
-                          title: context.tr.bitcoinAccountsCustodyOnchainTitle,
-                          subtitle:
-                              context.tr.bitcoinAccountsCustodyOnchainSubtitle,
-                          onTap: () =>
-                              setState(() => _selectedCustodyIndex = 1),
-                        ),
-                        _CustodySelectionTile(
-                          selected: _selectedCustodyIndex == 2,
-                          icon: LucideIcons.eye,
-                          title:
-                              context.tr.bitcoinAccountsCustodyWatchOnlyTitle,
-                          subtitle: context
-                              .tr.bitcoinAccountsCustodyWatchOnlySubtitle,
-                          onTap: () =>
-                              setState(() => _selectedCustodyIndex = 2),
-                        ),
+                        if (options.isEmpty)
+                          Padding(
+                            padding: const EdgeInsets.fromLTRB(24, 36, 24, 0),
+                            child: _MutedPanel(
+                              text:
+                                  'As carteiras disponíveis já foram criadas.',
+                            ),
+                          )
+                        else
+                          for (final option in options)
+                            _CustodySelectionTile(
+                              selected: _selectedCustodyIndex == option.index,
+                              icon: option.icon,
+                              title: option.title,
+                              subtitle: option.subtitle,
+                              onTap: () => setState(
+                                  () => _selectedCustodyIndex = option.index),
+                            ),
                       ],
                     ),
                   ),
@@ -198,7 +206,7 @@ class _InternalAccountCreationFlowState
               bottom: 24,
               child: _CreationPrimaryButton(
                 label: 'Continuar',
-                onPressed: _onCustodyContinue,
+                onPressed: options.isEmpty ? null : _onCustodyContinue,
               ),
             ),
           ],
@@ -207,26 +215,126 @@ class _InternalAccountCreationFlowState
     );
   }
 
-  Widget _buildPurposeStep() {
+  BitcoinAccountCustody get _selectedCustody {
+    return switch (_selectedCustodyIndex) {
+      1 => BitcoinAccountCustody.custodialOnchain,
+      _ => BitcoinAccountCustody.internal,
+    };
+  }
+
+  List<_CustodyCreationOption> get _availableCustodyOptions {
+    final accounts = ref.watch(bitcoinAccountsProvider).asData?.value ??
+        const <BitcoinAccount>[];
+    final hasInternal = accounts.any((account) =>
+        account.isActive &&
+        (account.isInternal && !account.isCustodialOnchain));
+    final hasCustodialOnchain = accounts
+        .any((account) => account.isActive && account.isCustodialOnchain);
+
+    return [
+      if (!hasInternal)
+        _CustodyCreationOption(
+          index: 0,
+          icon: KeroseneIcons.wallet,
+          title: context.tr.bitcoinAccountsCustodyInternalTitle,
+          subtitle: context.tr.bitcoinAccountsCustodyInternalSubtitle,
+        ),
+      if (!hasCustodialOnchain)
+        _CustodyCreationOption(
+          index: 1,
+          icon: KeroseneIcons.shield,
+          title: context.tr.bitcoinAccountsCustodyOnchainTitle,
+          subtitle: context.tr.bitcoinAccountsCustodyOnchainSubtitle,
+        ),
+    ];
+  }
+
+  String get _selectedCustodyLabel {
+    return switch (_selectedCustodyIndex) {
+      1 => context.tr.bitcoinAccountsCustodyOnchainTitle,
+      _ => context.tr.bitcoinAccountsCustodyInternalTitle,
+    };
+  }
+
+  Widget _buildDetailsStep() {
+    final colors = _BitcoinAccountsColors.of(context);
+    final title = 'Como essa carteira deve se chamar?';
+    final confirmationMessage =
+        'Você escolheu $_selectedCustodyLabel. A carteira só será criada depois de confirmar este nome.';
+    final createButtonLabel = _busy ? 'Criando...' : 'Criar carteira';
+
     return _CreationStepFrame(
-      key: const ValueKey('purpose'),
+      key: const ValueKey('details'),
       footer: _CreationPrimaryButton(
-        label: _busy ? 'Gerando...' : 'Gerar Carteira',
-        onPressed: _busy ? null : _continueFromPurpose,
+        label: createButtonLabel,
+        onPressed: _busy ? null : _continueFromDetails,
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           _CreationTitle(
-            'Para Que Finalidade Deseja Derivar essa Carteira?',
+            title,
           ),
-          const SizedBox(height: 40),
-          for (final purpose in _walletPurposeOptions)
-            _PurposeTile(
-              purpose: purpose,
-              selected: _purpose == purpose,
-              onTap: () => setState(() => _purpose = purpose),
+          const SizedBox(height: 16),
+          Text(
+            confirmationMessage,
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              color: colors.mutedText,
+              fontSize: 15,
+              fontWeight: FontWeight.w400,
+              height: 1.45,
+              letterSpacing: 0,
             ),
+          ),
+          const SizedBox(height: 32),
+          TextField(
+            controller: _walletNameController,
+            enabled: !_busy,
+            textInputAction: TextInputAction.done,
+            onSubmitted: (_) => _continueFromDetails(),
+            style: TextStyle(
+              fontFamily: AppTypography.fontFamily,
+              color: colors.text,
+              fontSize: 18,
+              fontWeight: FontWeight.w600,
+              letterSpacing: 0,
+            ),
+            decoration: InputDecoration(
+              labelText: 'Nome da carteira',
+              hintText: context.tr.createWalletNameHint,
+              filled: true,
+              fillColor: colors.surfaceAlt,
+              labelStyle: TextStyle(
+                fontFamily: AppTypography.fontFamily,
+                color: colors.mutedText,
+                fontSize: 14,
+                letterSpacing: 0,
+              ),
+              hintStyle: TextStyle(
+                fontFamily: AppTypography.fontFamily,
+                color: colors.faintText,
+                fontSize: 15,
+                letterSpacing: 0,
+              ),
+              enabledBorder: OutlineInputBorder(
+                borderRadius: colors.controlRadius,
+                borderSide: BorderSide(color: colors.border),
+              ),
+              focusedBorder: OutlineInputBorder(
+                borderRadius: colors.controlRadius,
+                borderSide: BorderSide(color: colors.text),
+              ),
+              disabledBorder: OutlineInputBorder(
+                borderRadius: colors.controlRadius,
+                borderSide: BorderSide(color: colors.border),
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                horizontal: 16,
+                vertical: 18,
+              ),
+            ),
+          ),
         ],
       ),
     );
@@ -279,7 +387,7 @@ class _CreationTitle extends StatelessWidget {
 
     return Text(
       text,
-      style: GoogleFonts.ibmPlexSerif(
+      style: AppTypography.newsreader(
         color: colors.text,
         fontSize: 40,
         fontWeight: FontWeight.w500,
@@ -307,8 +415,8 @@ class _CreationPrimaryButton extends StatelessWidget {
         : FilledButton.styleFrom(
             backgroundColor: Colors.white,
             foregroundColor: Colors.black,
-            disabledBackgroundColor: const Color(0xFF2A2A2A),
-            disabledForegroundColor: const Color(0xFF777777),
+            disabledBackgroundColor: AppColors.hexFF2A2A2A,
+            disabledForegroundColor: AppColors.hexFF777777,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(12),
             ),
@@ -365,7 +473,7 @@ class _CustodySelectionTopBar extends StatelessWidget {
                   visualDensity: VisualDensity.compact,
                   onPressed: onBack,
                   icon: Icon(
-                    LucideIcons.arrowLeft,
+                    KeroseneIcons.back,
                     color: colors.text,
                     size: 24,
                   ),
@@ -463,7 +571,7 @@ class _CustodySelectionTile extends StatelessWidget {
                               maxLines: 2,
                               overflow: TextOverflow.ellipsis,
                               textAlign: TextAlign.center,
-                              style: GoogleFonts.ibmPlexSerif(
+                              style: AppTypography.newsreader(
                                 color: foreground,
                                 fontSize: titleSize,
                                 fontWeight: FontWeight.w600,
@@ -501,113 +609,21 @@ class _CustodySelectionTile extends StatelessWidget {
   }
 }
 
-class _PurposeTile extends StatelessWidget {
-  final _WalletPurpose purpose;
-  final bool selected;
-  final VoidCallback onTap;
+enum _InternalAccountStep { custody, details }
 
-  const _PurposeTile({
-    required this.purpose,
-    required this.selected,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        child: Container(
-          height: 80,
-          decoration: BoxDecoration(
-            border: Border(
-              bottom: BorderSide(color: colors.divider),
-            ),
-          ),
-          child: Row(
-            children: [
-              _CreationCircleIcon(icon: purpose.icon),
-              const SizedBox(width: 16),
-              Expanded(
-                child: Text(
-                  purpose.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    fontFamily: AppTypography.fontFamily,
-                    color: colors.text,
-                    fontSize: 17,
-                    fontWeight: FontWeight.w400,
-                    height: 1,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-              AnimatedContainer(
-                duration: const Duration(milliseconds: 140),
-                width: 32,
-                height: 32,
-                decoration: BoxDecoration(
-                  color: selected ? colors.text : colors.surfaceRaised,
-                  shape: BoxShape.circle,
-                ),
-                child: Icon(
-                  selected ? LucideIcons.check : LucideIcons.chevronRight,
-                  color: selected
-                      ? colors.filledButtonForeground
-                      : colors.mutedText,
-                  size: selected ? 16 : 18,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _CreationCircleIcon extends StatelessWidget {
+class _CustodyCreationOption {
+  final int index;
   final IconData icon;
+  final String title;
+  final String subtitle;
 
-  const _CreationCircleIcon({
+  const _CustodyCreationOption({
+    required this.index,
     required this.icon,
+    required this.title,
+    required this.subtitle,
   });
-
-  @override
-  Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
-
-    return Container(
-      width: 48,
-      height: 48,
-      decoration: BoxDecoration(
-        color: colors.surfaceRaised,
-        shape: BoxShape.circle,
-      ),
-      child: Icon(icon, color: colors.text, size: 20),
-    );
-  }
 }
-
-class _WalletPurpose {
-  final String label;
-  final IconData icon;
-
-  const _WalletPurpose(this.label, this.icon);
-}
-
-const _walletPurposeOptions = [
-  _WalletPurpose('Investimento', LucideIcons.trendingUp),
-  _WalletPurpose('Dia a dia', LucideIcons.calendarDays),
-  _WalletPurpose('Veiculo', LucideIcons.car),
-  _WalletPurpose('Futuros gastos', LucideIcons.receipt),
-];
-
-enum _InternalAccountStep { custody, purpose }
 
 String _friendlyStatus(BuildContext context, String status) {
   return switch (status.trim().toUpperCase()) {
@@ -616,59 +632,4 @@ String _friendlyStatus(BuildContext context, String status) {
     'DISABLED' => context.tr.bitcoinAccountsStatusDisabled,
     _ => context.tr.bitcoinAccountsStatusReady,
   };
-}
-
-void _showReceiveSheet(BuildContext context, BitcoinAccount account) {
-  final colors = _BitcoinAccountsColors.of(context);
-
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: colors.surface,
-    shape: RoundedRectangleBorder(
-      borderRadius: colors.isLight
-          ? const BorderRadius.vertical(top: Radius.circular(24))
-          : monoRadius,
-    ),
-    builder: (context) => _ReceiveSheet(account: account),
-  );
-}
-
-void _showCreatePsbtSheet(BuildContext context, BitcoinAccount account) {
-  final colors = _BitcoinAccountsColors.of(context);
-
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: colors.surface,
-    shape: RoundedRectangleBorder(
-      borderRadius: colors.isLight
-          ? const BorderRadius.vertical(top: Radius.circular(24))
-          : monoRadius,
-    ),
-    builder: (context) => _CreatePsbtSheet(account: account),
-  );
-}
-
-void _showSubmitPsbtSheet(
-  BuildContext context,
-  BitcoinAccount account,
-  PsbtWorkflowView workflow,
-) {
-  final colors = _BitcoinAccountsColors.of(context);
-
-  showModalBottomSheet<void>(
-    context: context,
-    isScrollControlled: true,
-    backgroundColor: colors.surface,
-    shape: RoundedRectangleBorder(
-      borderRadius: colors.isLight
-          ? const BorderRadius.vertical(top: Radius.circular(24))
-          : monoRadius,
-    ),
-    builder: (context) => _SubmitPsbtSheet(
-      account: account,
-      workflow: workflow,
-    ),
-  );
 }

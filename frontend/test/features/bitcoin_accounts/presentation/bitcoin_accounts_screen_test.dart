@@ -9,6 +9,7 @@ import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts
 import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
 import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 void main() {
   testWidgets(
@@ -60,23 +61,52 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Saldo disponível'), findsOneWidget);
-    expect(find.text('Saldo acompanhado'), findsOneWidget);
+    expect(find.text('STATUS DA CARTEIRA'), findsOneWidget);
+    expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
+    expect(find.text('NOME DA CARTEIRA'), findsOneWidget);
+    expect(find.text('UTXOS MONITORADOS'), findsNothing);
+
+    await tester.tap(find.text('STATUS DA CARTEIRA'));
+    await tester.pumpAndSettle();
+
     expect(find.text('Cartão Kerosene'), findsWidgets);
-    expect(find.text('Somente leitura'), findsOneWidget);
-    expect(find.textContaining('só acompanha'), findsOneWidget);
-    expect(find.textContaining('Em análise'), findsOneWidget);
-    expect(find.text('Bitcoin Advanced'), findsOneWidget);
-    expect(find.text('UTXOs monitorados'), findsOneWidget);
-    expect(find.text('PSBT workflows'), findsOneWidget);
-    expect(find.text('Relatórios fiscais'), findsOneWidget);
-    expect(find.text('Exportar JSON'), findsOneWidget);
+    expect(find.text('0.00131000 BTC'), findsOneWidget);
+
+    await tester.drag(find.byType(PageView).first, const Offset(-360, 0));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Cold Wallet'), findsWidgets);
+    expect(find.text('UTXOS MONITORADOS'), findsOneWidget);
+    expect(find.text('PSBT WORKFLOWS'), findsOneWidget);
+
+    await tester.tap(find.text('STATUS DA CARTEIRA'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Somente leitura'), findsWidgets);
+    expect(find.text('0.00250000 BTC'), findsWidgets);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -520));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('UTXOS MONITORADOS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Disponível para PSBT'), findsOneWidget);
+
+    await tester.drag(find.byType(ListView).first, const Offset(0, -160));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('PSBT WORKFLOWS'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Copiar unsigned'), findsOneWidget);
+    expect(find.text('Bitcoin Advanced'), findsNothing);
+    expect(find.text('Relatórios fiscais'), findsNothing);
+    expect(find.text('Exportar JSON'), findsNothing);
   });
 
   testWidgets('uses dedicated empty bitcoin accounts layout', (tester) async {
     await _pumpBitcoinAccounts(
       tester,
-      const _FakeBitcoinAccountsService([]),
+      _FakeBitcoinAccountsService([]),
     );
 
     await tester.pumpAndSettle();
@@ -91,7 +121,7 @@ void main() {
       (tester) async {
     await _pumpBitcoinAccounts(
       tester,
-      const _FakeBitcoinAccountsService([]),
+      _FakeBitcoinAccountsService([]),
     );
 
     await tester.pumpAndSettle();
@@ -101,20 +131,96 @@ void main() {
     expect(find.text('Nova Carteira'), findsOneWidget);
     expect(find.text('Carteira Interna'), findsOneWidget);
     expect(find.text('Custodial On-chain'), findsOneWidget);
-    expect(find.text('Kerosene Watch-Only'), findsOneWidget);
+    expect(find.text('Kerosene Watch-Only'), findsNothing);
     expect(find.text('Continuar'), findsOneWidget);
+  });
+
+  testWidgets('hides custody creation options that already exist',
+      (tester) async {
+    await _pumpBitcoinAccounts(
+      tester,
+      _FakeBitcoinAccountsService(
+        const [
+          _internalAccount,
+          BitcoinAccount(
+            id: 'custodial-1',
+            type: 'INTERNAL_CARD',
+            custody: 'CUSTODIAL_ONCHAIN',
+            status: 'ACTIVE',
+            label: 'Reserva on-chain',
+            riskTier: 'BRONZE',
+            cardId: 'card-2',
+            balanceAvailableSats: 50000,
+          ),
+        ],
+      ),
+    );
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.byIcon(KeroseneIcons.plus));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Carteira Interna'), findsNothing);
+    expect(find.text('Custodial On-chain'), findsNothing);
+    expect(find.text('As carteiras disponíveis já foram criadas.'),
+        findsOneWidget);
+  });
+
+  testWidgets('requires name and custody before creating wallet',
+      (tester) async {
+    final service = _FakeBitcoinAccountsService([]);
+    await _pumpBitcoinAccounts(tester, service);
+
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Novo cartão Kerosene'));
+    await tester.pumpAndSettle();
+
+    expect(service.createWalletCalls, 0);
+
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(service.createWalletCalls, 0);
+
+    await tester.tap(find.text('Carteira Interna'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Continuar'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Como essa carteira deve se chamar?'), findsOneWidget);
+    expect(service.createWalletCalls, 0);
+
+    await tester.tap(find.text('Criar carteira'));
+    await tester.pumpAndSettle();
+
+    expect(service.createWalletCalls, 0);
+
+    await tester.enterText(find.byType(TextField), 'Reserva familiar');
+    await tester.tap(find.text('Criar carteira'));
+    await tester.pumpAndSettle();
+
+    expect(service.createWalletCalls, 1);
+    expect(service.lastCreatedLabel, 'Reserva familiar');
+    expect(service.lastCreatedCustody, BitcoinAccountCustody.internal);
+
+    await tester.pump(const Duration(seconds: 3));
   });
 
   testWidgets('shows receive requests empty state', (tester) async {
     await _pumpBitcoinAccounts(
       tester,
-      const _FakeBitcoinAccountsService([_internalAccount]),
+      _FakeBitcoinAccountsService([_internalAccount]),
     );
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Pedidos de recebimento'), findsOneWidget);
-    expect(find.text('Nenhum pedido ativo.'), findsOneWidget);
+    expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
+
+    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Não informado'), findsWidgets);
+    expect(find.text('Pronta'), findsWidgets);
   });
 
   testWidgets('shows receive requests error and retry state', (tester) async {
@@ -128,9 +234,17 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Pedidos de recebimento'), findsOneWidget);
-    expect(find.text('Não foi possível carregar pedidos.'), findsOneWidget);
-    expect(find.text('Tentar Novamente'), findsOneWidget);
+    expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
+
+    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await tester.pumpAndSettle();
+
+    expect(
+      find.text(
+        'A Kerosene não conseguiu atualizar os pedidos de recebimento desta conta.',
+      ),
+      findsOneWidget,
+    );
   });
 
   testWidgets('shows loaded receive requests', (tester) async {
@@ -157,8 +271,70 @@ void main() {
 
     await tester.pumpAndSettle();
 
-    expect(find.text('Pedidos de recebimento'), findsOneWidget);
+    expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
+    expect(find.text('( bc1qrece...00000000 )'), findsOneWidget);
+
+    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await tester.pumpAndSettle();
+
     expect(find.text('0.00050000 BTC'), findsOneWidget);
+    expect(
+      find.text('bc1qreceive0000000000000000000000000000000000'),
+      findsOneWidget,
+    );
+  });
+
+  testWidgets('exposes focused card management actions', (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    final service = _FakeBitcoinAccountsService(
+      [_internalAccount],
+      requests: [
+        ReceivingRequestView(
+          id: 'request-1',
+          accountId: 'internal-1',
+          address: 'bc1qreceive0000000000000000000000000000000000',
+          bip21: 'bitcoin:bc1qreceive0000000000000000000000000000000000',
+          status: 'ACTIVE',
+          amountSats: null,
+          expiry: '',
+          oneTime: false,
+          createdAt: DateTime(2026, 5, 28),
+        ),
+      ],
+    );
+    await _pumpBitcoinAccounts(tester, service);
+    await tester.pumpAndSettle();
+
+    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await tester.pumpAndSettle();
+    expect(find.text('Rotacionar endereço'), findsOneWidget);
+    await tester.tap(find.text('Rotacionar endereço'));
+    await tester.pumpAndSettle();
+    expect(service.rotateAddressCalls, 1);
+
+    await tester.tap(find.text('NOME DA CARTEIRA'));
+    await tester.pumpAndSettle();
+    expect(find.text('Trocar nome'), findsOneWidget);
+    await tester.tap(find.text('Trocar nome'));
+    await tester.pumpAndSettle();
+    await tester.enterText(find.byType(TextField).last, 'Reserva privada');
+    await tester.tap(find.text('Salvar'));
+    await tester.pumpAndSettle();
+    expect(service.renameWalletCalls, 1);
+    expect(service.lastRenamedLabel, 'Reserva privada');
+
+    await tester.tap(find.text('STATUS DA CARTEIRA'));
+    await tester.pumpAndSettle();
+    expect(find.text('Bloquear cartão'), findsOneWidget);
+    await tester.tap(find.text('Bloquear cartão'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('CONFIRMAR'));
+    await tester.pumpAndSettle();
+    expect(service.archiveWalletCalls, 1);
+    expect(service.lastArchivedAccountId, 'internal-1');
+    await tester.pump(const Duration(seconds: 3));
   });
 }
 
@@ -204,8 +380,17 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
   final List<PsbtWorkflowView> psbts;
   final List<TaxEventView> taxEvents;
   final Exception? requestError;
+  int createWalletCalls = 0;
+  int rotateAddressCalls = 0;
+  int renameWalletCalls = 0;
+  int archiveWalletCalls = 0;
+  String? lastCreatedLabel;
+  BitcoinAccountCustody? lastCreatedCustody;
+  String? lastRenamedAccountId;
+  String? lastRenamedLabel;
+  String? lastArchivedAccountId;
 
-  const _FakeBitcoinAccountsService(
+  _FakeBitcoinAccountsService(
     this.accounts, {
     this.requests = const [],
     this.utxos = const [
@@ -247,6 +432,71 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
 
   @override
   Future<List<BitcoinAccount>> listAccounts() async => accounts;
+
+  @override
+  Future<BitcoinAccount> createWallet({
+    required String label,
+    required BitcoinAccountCustody custody,
+  }) async {
+    createWalletCalls += 1;
+    lastCreatedLabel = label;
+    lastCreatedCustody = custody;
+    return BitcoinAccount(
+      id: 'created-$createWalletCalls',
+      type: custody == BitcoinAccountCustody.watchOnly
+          ? 'WATCH_ONLY_COLD_WALLET'
+          : 'INTERNAL_CARD',
+      custody: custody == BitcoinAccountCustody.watchOnly
+          ? 'WATCH_ONLY'
+          : 'KEROSENE_CUSTODIAL',
+      status: 'ACTIVE',
+      label: label,
+      riskTier: 'BRONZE',
+      cardId: 'created-card',
+    );
+  }
+
+  @override
+  Future<BitcoinAccount> createInternalCard({required String label}) {
+    return createWallet(
+      label: label,
+      custody: BitcoinAccountCustody.internal,
+    );
+  }
+
+  @override
+  Future<ReceivingRequestView> rotateReceiveAddress(String accountId) async {
+    rotateAddressCalls += 1;
+    return ReceivingRequestView.fromKfeActiveAddress(
+      accountId: accountId,
+      address: 'bc1qrotated0000000000000000000000000000000000',
+      createdAt: DateTime(2026, 5, 29),
+    );
+  }
+
+  @override
+  Future<BitcoinAccount> renameWallet({
+    required String accountId,
+    required String label,
+  }) async {
+    renameWalletCalls += 1;
+    lastRenamedAccountId = accountId;
+    lastRenamedLabel = label;
+    return _accountWith(
+      accounts.firstWhere((account) => account.id == accountId),
+      label: label,
+    );
+  }
+
+  @override
+  Future<BitcoinAccount> archiveWallet(String accountId) async {
+    archiveWalletCalls += 1;
+    lastArchivedAccountId = accountId;
+    return _accountWith(
+      accounts.firstWhere((account) => account.id == accountId),
+      status: 'ARCHIVED',
+    );
+  }
 
   @override
   Future<List<ReceivingRequestView>> listReceiveRequestsForAccount(
@@ -341,4 +591,30 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
 
   @override
   dynamic noSuchMethod(Invocation invocation) => super.noSuchMethod(invocation);
+
+  BitcoinAccount _accountWith(
+    BitcoinAccount account, {
+    String? label,
+    String? status,
+  }) {
+    return BitcoinAccount(
+      id: account.id,
+      type: account.type,
+      custody: account.custody,
+      status: status ?? account.status,
+      label: label ?? account.label,
+      walletTypeDescription: account.walletTypeDescription,
+      riskTier: account.riskTier,
+      cardId: account.cardId,
+      coldWalletId: account.coldWalletId,
+      balanceAvailableSats: account.balanceAvailableSats,
+      balancePendingSats: account.balancePendingSats,
+      balanceLockedSats: account.balanceLockedSats,
+      balanceAutoHoldSats: account.balanceAutoHoldSats,
+      observedBalanceSats: account.observedBalanceSats,
+      xpubFingerprint: account.xpubFingerprint,
+      derivationPath: account.derivationPath,
+      scriptPolicy: account.scriptPolicy,
+    );
+  }
 }

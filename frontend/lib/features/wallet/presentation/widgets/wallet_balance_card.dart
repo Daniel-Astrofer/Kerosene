@@ -1,10 +1,14 @@
-import 'package:flutter/material.dart';
-import '../../domain/entities/wallet.dart';
 import 'dart:math' as math;
+
+import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/utils/safe_display_text.dart';
+
+import '../../domain/entities/wallet.dart';
 import '../providers/balance_settings_provider.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Widget do card de balanço com gráfico circular
 class WalletBalanceCard extends ConsumerWidget {
@@ -16,6 +20,8 @@ class WalletBalanceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final responsive = context.responsive;
+    const balanceLabel = 'Balance';
+    const portfolioLabel = 'Total Portfolio Value';
     final chartSize = responsive.isTinyPhone ? 132.0 : 160.0;
     final innerSize = chartSize * 0.625;
 
@@ -25,12 +31,12 @@ class WalletBalanceCard extends ConsumerWidget {
         gradient: LinearGradient(
           begin: Alignment.topLeft,
           end: Alignment.bottomRight,
-          colors: [const Color(0xFF1A1F3A), const Color(0xFF0F1229)],
+          colors: [AppColors.hexFF1A1F3A, AppColors.hexFF0F1229],
         ),
         borderRadius: BorderRadius.circular(24),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF7B61FF).withValues(alpha: 0.1),
+            color: AppColors.hexFF7B61FF.withValues(alpha: 0.1),
             blurRadius: 20,
             offset: const Offset(0, 10),
           ),
@@ -57,11 +63,11 @@ class WalletBalanceCard extends ConsumerWidget {
                   width: innerSize,
                   height: innerSize,
                   decoration: BoxDecoration(
-                    color: const Color(0xFF0F1229),
+                    color: AppColors.hexFF0F1229,
                     shape: BoxShape.circle,
                   ),
                   child: Icon(
-                    Icons.bar_chart_rounded,
+                    KeroseneIcons.chart,
                     color: Theme.of(context).colorScheme.onPrimary,
                     size: 40,
                   ),
@@ -73,7 +79,7 @@ class WalletBalanceCard extends ConsumerWidget {
 
           // Label "Balance"
           Text(
-            'Balance',
+            balanceLabel,
             style: TextStyle(
               color: Theme.of(
                 context,
@@ -116,7 +122,7 @@ class WalletBalanceCard extends ConsumerWidget {
 
           // Label "Total Portfolio"
           Text(
-            'Total Portfolio Value',
+            portfolioLabel,
             style: TextStyle(
               color: Theme.of(
                 context,
@@ -143,7 +149,7 @@ class BalanceChartPainter extends CustomPainter {
 
     // Background circle (cinza)
     final bgPaint = Paint()
-      ..color = const Color(0xFF1A1F3A)
+      ..color = AppColors.hexFF1A1F3A
       ..style = PaintingStyle.stroke
       ..strokeWidth = 12
       ..strokeCap = StrokeCap.round;
@@ -155,7 +161,7 @@ class BalanceChartPainter extends CustomPainter {
     final gradient = SweepGradient(
       startAngle: -math.pi / 2,
       endAngle: -math.pi / 2 + (2 * math.pi * percentage),
-      colors: const [Color(0xFF7B61FF), Color(0xFF00D4FF)],
+      colors: const [AppColors.hexFF7B61FF, AppColors.hexFF00D4FF],
     );
 
     final progressPaint = Paint()

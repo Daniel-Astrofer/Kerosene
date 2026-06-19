@@ -1,6 +1,7 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 enum AppNoticeType { success, error, info, warning }
 
@@ -29,7 +30,7 @@ class AppScreenFeedbackBus {
     required AppNoticeType type,
     required String title,
     required String message,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = KeroseneMotion.noticeHold,
   }) {
     _timer?.cancel();
     final next = AppScreenFeedbackMessage(
@@ -60,7 +61,7 @@ class AppNotice {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = KeroseneMotion.noticeHold,
   }) {
     show(
       context,
@@ -75,7 +76,7 @@ class AppNotice {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = KeroseneMotion.noticeExtendedHold,
   }) {
     show(
       context,
@@ -90,7 +91,7 @@ class AppNotice {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = KeroseneMotion.noticeHold,
   }) {
     show(
       context,
@@ -105,7 +106,7 @@ class AppNotice {
     BuildContext context, {
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 4),
+    Duration duration = KeroseneMotion.noticeExtendedHold,
   }) {
     show(
       context,
@@ -121,7 +122,7 @@ class AppNotice {
     required AppNoticeType type,
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = KeroseneMotion.noticeHold,
   }) {
     final messenger = ScaffoldMessenger.maybeOf(context);
     if (messenger == null) {
@@ -142,7 +143,7 @@ class AppNotice {
     required AppNoticeType type,
     required String message,
     String? title,
-    Duration duration = const Duration(seconds: 3),
+    Duration duration = KeroseneMotion.noticeHold,
   }) {
     final context = messenger.context;
     final defaultTitle = _defaultTitle(context, type);

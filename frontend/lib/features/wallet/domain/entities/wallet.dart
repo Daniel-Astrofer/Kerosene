@@ -315,7 +315,31 @@ final class Wallet extends Equatable {
 
   bool get isSelfCustody => walletMode.trim().toUpperCase() == 'SELF_CUSTODY';
 
-  bool get isKeroseneCustody => !isSelfCustody;
+  bool get isInternalCustody {
+    final mode = walletMode.trim().toUpperCase();
+    return mode.isEmpty || mode == 'KEROSENE' || mode == 'INTERNAL';
+  }
+
+  bool get isCustodialOnchain {
+    final mode = walletMode.trim().toUpperCase();
+    return mode == 'CUSTODIAL_ONCHAIN' ||
+        mode == 'CUSTODIAL ONCHAIN' ||
+        mode == 'ONCHAIN' ||
+        mode == 'ON_CHAIN';
+  }
+
+  bool get isColdWallet {
+    final mode = walletMode.trim().toUpperCase();
+    return isSelfCustody || mode == 'WATCH_ONLY' || mode.contains('COLD');
+  }
+
+  bool get isKeroseneCustody => isInternalCustody || isCustodialOnchain;
+
+  String get custodyDisplayLabel {
+    if (isColdWallet) return 'Cold wallet';
+    if (isCustodialOnchain) return 'Custodial on-chain';
+    return 'Carteira global';
+  }
 
   @override
   List<Object?> get props => [

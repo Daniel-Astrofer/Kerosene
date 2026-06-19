@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:dartz/dartz.dart';
 import 'package:kerosene/core/errors/failures.dart';
 import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
+import 'package:kerosene/features/notifications/domain/entities/device_token.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/domain/repositories/notification_repository.dart';
 import 'package:kerosene/features/security/domain/entities/account_security_profile.dart';
@@ -9,18 +10,16 @@ import 'package:kerosene/features/security/domain/entities/admin_access.dart';
 import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
 import 'package:kerosene/features/security/domain/entities/passkey_inventory.dart';
 import 'package:kerosene/features/security/domain/entities/security_status.dart';
-import 'package:kerosene/features/security/domain/entities/treasury_overview.dart';
+import 'package:kerosene/features/security/domain/entities/kfe_reserve_overview.dart';
 import 'package:kerosene/features/transactions/domain/entities/deposit.dart';
 import 'package:kerosene/features/transactions/domain/entities/external_transfer.dart';
 import 'package:kerosene/features/transactions/domain/entities/fee_estimate.dart';
-import 'package:kerosene/features/transactions/domain/entities/lightning_invoice.dart';
 import 'package:kerosene/features/transactions/domain/entities/onchain_address_allocation.dart';
 import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
 import 'package:kerosene/features/transactions/domain/entities/tx_status.dart';
 import 'package:kerosene/features/transactions/domain/entities/wallet_network_address.dart';
 import 'package:kerosene/features/transactions/domain/repositories/transaction_repository.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
-import 'package:kerosene/features/wallet/domain/entities/unsigned_transaction.dart';
 import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
 import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/wallet/presentation/state/wallet_state.dart';
@@ -276,7 +275,7 @@ PaymentLink mockPaymentLink({
         ? DateTime.now().subtract(const Duration(minutes: 2))
         : null,
     paymentRail: internal ? 'INTERNAL' : 'ONCHAIN',
-    paymentIntentStatus:
+    settlementStatus:
         status == 'paid' || status == 'completed' ? 'SETTLED' : 'QUOTED',
     terminal: status == 'paid' || status == 'completed',
   );
@@ -532,7 +531,7 @@ final mockSecurityStatus = SecurityStatus(
   serverUptimeSeconds: 86400 * 18,
 );
 
-const mockTreasuryOverview = TreasuryOverview(
+const mockKfeReserveOverview = KfeReserveOverview(
   totalOnchainBtc: 18.42,
   lightningNodeBtc: 2.18,
   inboundLiquidityBtc: 1.62,
@@ -895,20 +894,35 @@ class MockBitcoinAccountsService implements BitcoinAccountsService {
   Future<List<BitcoinAccount>> listAccounts() async => List.of(_accounts);
 
   @override
-  Future<BitcoinAccount> createInternalCard({
+  Future<BitcoinAccount> createWallet({
     required String label,
+    required BitcoinAccountCustody custody,
   }) async {
+    final isWatchOnly = custody == BitcoinAccountCustody.watchOnly;
     final account = BitcoinAccount(
       id: 'story-account-${_accounts.length + 1}',
-      type: 'INTERNAL_CARD',
-      custody: 'KEROSENE_CUSTODIAL',
+      type: isWatchOnly ? 'WATCH_ONLY_COLD_WALLET' : 'INTERNAL_CARD',
+      custody: isWatchOnly ? 'WATCH_ONLY' : 'KEROSENE_CUSTODIAL',
       status: 'ACTIVE',
       label: label,
-      riskTier: 'BRONZE',
-      cardId: 'card-storybook-${_accounts.length + 1}',
+      riskTier: isWatchOnly ? 'GOLD' : 'BRONZE',
+      cardId: isWatchOnly ? null : 'card-storybook-${_accounts.length + 1}',
+      coldWalletId:
+          isWatchOnly ? 'cold-storybook-${_accounts.length + 1}' : null,
+      observedBalanceSats: 0,
     );
     _accounts.add(account);
     return account;
+  }
+
+  @override
+  Future<BitcoinAccount> createInternalCard({
+    required String label,
+  }) {
+    return createWallet(
+      label: label,
+      custody: BitcoinAccountCustody.internal,
+    );
   }
 
   @override
@@ -964,6 +978,39 @@ class MockBitcoinAccountsService implements BitcoinAccountsService {
     );
     _requests.add(request);
     return request;
+  }
+
+  @override
+  Future<ReceivingRequestView> rotateReceiveAddress(String accountId) async {
+    final address = 'bc1qstorybookrotated${_requests.length + 1}';
+    final request = ReceivingRequestView.fromKfeActiveAddress(
+      accountId: accountId,
+      address: address,
+      createdAt: DateTime.now(),
+    );
+    _requests.insert(0, request);
+    return request;
+  }
+
+  @override
+  Future<BitcoinAccount> renameWallet({
+    required String accountId,
+    required String label,
+  }) async {
+    final index = _accounts.indexWhere((item) => item.id == accountId);
+    if (index < 0) return _accounts.first;
+    final updated = _accountWith(_accounts[index], label: label);
+    _accounts[index] = updated;
+    return updated;
+  }
+
+  @override
+  Future<BitcoinAccount> archiveWallet(String accountId) async {
+    final index = _accounts.indexWhere((item) => item.id == accountId);
+    if (index < 0) return _accounts.first;
+    final updated = _accountWith(_accounts[index], status: 'ARCHIVED');
+    _accounts[index] = updated;
+    return updated;
   }
 
   @override
@@ -1102,6 +1149,32 @@ class MockBitcoinAccountsService implements BitcoinAccountsService {
     }
     return updated;
   }
+
+  BitcoinAccount _accountWith(
+    BitcoinAccount account, {
+    String? label,
+    String? status,
+  }) {
+    return BitcoinAccount(
+      id: account.id,
+      type: account.type,
+      custody: account.custody,
+      status: status ?? account.status,
+      label: label ?? account.label,
+      walletTypeDescription: account.walletTypeDescription,
+      riskTier: account.riskTier,
+      cardId: account.cardId,
+      coldWalletId: account.coldWalletId,
+      balanceAvailableSats: account.balanceAvailableSats,
+      balancePendingSats: account.balancePendingSats,
+      balanceLockedSats: account.balanceLockedSats,
+      balanceAutoHoldSats: account.balanceAutoHoldSats,
+      observedBalanceSats: account.observedBalanceSats,
+      xpubFingerprint: account.xpubFingerprint,
+      derivationPath: account.derivationPath,
+      scriptPolicy: account.scriptPolicy,
+    );
+  }
 }
 
 class MockNotificationRepository implements NotificationRepository {
@@ -1124,6 +1197,11 @@ class MockNotificationRepository implements NotificationRepository {
     String? appVersion,
   }) async {
     return const Right(null);
+  }
+
+  @override
+  Future<Either<Failure, List<DeviceToken>>> activeDeviceTokens() async {
+    return const Right([]);
   }
 
   @override
@@ -1185,54 +1263,6 @@ class MockTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<Either<Failure, TxStatus>> broadcastTransaction({
-    required String rawTxHex,
-    required String toAddress,
-    required double amount,
-    String? message,
-  }) async {
-    return Right(
-      TxStatus(
-        txid: 'storybook-broadcast-txid',
-        status: 'broadcasted',
-        feeSatoshis: 900,
-        amountReceived: amount,
-        receiver: toAddress,
-        message: message,
-      ),
-    );
-  }
-
-  @override
-  Future<Either<Failure, UnsignedTransaction>> createUnsignedTransaction({
-    required String toAddress,
-    required double amount,
-    required String feeLevel,
-  }) async {
-    return Right(
-      UnsignedTransaction(
-        rawTxHex: '0200000001storybook',
-        txId: 'storybook-unsigned-txid',
-        inputs: const [
-          TransactionInput(
-            txid: 'storybook-utxo',
-            vout: 0,
-            value: 0.05,
-            scriptPubKey: '0014storybook',
-          ),
-        ],
-        outputs: [
-          TransactionOutput(address: toAddress, value: amount),
-        ],
-        totalAmount: amount,
-        fee: 1200,
-        fromAddress: mockWallets.first.address,
-        toAddress: toAddress,
-      ),
-    );
-  }
-
-  @override
   Future<Either<Failure, String>> getDepositAddress() async {
     return Right(mockWallets.first.address);
   }
@@ -1244,26 +1274,6 @@ class MockTransactionRepository implements TransactionRepository {
       'binance': 'https://www.binance.com/storybook',
       'transfero': 'https://transfero.com/storybook',
     });
-  }
-
-  @override
-  Future<Deposit> confirmDeposit({
-    required String txid,
-    required String fromAddress,
-    required double amount,
-  }) async {
-    return Deposit(
-      id: 2,
-      userId: 1,
-      txid: txid,
-      fromAddress: fromAddress,
-      toAddress: mockWallets.first.address,
-      amountBtc: amount,
-      confirmations: 1,
-      status: 'credited',
-      createdAt: DateTime.now(),
-      confirmedAt: DateTime.now(),
-    );
   }
 
   @override
@@ -1309,14 +1319,6 @@ class MockTransactionRepository implements TransactionRepository {
   Future<List<PaymentLink>> getPaymentLinks() async => mockPaymentLinks;
 
   @override
-  Future<PaymentLink> cancelPaymentLink({
-    required String linkId,
-    String? reason,
-  }) async {
-    return mockPaymentLink(id: linkId, status: 'cancelled');
-  }
-
-  @override
   Future<WalletNetworkAddress> getWalletNetworkProfile({
     required String walletName,
   }) async {
@@ -1355,27 +1357,6 @@ class MockTransactionRepository implements TransactionRepository {
   }
 
   @override
-  Future<LightningInvoice> createLightningInvoice({
-    required String idempotencyKey,
-    required String walletName,
-    required double amount,
-    String? memo,
-    int expiresInSeconds = 900,
-  }) async {
-    return LightningInvoice(
-      transferId: 'storybook-lightning-transfer',
-      walletName: walletName,
-      paymentRequest: 'lnbc${(amount * 100000000).round()}n1storybook',
-      paymentHash: 'storybook-payment-hash',
-      lightningAddress: 'storybook@kerosene.local',
-      amountBtc: amount,
-      provider: 'Kerosene',
-      expiresAt: DateTime.now().add(Duration(seconds: expiresInSeconds)),
-      status: 'PENDING',
-    );
-  }
-
-  @override
   Future<List<ExternalTransfer>> getExternalTransfers() async {
     return mockExternalTransfers;
   }
@@ -1386,11 +1367,6 @@ class MockTransactionRepository implements TransactionRepository {
       (item) => item.id == transferId,
       orElse: () => mockExternalTransfers.first,
     );
-  }
-
-  @override
-  Future<ExternalTransfer> cancelInboundTransfer(String transferId) async {
-    return mockExternalTransfer(id: transferId, status: 'CANCELLED');
   }
 
   @override

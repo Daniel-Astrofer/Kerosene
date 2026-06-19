@@ -37,34 +37,22 @@ class _InternalTransferReviewScreen<T> extends StatefulWidget {
 class _InternalTransferReviewScreenState<T>
     extends State<_InternalTransferReviewScreen<T>> {
   bool _isSubmitting = false;
-  T? _result;
-
   Future<void> _confirm() async {
     if (_isSubmitting) return;
     setState(() => _isSubmitting = true);
     final result = await widget.onConfirm(context);
     if (!mounted) return;
-    setState(() {
-      _isSubmitting = false;
-      _result = result;
-    });
+    if (result != null) {
+      Navigator.of(context).pop(result);
+      return;
+    }
+
+    setState(() => _isSubmitting = false);
   }
 
   @override
   Widget build(BuildContext context) {
-    final result = _result;
-    if (result != null) {
-      return _InternalTransferSuccessView<T>(
-        result: result,
-        recipientLabel: widget.recipientLabel,
-        amountBtcLabel: widget.amountBtcLabel,
-        fiatAmountLabel: widget.fiatAmountLabel,
-        feeLabel: widget.feeLabel,
-        title: widget.successTitle,
-        message: widget.successMessage,
-      );
-    }
-
+    const protectedLabel = 'TRANSAÇÃO PROTEGIDA';
     return Scaffold(
       backgroundColor: _SendMoneyScreenState._internalBlack,
       body: SafeArea(
@@ -78,7 +66,7 @@ class _InternalTransferReviewScreenState<T>
                 child: IconButton(
                   onPressed:
                       _isSubmitting ? null : () => Navigator.of(context).pop(),
-                  icon: const Icon(LucideIcons.arrowLeft, size: 22),
+                  icon: const Icon(KeroseneIcons.back, size: 22),
                   style: IconButton.styleFrom(
                     foregroundColor: _SendMoneyScreenState._internalText,
                     backgroundColor: _SendMoneyScreenState._internalSurface,
@@ -103,7 +91,7 @@ class _InternalTransferReviewScreenState<T>
                         Text(
                           widget.title,
                           textAlign: TextAlign.center,
-                          style: GoogleFonts.ibmPlexSerif(
+                          style: AppTypography.newsreader(
                             color: _SendMoneyScreenState._internalText,
                             fontSize: 38,
                             fontWeight: FontWeight.w500,
@@ -115,7 +103,7 @@ class _InternalTransferReviewScreenState<T>
                         _InternalReviewRow(
                           label: 'Para',
                           value: widget.recipientLabel,
-                          trailingIcon: LucideIcons.chevronRight,
+                          trailingIcon: KeroseneIcons.chevronRight,
                         ),
                         if (widget.recipientAddress.trim().isNotEmpty &&
                             widget.recipientAddress.trim() !=
@@ -177,7 +165,7 @@ class _InternalTransferReviewScreenState<T>
                                 color: _SendMoneyScreenState._internalBlack,
                               ),
                             )
-                          : const Icon(LucideIcons.arrowRight, size: 20),
+                          : const Icon(KeroseneIcons.next, size: 20),
                       label: Text(
                         widget.confirmLabel,
                         style: const TextStyle(fontWeight: FontWeight.w700),
@@ -189,13 +177,13 @@ class _InternalTransferReviewScreenState<T>
                     mainAxisAlignment: MainAxisAlignment.center,
                     children: [
                       const Icon(
-                        LucideIcons.shieldCheck,
+                        KeroseneIcons.security,
                         color: _SendMoneyScreenState._internalMutedText,
                         size: 13,
                       ),
                       const SizedBox(width: 5),
                       Text(
-                        'TRANSAÇÃO PROTEGIDA',
+                        protectedLabel,
                         style: Theme.of(context).textTheme.labelSmall?.copyWith(
                               color: _SendMoneyScreenState._internalMutedText,
                               fontSize: 10,
@@ -238,7 +226,7 @@ class _InternalReviewRow extends StatelessWidget {
       padding: const EdgeInsets.symmetric(vertical: 24),
       decoration: const BoxDecoration(
         border: Border(
-          top: BorderSide(color: Color(0x14FFFFFF)),
+          top: BorderSide(color: KeroseneBrandTokens.borderSubtle),
         ),
       ),
       child: Row(
@@ -303,121 +291,6 @@ class _InternalReviewRow extends StatelessWidget {
             ),
           ),
         ],
-      ),
-    );
-  }
-}
-
-class _InternalTransferSuccessView<T> extends StatelessWidget {
-  final T result;
-  final String recipientLabel;
-  final String amountBtcLabel;
-  final String fiatAmountLabel;
-  final String feeLabel;
-  final String title;
-  final String message;
-
-  const _InternalTransferSuccessView({
-    required this.result,
-    required this.recipientLabel,
-    required this.amountBtcLabel,
-    required this.fiatAmountLabel,
-    required this.feeLabel,
-    required this.title,
-    required this.message,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Scaffold(
-      backgroundColor: _SendMoneyScreenState._internalBlack,
-      body: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 56, 24, 40),
-          child: Column(
-            children: [
-              const Spacer(),
-              Container(
-                width: 88,
-                height: 88,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _SendMoneyScreenState._internalSuccessGreen
-                      .withValues(alpha: 0.12),
-                  border: Border.all(
-                    color: _SendMoneyScreenState._internalSuccessGreen,
-                  ),
-                ),
-                child: const Icon(
-                  LucideIcons.check,
-                  color: _SendMoneyScreenState._internalSuccessGreen,
-                  size: 42,
-                ),
-              )
-                  .animate()
-                  .scale(
-                    begin: const Offset(0.72, 0.72),
-                    end: const Offset(1, 1),
-                    curve: Curves.easeOutBack,
-                    duration: 420.ms,
-                  )
-                  .fadeIn(duration: 240.ms),
-              const SizedBox(height: 28),
-              Text(
-                title,
-                textAlign: TextAlign.center,
-                style: GoogleFonts.ibmPlexSerif(
-                  color: _SendMoneyScreenState._internalText,
-                  fontSize: 38,
-                  fontWeight: FontWeight.w500,
-                  height: 1.08,
-                  letterSpacing: 0,
-                ),
-              ).animate().fadeIn(delay: 80.ms, duration: 280.ms),
-              const SizedBox(height: 10),
-              Text(
-                message,
-                textAlign: TextAlign.center,
-                style: Theme.of(context).textTheme.bodyMedium?.copyWith(
-                      color: _SendMoneyScreenState._internalMutedText,
-                      fontSize: 14,
-                      height: 1.45,
-                    ),
-              ),
-              const SizedBox(height: 44),
-              _InternalReviewRow(label: 'Para', value: recipientLabel),
-              _InternalReviewRow(
-                label: 'Valor',
-                value: amountBtcLabel,
-                helper: fiatAmountLabel,
-                valueLarge: true,
-              ),
-              _InternalReviewRow(label: 'Taxa', value: feeLabel),
-              const Spacer(),
-              SizedBox(
-                width: double.infinity,
-                height: 56,
-                child: FilledButton(
-                  onPressed: () => Navigator.of(context).pop(result),
-                  style: FilledButton.styleFrom(
-                    backgroundColor: _SendMoneyScreenState._internalText,
-                    foregroundColor: _SendMoneyScreenState._internalBlack,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(999),
-                    ),
-                  ),
-                  child: const Text(
-                    'Concluir',
-                    style: TextStyle(
-                      fontWeight: FontWeight.w800,
-                      letterSpacing: 0.5,
-                    ),
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
       ),
     );
   }

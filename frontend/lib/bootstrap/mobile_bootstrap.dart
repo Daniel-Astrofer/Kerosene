@@ -14,13 +14,13 @@ import '../core/providers/shared_preferences_provider.dart';
 import '../core/providers/appearance_provider.dart';
 import '../core/providers/locale_provider.dart';
 import '../core/providers/session_invalidation_provider.dart';
-import '../core/presentation/widgets/kerosene_logo_loading_view.dart';
 import '../core/responsive/kerosene_responsive.dart';
 import '../features/auth/presentation/screens/welcome_screen.dart';
 import '../features/auth/presentation/screens/emergency_recovery_screen.dart';
 import '../features/auth/presentation/screens/login_screen.dart';
 import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
+import '../features/home/presentation/screens/startup_connection_loading_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
 import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
@@ -155,13 +155,14 @@ class MyApp extends ConsumerWidget {
         builder: (context, ref, child) {
           final authState = ref.watch(authControllerProvider);
           if (authState is AuthInitial || authState is AuthLoading) {
-            return const KeroseneLogoLoadingView(
-              status: 'INICIALIZANDO',
-              detail: 'Verificando sessão segura',
-            );
+            return const StartupConnectionLoadingScreen();
           }
           if (authState is AuthAuthenticated) {
-            return const AppEntryPinGate(child: HomeLoadingScreen());
+            return const AppEntryPinGate(
+              child: StartupConnectionLoadingScreen(
+                childAfterWarmup: HomeLoadingScreen(),
+              ),
+            );
           }
           if (authState is AuthServerUnavailable) {
             return const ServerUnavailableScreen();
@@ -181,8 +182,11 @@ class MyApp extends ConsumerWidget {
                 builder: (_) => home.HomeScreen(),
               ),
             ),
-        '/home_loading': (context) =>
-            const _PrivateMobileRoute(child: HomeLoadingScreen()),
+        '/home_loading': (context) => const _PrivateMobileRoute(
+              child: StartupConnectionLoadingScreen(
+                childAfterWarmup: HomeLoadingScreen(),
+              ),
+            ),
         '/settings': (context) => _PrivateMobileRoute(
               child: DeferredPage(
                 loadLibrary: settings.loadLibrary,
@@ -210,16 +214,9 @@ class MyApp extends ConsumerWidget {
               ),
             ),
         '/receive': (context) => _PrivateMobileRoute(
-              child: _WalletFlowMobileRoute(
-                titleBuilder: (context) => context.tr.receive,
-                subtitleBuilder: (context) =>
-                    context.tr.walletSelectorReceiveSubtitle,
-                destinationBuilder: (wallet) => DeferredPage(
-                  loadLibrary: deposits.loadLibrary,
-                  builder: (_) => deposits.DepositsScreen(
-                    initialWallet: wallet,
-                  ),
-                ),
+              child: DeferredPage(
+                loadLibrary: deposits.loadLibrary,
+                builder: (_) => deposits.DepositsScreen(),
               ),
             ),
         '/send-money': (context) => _PrivateMobileRoute(

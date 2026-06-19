@@ -216,11 +216,16 @@ class AuthController extends Notifier<AuthState> {
     }
   }
 
-  Future<void> _checkAuthStatus() async {
+  Future<void> _checkAuthStatus({
+    bool forceRemote = false,
+    bool probeWhenUnauthenticated = false,
+  }) async {
     try {
       final isAuth = await authRepository.isAuthenticated();
       if (isAuth) {
-        final result = await authRepository.getCurrentUser();
+        final result = await authRepository.getCurrentUser(
+          forceRemote: forceRemote,
+        );
         result.fold(
           (failure) {
             if (failure is AuthFailure) {
@@ -237,6 +242,14 @@ class AuthController extends Notifier<AuthState> {
           },
         );
       } else {
+        if (probeWhenUnauthenticated) {
+          final result = await authRepository.checkServerAvailability();
+          result.fold(
+            (failure) => state = AuthServerUnavailable(failure.message),
+            (_) => state = const AuthUnauthenticated(),
+          );
+          return;
+        }
         state = const AuthUnauthenticated();
       }
     } catch (e) {
@@ -408,7 +421,10 @@ class AuthController extends Notifier<AuthState> {
 
   Future<void> retrySessionCheck() async {
     state = const AuthLoading();
-    await _checkAuthStatus();
+    await _checkAuthStatus(
+      forceRemote: true,
+      probeWhenUnauthenticated: true,
+    );
   }
 
   Future<void> loginWithPasskey(

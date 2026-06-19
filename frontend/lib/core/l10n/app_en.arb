@@ -95,6 +95,7 @@
   "retry": "Retry",
   "cancel": "Cancel",
   "goBack": "Go Back",
+  "goToHome": "Go to home",
   "done": "Done",
   "save": "Save",
   "continueButton": "CONTINUE",
@@ -146,6 +147,7 @@
   "passphrase": "Passphrase",
   "required": "Required",
   "settingsTitle": "Settings",
+  "settingsScreenSubtitle": "Manage your account, security, and devices",
   "currency": "Currency",
   "selectLanguage": "Select Language",
   "selectCurrency": "Select Currency",
@@ -501,6 +503,15 @@
       }
     }
   },
+  "passkeyVerificationUserNotFound": "User not found",
+  "passkeyVerificationNoLocal": "No local passkey on this device",
+  "passkeyVerificationCancelled": "Verification cancelled",
+  "passkeyVerificationChallengeExpired": "Time expired",
+  "passkeyVerificationRejected": "Passkey rejected",
+  "passkeyVerificationFailed": "Could not validate passkey",
+  "passkeyVerificationBodyPreparing": "Starting secure confirmation.",
+  "passkeyVerificationBodySending": "Waiting for approval from this device.",
+  "passkeyVerificationBodySuccess": "Credential accepted. Continuing automatically.",
   "passkeyLoadingInitBiom": "Initializing Biometrics...",
   "passkeyLoadingSecuring": "Securing Device...",
   "passkeyLoadingRegistering": "Activating device key...",
@@ -776,8 +787,8 @@
   "bitcoinAdvancedPsbtRejectedTitle": "PSBT rejected",
   "bitcoinAdvancedPsbtRejectedMessage": "The signature did not pass the security validations.",
   "bitcoinTaxReportsTitle": "Tax reports",
-  "bitcoinTaxEventsUnavailableTitle": "Events unavailable",
-  "bitcoinTaxEventsUnavailableMessage": "We could not load temporary events.",
+  "taxEventsUnavailableTitle": "Events unavailable",
+  "taxEventsUnavailableMessage": "We could not load temporary events.",
   "bitcoinTaxNoEventsTitle": "No temporary event.",
   "bitcoinTaxNoEventsMessage": "Recent deposits, sends, and fees will appear here temporarily.",
   "bitcoinTaxHiddenEvents": "+{count} hidden events.",
@@ -1132,51 +1143,6 @@
   "bitcoinReceiveRequestsEmptyMessage": "Generated Bitcoin receive requests will appear here.",
   "bitcoinReceiveRequestsFlexibleAmount": "Flexible amount",
   "bitcoinReceiveRequestsNoExpiry": "no expiry",
-  "paymentIntentScreenTitle": "Payment intent",
-  "paymentIntentScreenSubtitle": "Quote, confirmation, and status",
-  "paymentIntentRecipientHint": "username, email, or address",
-  "paymentIntentSearchAction": "Search",
-  "paymentIntentAmountFeeTitle": "Amount and fee",
-  "paymentIntentGenerateQuoteAction": "Generate quote",
-  "paymentIntentQuoteTitle": "Quote",
-  "paymentIntentMetricReceiver": "Receiver",
-  "paymentIntentMetricRoute": "Route",
-  "paymentIntentMetricReceives": "Receives",
-  "paymentIntentMetricNetworkFee": "Network fee",
-  "paymentIntentMetricKeroseneFee": "Kerosene fee",
-  "paymentIntentMetricTotalDebit": "Total debited",
-  "paymentIntentConfirmPaymentAction": "Confirm payment",
-  "paymentIntentStatusTitle": "Status",
-  "paymentIntentNotCompleted": "Payment not completed.",
-  "paymentIntentReviewTitle": "Review send",
-  "paymentIntentReviewDebitMessage": "{total} will be debited to {receiver}.",
-  "@paymentIntentReviewDebitMessage": {
-    "placeholders": {
-      "total": {},
-      "receiver": {}
-    }
-  },
-  "paymentIntentAuthorizeAction": "Authorize",
-  "paymentIntentValidationRecipientRequired": "Enter the recipient.",
-  "paymentIntentValidationAmountRequired": "Enter the amount.",
-  "paymentIntentRailInternal": "Kerosene",
-  "paymentIntentRailLightning": "Lightning",
-  "paymentIntentRailOnchain": "On-chain",
-  "paymentIntentFeeSenderPays": "Sender pays",
-  "paymentIntentFeeRecipientPays": "Recipient pays",
-  "paymentIntentSpeedEconomy": "Economy",
-  "paymentIntentSpeedNormal": "Normal",
-  "paymentIntentSpeedFast": "Fast",
-  "paymentIntentStatusCreated": "Created",
-  "paymentIntentStatusQuoted": "Quoted",
-  "paymentIntentStatusConfirmed": "Confirmed",
-  "paymentIntentStatusProcessing": "Processing",
-  "paymentIntentStatusAcceptedByProvider": "Accepted by provider",
-  "paymentIntentStatusRequiresReconciliation": "Requires reconciliation",
-  "paymentIntentStatusSettled": "Settled",
-  "paymentIntentStatusFailed": "Failed",
-  "paymentIntentStatusCanceled": "Canceled",
-  "paymentIntentStatusExpired": "Expired",
   "bitcoinReceiveStatusDetected": "Detected",
   "bitcoinReceiveStatusConfirming": "Confirming",
   "bitcoinReceiveStatusPaid": "Paid",
@@ -2632,6 +2598,50 @@
   "sendMoneyRequestExpired": "This payment request has expired.",
   "sendMoneyLockedDestination": "Protected destination",
   "sendMoneyPaymentRequestLoaded": "Payment request loaded.",
+  "authReasonTransactionConfirm": "Confirm on this device to authorize the transaction.",
+  "transactionAuthVaultTitle": "Vault confirmation",
+  "transactionAuthOperationTitle": "Operation confirmation",
+  "transactionAuthPassphraseLabel": "Passphrase",
+  "transactionAuthConfirmationPassphraseLabel": "Confirmation passphrase",
+  "transactionAuthEnterPassphrase": "Enter your passphrase to continue.",
+  "transactionAuthTotpCodeLabel": "TOTP code",
+  "transactionAuthEnterAuthenticatorDigits": "Enter the 6 digits from your authenticator.",
+  "transactionAuthContinue": "Continue",
+  "transactionAuthProfileSubtitleMultisigFull": "This policy uses passphrase, TOTP, and passkey to release critical operations.",
+  "transactionAuthProfileSubtitleMultisigStandard": "This policy uses passphrase and TOTP to release critical operations.",
+  "transactionAuthProfileSubtitlePasskeyOnly": "Final confirmation will be requested with your passkey.",
+  "transactionAuthProfileSubtitleDefault": "Confirm the required factors to complete this operation.",
+  "transactionAuthShamirRecoveryError": "Enter {threshold} full shares to reconstruct the passphrase.",
+  "@transactionAuthShamirRecoveryError": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShamirReconstructFailed": "The passphrase could not be reconstructed. Review the shares and try again.",
+  "transactionAuthShamirTitle": "Shamir authorization",
+  "transactionAuthShamirSubtitle": "Reconstruct the passphrase with {threshold} of {totalShares} shares before releasing the operation.",
+  "@transactionAuthShamirSubtitle": {
+    "placeholders": {
+      "threshold": {
+        "type": "int"
+      },
+      "totalShares": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthShareLabel": "Share {index}",
+  "@transactionAuthShareLabel": {
+    "placeholders": {
+      "index": {
+        "type": "int"
+      }
+    }
+  },
+  "transactionAuthReconstructAndContinue": "Reconstruct and continue",
+  "transactionAuthShareHint": "Paste the full share here",
   "walletConfigAddressCopiedMessage": "Wallet address copied successfully.",
   "walletConfigAddressCopiedTitle": "Address copied",
   "walletConfigExportNoticeMessage": "Private key export depends on device security verification.",
@@ -2890,6 +2900,22 @@
   "landingStatusRegion": "Region",
   "landingStatusBuild": "Build",
   "landingStatusManifest": "Manifest",
+  "landingNetworkStatusLabel": "NETWORK STATUS",
+  "landingNetworkOnlineDetail": "100% On-chain & Tor",
+  "landingNetworkFallbackDetail": "On-chain & Tor",
+  "landingApiAccessTitle": "API ACCESS",
+  "landingApiAccessBody": "Technical documentation is available through the developer portal on the Onion network.",
+  "landingStatusLine": "{label}: {status}",
+  "@landingStatusLine": {
+    "placeholders": {
+      "label": {
+        "type": "String"
+      },
+      "status": {
+        "type": "String"
+      }
+    }
+  },
   "homeFundsDistributionTitle": "Fund Distribution",
   "homeRecentActivitiesTitle": "Activities",
   "homeViewStatementShortLabel": "Statement",

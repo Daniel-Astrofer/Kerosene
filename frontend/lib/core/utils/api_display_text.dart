@@ -69,6 +69,7 @@ class ApiDisplayText {
       'WATCH_ONLY' || 'SELF_CUSTODY' => l10n.apiDisplayWatchedColdWallet,
       'KEROSENE_CUSTODIAL' ||
       'CUSTODIAL' ||
+      'CUSTODIAL_ONCHAIN' ||
       'INTERNAL_CARD' =>
         l10n.apiDisplayKeroseneCard,
       _ => l10n.apiDisplayBitcoinWallet,

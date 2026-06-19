@@ -1,7 +1,8 @@
 import 'dart:math';
 import 'dart:ui' as ui;
 import 'package:flutter/cupertino.dart';
-import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 class BitcoinRefreshIndicator extends StatefulWidget {
   final Future<void> Function() onRefresh;
@@ -26,17 +27,17 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
     super.initState();
     _spinnerController = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 1),
+      duration: KeroseneMotion.calm,
     );
 
     _checkController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 600),
+      duration: KeroseneMotion.slow,
     );
 
     _checkAnim = CurvedAnimation(
       parent: _checkController,
-      curve: Curves.elasticOut,
+      curve: KeroseneMotion.spring,
     );
   }
 
@@ -150,17 +151,17 @@ class BitcoinPainter extends CustomPainter {
         Offset(0, 0),
         Offset(size.width, size.height),
         [
-          const Color(0xFFFFD700), // Gold
-          const Color(0xFFE6AC00), // Darker Gold
-          const Color(0xFFFFE145), // Light Gold
-          const Color(0xFFC79200),
+          KeroseneBrandTokens.brand, // Gold
+          KeroseneBrandTokens.amberDeep, // Darker Gold
+          KeroseneBrandTokens.bitcoin, // Light Gold
+          KeroseneBrandTokens.warning,
         ],
         [0.0, 0.4, 0.6, 1.0],
       );
 
     // Shadow/Glow
     final Paint shadowPaint = Paint()
-      ..color = Colors.orangeAccent.withValues(alpha: 0.4)
+      ..color = KeroseneBrandTokens.bitcoin.withValues(alpha: 0.32)
       ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
 
     canvas.drawCircle(center, radius, shadowPaint);
@@ -172,8 +173,8 @@ class BitcoinPainter extends CustomPainter {
         Offset(0, 0),
         Offset(size.width * 0.5, size.height),
         [
-          Colors.white.withValues(alpha: 0.4),
-          Colors.white.withValues(alpha: 0.0),
+          KeroseneBrandTokens.textPrimary.withValues(alpha: 0.36),
+          KeroseneBrandTokens.textPrimary.withValues(alpha: 0.0),
         ],
       );
     canvas.drawCircle(center, radius * 0.9, shinePaint);
@@ -208,10 +209,12 @@ class BitcoinPainter extends CustomPainter {
         style: TextStyle(
           fontSize: radius * 1.4,
           fontWeight: FontWeight.bold,
-          color: Colors.white.withValues(alpha: opacity * 0.9),
+          color:
+              KeroseneBrandTokens.textPrimary.withValues(alpha: opacity * 0.9),
           shadows: [
             Shadow(
-              color: Colors.black.withValues(alpha: 0.2 * opacity),
+              color: KeroseneBrandTokens.textInverse
+                  .withValues(alpha: 0.2 * opacity),
               offset: const Offset(1, 1),
               blurRadius: 2,
             ),
@@ -259,14 +262,14 @@ class BitcoinPainter extends CustomPainter {
     // Vamos desenhar completo com scale (elasticOut do controller já dá o pop).
 
     final Paint checkPaint = Paint()
-      ..color = Colors.white
+      ..color = KeroseneBrandTokens.textPrimary
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
       ..shader = ui.Gradient.linear(
         Offset(0, 0),
         Offset(size.width, size.height),
-        [Colors.white, const Color(0xFFE0FFFF)],
+        [KeroseneBrandTokens.textPrimary, KeroseneBrandTokens.info],
       );
 
     // Scale transformation for pop effect

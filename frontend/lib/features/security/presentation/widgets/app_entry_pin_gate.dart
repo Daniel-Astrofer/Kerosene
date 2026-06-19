@@ -3,17 +3,18 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
-import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/presentation/widgets/kerosene_screen_background.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
-import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'pin_entry_scaffold.dart';
 
 class AppEntryPinGate extends ConsumerWidget {
   final Widget child;
@@ -51,7 +52,7 @@ class _PinGateLoadingState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const CyberBackground.authenticated(
+    return const KeroseneScreenBackground(
       useScroll: false,
       child: Center(
         child: TorLoadingDots(),
@@ -67,7 +68,7 @@ class _PinGateErrorState extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return CyberBackground.authenticated(
+    return KeroseneScreenBackground(
       useScroll: false,
       child: Center(
         child: Padding(
@@ -94,8 +95,8 @@ class _PinGateErrorState extends StatelessWidget {
                     ),
                     alignment: Alignment.center,
                     child: const Icon(
-                      LucideIcons.lock,
-                      color: monoTextColor,
+                      KeroseneIcons.lock,
+                      color: KeroseneBrandTokens.textPrimary,
                       size: 18,
                     ),
                   ),
@@ -143,34 +144,76 @@ class _AppEntryPinSetupScreen extends ConsumerStatefulWidget {
 
 class _AppEntryPinSetupScreenState
     extends ConsumerState<_AppEntryPinSetupScreen> {
-  final _pinController = TextEditingController();
-  final _confirmController = TextEditingController();
   bool _busy = false;
+  bool _confirming = false;
+  String _pin = '';
+  String _confirmation = '';
   String? _error;
 
-  @override
-  void dispose() {
-    _pinController.dispose();
-    _confirmController.dispose();
-    super.dispose();
+  int get _pinLength => widget.status.minPinLength.clamp(4, 8);
+
+  String get _currentInput => _confirming ? _confirmation : _pin;
+
+  set _currentInput(String value) {
+    if (_confirming) {
+      _confirmation = value;
+    } else {
+      _pin = value;
+    }
+  }
+
+  void _appendDigit(String digit) {
+    if (_busy || _currentInput.length >= _pinLength) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentInput = _currentInput + digit;
+      _error = null;
+    });
+    if (_currentInput.length == _pinLength) {
+      unawaited(_submit());
+    }
+  }
+
+  void _deleteDigit() {
+    if (_busy || _currentInput.isEmpty) {
+      return;
+    }
+    HapticFeedback.selectionClick();
+    setState(() {
+      _currentInput = _currentInput.substring(0, _currentInput.length - 1);
+      _error = null;
+    });
   }
 
   Future<void> _submit() async {
-    final pin = _pinController.text.trim();
-    final confirmation = _confirmController.text.trim();
-    if (pin.length < widget.status.minPinLength ||
-        pin.length > widget.status.maxPinLength) {
+    final input = _currentInput;
+    if (input.length != _pinLength) {
       setState(() {
         _error = context.tr.appEntryPinLengthError(
-          widget.status.minPinLength,
-          widget.status.maxPinLength,
+          _pinLength,
+          _pinLength,
         );
       });
       return;
     }
-    if (pin != confirmation) {
+
+    if (!_confirming) {
+      setState(() {
+        _confirming = true;
+        _confirmation = '';
+        _error = null;
+      });
+      return;
+    }
+
+    if (_pin != _confirmation) {
       setState(() {
         _error = context.tr.securityPinMismatchError;
+        _pin = '';
+        _confirmation = '';
+        _confirming = false;
       });
       return;
     }
@@ -182,7 +225,7 @@ class _AppEntryPinSetupScreenState
 
     final result = await ref.read(securityRepositoryProvider).configureAppPin(
           enabled: true,
-          pin: pin,
+          pin: _pin,
         );
 
     result.fold(
@@ -206,131 +249,19 @@ class _AppEntryPinSetupScreenState
     }
   }
 
-  Future<void> _logout() async {
-    await ref.read(authControllerProvider.notifier).logout();
-  }
-
   @override
   Widget build(BuildContext context) {
-    return CyberBackground.authenticated(
-      useScroll: false,
-      child: SafeArea(
-        child: Center(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(
-              parent: AlwaysScrollableScrollPhysics(),
-            ),
-            padding: const EdgeInsets.all(AppSpacing.lg),
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Container(
-                padding: const EdgeInsets.all(AppSpacing.lg),
-                decoration: monochromePanelDecoration(
-                  color: monoSurfaceColor,
-                  borderColor: monoBorderStrongColor,
-                ),
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.stretch,
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    Container(
-                      width: 44,
-                      height: 44,
-                      decoration: monochromePanelDecoration(
-                        color: monoSurfaceAltColor,
-                        borderColor: monoBorderStrongColor,
-                        showShadow: false,
-                      ),
-                      alignment: Alignment.center,
-                      child: const Icon(
-                        LucideIcons.keyRound,
-                        color: monoTextColor,
-                        size: 18,
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    Text(
-                      context.tr.securityPinEnableTitle,
-                      style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                            color: monoTextColor,
-                            fontWeight: FontWeight.w700,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    Text(
-                      context.tr.securityPinEnableBody,
-                      style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                            color: monoMutedTextColor,
-                            height: 1.45,
-                          ),
-                    ),
-                    const SizedBox(height: AppSpacing.lg),
-                    TextField(
-                      controller: _pinController,
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      maxLength: widget.status.maxPinLength,
-                      enabled: !_busy,
-                      style: const TextStyle(color: monoTextColor),
-                      decoration: monochromeInputDecoration(
-                        label: context.tr.appEntryNewPinLabel,
-                        counterText: '',
-                      ),
-                    ),
-                    const SizedBox(height: AppSpacing.md),
-                    TextField(
-                      controller: _confirmController,
-                      keyboardType: TextInputType.number,
-                      obscureText: true,
-                      maxLength: widget.status.maxPinLength,
-                      enabled: !_busy,
-                      style: const TextStyle(color: monoTextColor),
-                      decoration: monochromeInputDecoration(
-                        label: context.tr.securityConfirmNewPinLabel,
-                        counterText: '',
-                      ),
-                      onSubmitted: (_) => _busy ? null : _submit(),
-                    ),
-                    if (_error != null) ...[
-                      const SizedBox(height: AppSpacing.md),
-                      Text(
-                        _error!.toUpperCase(),
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: monoMutedTextColor,
-                              letterSpacing: 0.8,
-                              height: 1.35,
-                            ),
-                      ),
-                    ],
-                    const SizedBox(height: AppSpacing.lg),
-                    FilledButton(
-                      onPressed: _busy ? null : _submit,
-                      style: monochromeFilledButtonStyle(),
-                      child: _busy
-                          ? const SizedBox(
-                              height: 18,
-                              child: TorLoadingDots(
-                                dotSize: 6,
-                                spacing: 8,
-                                travel: 10,
-                                color: Colors.black,
-                              ),
-                            )
-                          : Text(context.tr.appEntrySavePin),
-                    ),
-                    const SizedBox(height: AppSpacing.sm),
-                    TextButton(
-                      onPressed: _busy ? null : _logout,
-                      style: monochromeTextButtonStyle(),
-                      child: Text(context.tr.appEntryExit),
-                    ),
-                  ],
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
+    return PinEntryScaffold(
+      instruction: _confirming
+          ? _appEntryPinConfirmInstruction(context)
+          : _appEntryPinCreateInstruction(context),
+      valueLength: _currentInput.length,
+      maxLength: _pinLength,
+      error: _error,
+      busy: _busy,
+      onDigit: _appendDigit,
+      onDelete: _deleteDigit,
+      onConfirm: _busy ? null : _submit,
     );
   }
 }
@@ -361,6 +292,8 @@ class _AppEntryPinLockScreenState
         orElse: () => widget.status,
       );
 
+  int get _pinTargetLength => _status.minPinLength.clamp(4, 8);
+
   @override
   void initState() {
     super.initState();
@@ -380,12 +313,15 @@ class _AppEntryPinLockScreenState
   }
 
   void _appendDigit(String digit) {
-    if (_busy || _pin.length >= _status.maxPinLength) {
+    if (_busy || _pin.length >= _pinTargetLength) {
       return;
     }
     HapticFeedback.selectionClick();
     _pin += digit;
     _errorMessage = null;
+    if (_pin.length == _pinTargetLength) {
+      unawaited(_submit());
+    }
   }
 
   void _deleteDigit() {
@@ -401,11 +337,10 @@ class _AppEntryPinLockScreenState
     if (_busy || _status.locked) {
       return;
     }
-    if (_pin.length < _status.minPinLength ||
-        _pin.length > _status.maxPinLength) {
+    if (_pin.length != _pinTargetLength) {
       _errorMessage = context.tr.appEntryPinLengthError(
-        _status.minPinLength,
-        _status.maxPinLength,
+        _pinTargetLength,
+        _pinTargetLength,
       );
       return;
     }
@@ -437,225 +372,28 @@ class _AppEntryPinLockScreenState
     }
   }
 
-  Future<void> _resetWithTotp() async {
-    final result = await showModalBottomSheet<bool>(
-      context: context,
-      isScrollControlled: true,
-      backgroundColor: Colors.transparent,
-      builder: (context) => const _TotpResetSheet(),
-    );
-
-    if (result == true && mounted) {
-      ref.read(appEntryPinUnlockedProvider.notifier).unlock();
-      ref.invalidate(appPinStatusProvider);
-    }
-  }
-
-  Future<void> _logout() async {
-    await ref.read(authControllerProvider.notifier).logout();
-  }
-
   @override
   Widget build(BuildContext context) {
     final remaining = _status.remainingLockDuration;
-    final subtitle = _status.locked
+    final instruction = _status.locked
         ? context.tr.appEntryRetryIn(_formatDuration(remaining))
-        : context.tr.appEntryUnlockPrompt;
-    final helper = _status.locked
-        ? context.tr.appEntryLockedHelper
-        : _status.resettableWithTotp
-            ? context.tr.appEntryAttemptsHelper(
-                _status.remainingAttempts,
-              )
-            : context.tr.appEntryLocalPinHelper;
+        : _appEntryPinUnlockInstruction(context);
 
-    return CyberBackground.authenticated(
-      useScroll: false,
-      child: SafeArea(
-        child: Padding(
-          padding: const EdgeInsets.fromLTRB(
-            AppSpacing.lg,
-            AppSpacing.md,
-            AppSpacing.lg,
-            AppSpacing.lg,
-          ),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 420),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  const SizedBox(height: AppSpacing.md),
-                  Row(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Container(
-                        width: 44,
-                        height: 44,
-                        decoration: monochromePanelDecoration(
-                          color: monoSurfaceAltColor,
-                          borderColor: monoBorderStrongColor,
-                          showShadow: false,
-                        ),
-                        alignment: Alignment.center,
-                        child: const Icon(
-                          LucideIcons.lock,
-                          color: monoTextColor,
-                          size: 18,
-                        ),
-                      ),
-                      const SizedBox(width: AppSpacing.md),
-                      Expanded(
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              context.tr.appEntryEyebrow.toUpperCase(),
-                              style: AppTypography.caption.copyWith(
-                                color: monoMutedTextColor,
-                                letterSpacing: 1.8,
-                                fontWeight: FontWeight.w700,
-                              ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              subtitle,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .titleMedium
-                                  ?.copyWith(
-                                    color: monoTextColor,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1.1,
-                                  ),
-                            ),
-                            const SizedBox(height: 6),
-                            Text(
-                              helper,
-                              style: Theme.of(context)
-                                  .textTheme
-                                  .bodySmall
-                                  ?.copyWith(
-                                    color: monoMutedTextColor,
-                                    height: 1.4,
-                                  ),
-                            ),
-                          ],
-                        ),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  ListenableBuilder(
-                    listenable:
-                        Listenable.merge([_pinNotifier, _errorNotifier]),
-                    builder: (context, _) {
-                      return Container(
-                        padding: const EdgeInsets.all(AppSpacing.lg),
-                        decoration: monochromePanelDecoration(
-                          color: monoSurfaceColor,
-                          borderColor: monoBorderStrongColor,
-                        ),
-                        child: Column(
-                          crossAxisAlignment: CrossAxisAlignment.stretch,
-                          children: [
-                            _PinDots(
-                              length: _pin.length,
-                              maxLength: _status.maxPinLength,
-                            ),
-                            const SizedBox(height: AppSpacing.md),
-                            SizedBox(
-                              height: 36,
-                              child: AnimatedSwitcher(
-                                duration: const Duration(milliseconds: 180),
-                                child: _errorMessage == null
-                                    ? const SizedBox.shrink()
-                                    : Text(
-                                        _errorMessage!.toUpperCase(),
-                                        key: ValueKey(_errorMessage),
-                                        textAlign: TextAlign.center,
-                                        style: Theme.of(context)
-                                            .textTheme
-                                            .labelSmall
-                                            ?.copyWith(
-                                              color: monoMutedTextColor,
-                                              letterSpacing: 0.8,
-                                              height: 1.35,
-                                            ),
-                                      ),
-                              ),
-                            ),
-                          ],
-                        ),
-                      );
-                    },
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  Container(
-                    padding: const EdgeInsets.all(AppSpacing.md),
-                    decoration: monochromePanelDecoration(
-                      color: monoSurfaceColor,
-                      borderColor: monoBorderColor,
-                    ),
-                    child: _NumericPad(
-                      enabled: !_busy && !_status.locked,
-                      onDigit: _appendDigit,
-                      onDelete: _deleteDigit,
-                      onClear: () => setState(() {
-                        _pin = '';
-                        _errorMessage = null;
-                      }),
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.md),
-                  FilledButton(
-                    onPressed: _busy || _status.locked ? null : _submit,
-                    style: monochromeFilledButtonStyle(),
-                    child: _busy
-                        ? const SizedBox(
-                            height: 18,
-                            child: TorLoadingDots(
-                              dotSize: 6,
-                              spacing: 8,
-                              travel: 10,
-                              color: Colors.black,
-                            ),
-                          )
-                        : Text(context.tr.appEntryConfirm),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Row(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    children: [
-                      if (_status.resettableWithTotp)
-                        TextButton(
-                          onPressed: _busy ? null : _resetWithTotp,
-                          style: monochromeTextButtonStyle(),
-                          child: Text(context.tr.appEntryReset),
-                        ),
-                      if (_status.resettableWithTotp)
-                        Padding(
-                          padding: const EdgeInsets.symmetric(horizontal: 4),
-                          child: Text(
-                            '•',
-                            style: AppTypography.caption.copyWith(
-                              color: monoFaintTextColor,
-                            ),
-                          ),
-                        ),
-                      TextButton(
-                        onPressed: _busy ? null : _logout,
-                        style: monochromeTextButtonStyle(),
-                        child: Text(context.tr.appEntryExit),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
+    return ListenableBuilder(
+      listenable: Listenable.merge([_pinNotifier, _errorNotifier]),
+      builder: (context, _) {
+        return PinEntryScaffold(
+          instruction: instruction,
+          valueLength: _pin.length,
+          maxLength: _pinTargetLength,
+          error: _errorMessage,
+          busy: _busy,
+          enabled: !_status.locked,
+          onDigit: _appendDigit,
+          onDelete: _deleteDigit,
+          onConfirm: _busy || _status.locked ? null : _submit,
+        );
+      },
     );
   }
 
@@ -664,6 +402,30 @@ class _AppEntryPinLockScreenState
     final seconds = duration.inSeconds.remainder(60);
     return '${minutes.toString().padLeft(2, '0')}:${seconds.toString().padLeft(2, '0')}';
   }
+}
+
+String _appEntryPinCreateInstruction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Create a PIN to access your account',
+    'es' => 'Crea un PIN para acceder a tu cuenta',
+    _ => 'Crie um PIN para acessar a conta',
+  };
+}
+
+String _appEntryPinConfirmInstruction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Confirm the PIN',
+    'es' => 'Confirma el PIN',
+    _ => 'Confirme o PIN',
+  };
+}
+
+String _appEntryPinUnlockInstruction(BuildContext context) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => 'Enter your PIN to access your account',
+    'es' => 'Ingresa el PIN para acceder a tu cuenta',
+    _ => 'Digite o PIN para acessar sua conta',
+  };
 }
 
 class _TotpResetSheet extends ConsumerStatefulWidget {
@@ -807,135 +569,6 @@ class _TotpResetSheetState extends ConsumerState<_TotpResetSheet> {
           ],
         ),
       ),
-    );
-  }
-}
-
-class _PinDots extends StatelessWidget {
-  final int length;
-  final int maxLength;
-
-  const _PinDots({
-    required this.length,
-    required this.maxLength,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final total = maxLength.clamp(4, 8);
-
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (index) {
-        final filled = index < length;
-        return Container(
-          margin: const EdgeInsets.symmetric(horizontal: 6),
-          width: 18,
-          height: 18,
-          decoration: BoxDecoration(
-            color: filled ? monoTextColor : monoSurfaceAltColor,
-            border: Border.all(
-              color: filled ? monoTextColor : monoBorderStrongColor,
-            ),
-          ),
-        );
-      }),
-    );
-  }
-}
-
-class _NumericPad extends StatelessWidget {
-  final bool enabled;
-  final ValueChanged<String> onDigit;
-  final VoidCallback onDelete;
-  final VoidCallback onClear;
-
-  const _NumericPad({
-    required this.enabled,
-    required this.onDigit,
-    required this.onDelete,
-    required this.onClear,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final rows = const [
-      ['1', '2', '3'],
-      ['4', '5', '6'],
-      ['7', '8', '9'],
-      ['C', '0', '←'],
-    ];
-
-    return Column(
-      children: rows.map((row) {
-        return Padding(
-          padding: const EdgeInsets.only(bottom: AppSpacing.sm),
-          child: Row(
-            children: row.map((key) {
-              final isSpecial = key == '←' || key == 'C';
-              return Expanded(
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(horizontal: 4),
-                  child: Material(
-                    color: Colors.transparent,
-                    child: InkWell(
-                      onTap: !enabled
-                          ? null
-                          : () {
-                              if (key == '←') {
-                                onDelete();
-                                return;
-                              }
-                              if (key == 'C') {
-                                onClear();
-                                return;
-                              }
-                              onDigit(key);
-                            },
-                      child: Ink(
-                        height: 62,
-                        decoration: monochromePanelDecoration(
-                          color:
-                              enabled ? monoSurfaceAltColor : monoSurfaceColor,
-                          borderColor:
-                              enabled ? monoBorderStrongColor : monoBorderColor,
-                          showShadow: false,
-                        ),
-                        child: Center(
-                          child: isSpecial
-                              ? Icon(
-                                  key == '←'
-                                      ? LucideIcons.delete
-                                      : LucideIcons.rotateCcw,
-                                  size: 18,
-                                  color: enabled
-                                      ? monoMutedTextColor
-                                      : monoFaintTextColor,
-                                )
-                              : Text(
-                                  key,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontFamily: 'IBMPlexSansHebrew',
-                                        color: enabled
-                                            ? monoTextColor
-                                            : monoFaintTextColor,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: 24,
-                                      ),
-                                ),
-                        ),
-                      ),
-                    ),
-                  ),
-                ),
-              );
-            }).toList(),
-          ),
-        );
-      }).toList(),
     );
   }
 }

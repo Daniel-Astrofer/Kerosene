@@ -3,8 +3,10 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../providers/admin_providers.dart';
 import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
+import '../../theme/admin_copy.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Executive dashboard for operational and integrity posture.
 ///
@@ -44,7 +46,7 @@ class DashboardScreen extends ConsumerWidget {
                 _AsyncMetric(
                   title: 'BTC/USD',
                   asyncValue: btcPrice,
-                  icon: Icons.currency_bitcoin,
+                  icon: KeroseneIcons.bitcoin,
                   valueBuilder: (data) {
                     final usd = data['btcUsd'] ?? 0;
                     return '\$${_fmtPrice(usd)}';
@@ -56,21 +58,21 @@ class DashboardScreen extends ConsumerWidget {
                   label: 'Aggregate Volume',
                   value: '${kpis.totalVolumeBtc.toStringAsFixed(8)} BTC',
                   subtitle: '${kpis.totalTransactions} operational events',
-                  icon: Icons.bar_chart,
+                  icon: KeroseneIcons.chart,
                 ),
                 AdminMetricCard(
                   label: 'On-chain Ops',
                   value: '${kpis.onchainCount}',
                   subtitle:
                       '${kpis.onchainVolumeBtc.toStringAsFixed(6)} BTC aggregate',
-                  icon: Icons.link,
+                  icon: KeroseneIcons.onchain,
                 ),
                 AdminMetricCard(
                   label: 'Lightning Ops',
                   value: '${kpis.lightningCount}',
                   subtitle:
                       '${kpis.lightningVolumeBtc.toStringAsFixed(6)} BTC aggregate',
-                  icon: Icons.flash_on_outlined,
+                  icon: KeroseneIcons.lightning,
                 ),
               ],
             ),
@@ -82,14 +84,14 @@ class DashboardScreen extends ConsumerWidget {
                   value: '${kpis.linksCreated}',
                   subtitle:
                       '${kpis.linksPaid} paid | ${kpis.linksPending} pending',
-                  icon: Icons.qr_code_2_outlined,
+                  icon: KeroseneIcons.qr,
                 ),
                 AdminMetricCard(
                   label: 'Success Rate',
                   value: '${(kpis.successRate * 100).toStringAsFixed(1)}%',
                   subtitle:
                       '${kpis.confirmedTransactions} confirmed | ${kpis.failedTransactions} failed',
-                  icon: Icons.check_circle_outline,
+                  icon: KeroseneIcons.success,
                   accentColor: kpis.successRate > 0.95
                       ? AdminColors.positive
                       : AdminColors.warning,
@@ -99,14 +101,14 @@ class DashboardScreen extends ConsumerWidget {
                   value: '${kpis.totalFeesBtc.toStringAsFixed(8)} BTC',
                   subtitle:
                       'on-chain ${kpis.onchainFeesBtc.toStringAsFixed(6)} | lightning ${kpis.lightningFeesBtc.toStringAsFixed(6)}',
-                  icon: Icons.payments_outlined,
+                  icon: KeroseneIcons.payments,
                   accentColor: AdminColors.warning,
                 ),
                 AdminMetricCard(
                   label: 'Readable Retention',
                   value: '<= 24h',
                   subtitle: 'durable history lives on mobile',
-                  icon: Icons.timer_outlined,
+                  icon: KeroseneIcons.schedule,
                   accentColor: AdminColors.info,
                 ),
               ],
@@ -157,7 +159,7 @@ class _OperationsCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Operations',
-      icon: Icons.monitor_heart_outlined,
+      icon: KeroseneIcons.monitor,
       child: overview.when(
         data: (data) {
           final health = _map(data['health']);
@@ -179,7 +181,7 @@ class _OperationsCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load operations: $error',
+          AdminCopy.loadFailure('operações'),
           style: AdminTypography.caption,
         ),
       ),
@@ -196,7 +198,7 @@ class _IntegrityCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Integrity',
-      icon: Icons.fingerprint,
+      icon: KeroseneIcons.biometric,
       child: latestRoot.when(
         data: (root) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -206,7 +208,7 @@ class _IntegrityCard extends StatelessWidget {
             _InfoRow('Created', '${root['createdAt'] ?? 'unknown'}'),
             const SizedBox(height: AdminTheme.spacingMd),
             Text(
-              'Hash sequential audit, not readable financial history.',
+              AdminCopy.hashAuditSummary,
               style: AdminTypography.bodySmall.copyWith(
                 color: AdminColors.textSecondary,
                 height: 1.45,
@@ -218,7 +220,7 @@ class _IntegrityCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load integrity root: $error',
+          AdminCopy.loadFailure('a raiz de integridade'),
           style: AdminTypography.caption,
         ),
       ),
@@ -235,7 +237,7 @@ class _ReleaseCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _Panel(
       title: 'Release',
-      icon: Icons.verified_user_outlined,
+      icon: KeroseneIcons.security,
       child: release.when(
         data: (data) => Column(
           crossAxisAlignment: CrossAxisAlignment.start,
@@ -250,7 +252,7 @@ class _ReleaseCard extends StatelessWidget {
           color: AdminColors.textTertiary,
         ),
         error: (error, _) => Text(
-          'Failed to load release: $error',
+          AdminCopy.loadFailure('a versão atual'),
           style: AdminTypography.caption,
         ),
       ),

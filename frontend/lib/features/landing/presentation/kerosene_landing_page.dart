@@ -4,24 +4,34 @@ import 'dart:math' as math;
 import 'dart:ui';
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_logo.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/landing/data/public_site_service.dart';
-import 'package:kerosene/core/l10n/l10n_extension.dart';
 
-const _ink = Color(0xFF000000);
-const _surface = Color(0xFF131313);
-const _panel = Color(0x99101010);
-const _panelSoft = Color(0xFF201F1F);
-const _line = Color(0xFF353534);
-const _muted = Color(0xFFD5C4AB);
-const _faint = Color(0xFF9E8F78);
-const _gold = Color(0xFFFFB800);
-const _goldSoft = Color(0xFFFFDCA1);
-const _green = Color(0xFF00E274);
+const _ink = AppColors.hexFF000000;
+const _surface = AppColors.hexFF131313;
+const _panel = AppColors.hex99101010;
+const _panelSoft = AppColors.hexFF201F1F;
+const _line = AppColors.hexFF353534;
+const _muted = AppColors.hexFFD5C4AB;
+const _faint = AppColors.hexFF9E8F78;
+const _gold = AppColors.hexFFFFB800;
+const _goldSoft = AppColors.hexFFFFDCA1;
+const _green = AppColors.hexFF00E274;
 const _contentMaxWidth = 1280.0;
+const _heroBodyText =
+    'A Kerosene torna o Bitcoin mais seguro e útil para indivíduos e empresas, com privacidade absoluta, transparência operacional e controle real dos seus ativos sob a rede Tor.';
+const _statusCtaBodyText =
+    'A Kerosene é a infraestrutura financeira definitiva para quem exige privacidade absoluta sobre seu capital Bitcoin.';
+const _liquidityCardBodyText =
+    'Pagamentos instantâneos com taxas próximas de zero. Integrado nativamente para fluxos de caixa empresariais e transferências pessoais globais.';
+const _heroLeadText = 'Seu banco Bitcoin.\n';
+const _securityLeadText = 'Mais controle. Menos exposição.\n';
 
 class KeroseneLandingPage extends ConsumerStatefulWidget {
   final bool focusDownload;
@@ -140,8 +150,8 @@ class _KeroseneLandingPageState extends ConsumerState<KeroseneLandingPage> {
     }
     Scrollable.ensureVisible(
       targetContext,
-      duration: const Duration(milliseconds: 520),
-      curve: Curves.easeOutCubic,
+      duration: KeroseneMotion.slow,
+      curve: KeroseneMotion.standard,
       alignment: 0.04,
     );
   }
@@ -315,7 +325,7 @@ class _HeroSection extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _EyebrowPill(
-                icon: LucideIcons.shieldCheck,
+                icon: KeroseneIcons.security,
                 label: 'BITCOIN INFRAESTRUTURA PRIVADA',
               ),
               const SizedBox(height: 26),
@@ -323,7 +333,7 @@ class _HeroSection extends StatelessWidget {
                 text: TextSpan(
                   style: _displayStyle(context, compact ? 48 : 72),
                   children: const [
-                    TextSpan(text: 'Seu banco Bitcoin.\n'),
+                    TextSpan(text: _heroLeadText),
                     TextSpan(
                       text: 'Privado. Anônimo. Global.',
                       style: TextStyle(
@@ -339,7 +349,7 @@ class _HeroSection extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 660),
                 child: Text(
-                  'A Kerosene torna o Bitcoin mais seguro e útil para indivíduos e empresas, com privacidade absoluta, transparência operacional e controle real dos seus ativos sob a rede Tor.',
+                  _heroBodyText,
                   style: _bodyStyle(compact ? 18 : 19),
                 ),
               ),
@@ -440,7 +450,7 @@ class _AudienceSection extends StatelessWidget {
   Widget build(BuildContext context) {
     return DecoratedBox(
       decoration: BoxDecoration(
-        color: const Color(0xFF0E0E0E),
+        color: AppColors.hexFF0E0E0E,
         border: Border.symmetric(
           horizontal: BorderSide(color: Colors.white.withValues(alpha: 0.05)),
         ),
@@ -477,7 +487,7 @@ class _AudienceSection extends StatelessWidget {
                     'Monitoramento em tempo real de fluxos e reservas.'),
               ],
               visual: const _ApiAccessCard(),
-              icon: LucideIcons.badgeCheck,
+              icon: KeroseneIcons.settlement,
             );
 
             if (compact) {
@@ -509,20 +519,16 @@ class _ArchitectureSection extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    const architectureTitle = 'Arquitetura de Segurança';
+    const architectureBody = 'Tecnologia de ponta para cenários sensíveis.';
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Text(
-          'Arquitetura de Segurança',
-          style: _sectionTitleStyle(context, 38),
-        ),
+        Text(architectureTitle, style: _sectionTitleStyle(context, 38)),
         const SizedBox(height: 10),
         ConstrainedBox(
           constraints: const BoxConstraints(maxWidth: 760),
-          child: Text(
-            'Tecnologia de ponta para cenários sensíveis.',
-            style: _bodyStyle(17),
-          ),
+          child: Text(architectureBody, style: _bodyStyle(17)),
         ),
         const SizedBox(height: 34),
         _ArchitectureRail(items: _architectureCards(context)),
@@ -575,7 +581,7 @@ class _FinalCta extends StatelessWidget {
                 text: TextSpan(
                   style: _displayStyle(context, compact ? 38 : 58),
                   children: const [
-                    TextSpan(text: 'Mais controle. Menos exposição.\n'),
+                    TextSpan(text: _securityLeadText),
                     TextSpan(
                       text: 'Mais previsibilidade.',
                       style: TextStyle(color: _gold),
@@ -587,7 +593,7 @@ class _FinalCta extends StatelessWidget {
               ConstrainedBox(
                 constraints: const BoxConstraints(maxWidth: 720),
                 child: Text(
-                  'A Kerosene é a infraestrutura financeira definitiva para quem exige privacidade absoluta sobre seu capital Bitcoin.',
+                  _statusCtaBodyText,
                   textAlign: TextAlign.center,
                   style: _bodyStyle(18),
                 ),
@@ -714,35 +720,35 @@ class _StatusDetails extends StatelessWidget {
             minCardWidth: 300,
             items: [
               _LandingCardData(
-                icon: LucideIcons.activity,
+                icon: KeroseneIcons.activity,
                 title: context.tr.landingFooterStatus,
                 body: _statusLabel(context, readiness),
               ),
               _LandingCardData(
-                icon: LucideIcons.badgeCheck,
+                icon: KeroseneIcons.settlement,
                 title: context.tr.landingStatusRelease,
                 body:
                     '${release?['version'] ?? context.tr.landingStatusUnknown} - ${authorized ? context.tr.landingStatusAuthorized : release?['reason'] ?? context.tr.pending}',
               ),
               _LandingCardData(
-                icon: LucideIcons.server,
+                icon: KeroseneIcons.server,
                 title: context.tr.landingStatusService,
                 body: '${readiness?['service'] ?? context.tr.appTitle}',
               ),
               _LandingCardData(
-                icon: LucideIcons.globe2,
+                icon: KeroseneIcons.globe,
                 title: context.tr.landingStatusRegion,
                 body:
                     '${readiness?['region'] ?? context.tr.landingStatusUnknown}',
               ),
               _LandingCardData(
-                icon: LucideIcons.fingerprint,
+                icon: KeroseneIcons.biometric,
                 title: context.tr.landingStatusBuild,
                 body: _short(
                     release?['gitCommit'], context.tr.landingStatusUnknown),
               ),
               _LandingCardData(
-                icon: LucideIcons.fileCheck2,
+                icon: KeroseneIcons.fileVerified,
                 title: context.tr.landingStatusManifest,
                 body: _short(release?['manifestDigest'],
                     context.tr.landingStatusUnknown),
@@ -809,7 +815,7 @@ class _EyebrowPill extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
       decoration: BoxDecoration(
-        color: const Color(0xFF2A2A2A),
+        color: AppColors.hexFF2A2A2A,
         borderRadius: BorderRadius.circular(999),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
@@ -830,7 +836,11 @@ class _AvatarStack extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    const colors = [Color(0xFF353534), Color(0xFF2A2A2A), Color(0xFF1C1B1B)];
+    const colors = [
+      AppColors.hexFF353534,
+      AppColors.hexFF2A2A2A,
+      AppColors.hexFF1C1B1B
+    ];
     return SizedBox(
       width: 70,
       height: 32,
@@ -894,7 +904,7 @@ class _HeroVaultStage extends StatelessWidget {
                     gradient: const LinearGradient(
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
-                      colors: [Color(0xFF242424), Color(0xFF050505)],
+                      colors: [AppColors.hexFF242424, AppColors.hexFF050505],
                     ),
                   ),
                   child: CustomPaint(painter: const _VaultPainter()),
@@ -914,18 +924,21 @@ class _HeroVaultStage extends StatelessWidget {
                         crossAxisAlignment: CrossAxisAlignment.start,
                         mainAxisSize: MainAxisSize.min,
                         children: [
-                          Text('STATUS DA REDE', style: _monoStyle(_gold)),
+                          Text(
+                            context.tr.landingNetworkStatusLabel,
+                            style: _monoStyle(_gold),
+                          ),
                           const SizedBox(height: 6),
                           Text(
                             statusLabel == context.tr.landingStatusOnline
-                                ? '100% On-chain & Tor'
-                                : 'On-chain & Tor',
+                                ? context.tr.landingNetworkOnlineDetail
+                                : context.tr.landingNetworkFallbackDetail,
                             style: _cardTitleStyle(20),
                           ),
                         ],
                       ),
                     ),
-                    const Icon(LucideIcons.network, color: _gold, size: 38),
+                    const Icon(KeroseneIcons.network, color: _gold, size: 38),
                   ],
                 ),
               ),
@@ -984,7 +997,7 @@ class _PhoneMockup extends StatelessWidget {
       width: 390,
       padding: const EdgeInsets.all(10),
       decoration: BoxDecoration(
-        color: const Color(0xFF030405),
+        color: AppColors.hexFF030405,
         borderRadius: BorderRadius.circular(66),
         border:
             Border.all(color: Colors.white.withValues(alpha: 0.28), width: 2),
@@ -1157,7 +1170,7 @@ class _AudienceColumn extends StatelessWidget {
     required this.subtitle,
     required this.items,
     required this.visual,
-    this.icon = LucideIcons.checkCircle,
+    this.icon = KeroseneIcons.success,
   });
 
   @override
@@ -1214,7 +1227,7 @@ class _PhoneImagePanel extends StatelessWidget {
           gradient: const LinearGradient(
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
-            colors: [Color(0xFF191919), Color(0xFF050505)],
+            colors: [AppColors.hexFF191919, AppColors.hexFF050505],
           ),
         ),
         child: Stack(
@@ -1258,10 +1271,10 @@ class _ApiAccessCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Text('API ACCESS', style: _monoStyle(_gold)),
+          Text(context.tr.landingApiAccessTitle, style: _monoStyle(_gold)),
           const SizedBox(height: 16),
           Text(
-            'Documentação técnica disponível via portal de desenvolvedores em rede Onion.',
+            context.tr.landingApiAccessBody,
             style: _bodyStyle(16).copyWith(color: Colors.white),
           ),
           const SizedBox(height: 22),
@@ -1270,7 +1283,7 @@ class _ApiAccessCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: 0.67,
               minHeight: 8,
-              backgroundColor: const Color(0xFF353534),
+              backgroundColor: AppColors.hexFF353534,
               valueColor: const AlwaysStoppedAnimation<Color>(_gold),
             ),
           ),
@@ -1312,7 +1325,7 @@ class _AudienceCard extends StatelessWidget {
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        const Icon(LucideIcons.check,
+                        const Icon(KeroseneIcons.check,
                             size: 16, color: Colors.white),
                         const SizedBox(width: 12),
                         Expanded(child: Text(bullet, style: _bodyStyle(15))),
@@ -1477,11 +1490,11 @@ class _SquareIcon extends StatelessWidget {
       width: 50,
       height: 50,
       decoration: BoxDecoration(
-        color: active ? _gold : const Color(0xFF353534),
+        color: active ? _gold : AppColors.hexFF353534,
         borderRadius: BorderRadius.circular(8),
         border: Border.all(color: Colors.white.withValues(alpha: 0.05)),
       ),
-      child: Icon(icon, color: active ? const Color(0xFF131313) : Colors.white),
+      child: Icon(icon, color: active ? AppColors.hexFF131313 : Colors.white),
     );
   }
 }
@@ -1509,13 +1522,13 @@ class _LandingButtonState extends State<_LandingButton> {
   @override
   Widget build(BuildContext context) {
     final background = widget.filled ? _gold : Colors.transparent;
-    final foreground = widget.filled ? const Color(0xFF6B4C00) : Colors.white;
+    final foreground = widget.filled ? AppColors.hexFF6B4C00 : Colors.white;
     return MouseRegion(
       onEnter: (_) => setState(() => _hover = true),
       onExit: (_) => setState(() => _hover = false),
       child: AnimatedScale(
-        duration: const Duration(milliseconds: 140),
-        curve: Curves.easeOutCubic,
+        duration: KeroseneMotion.fast,
+        curve: KeroseneMotion.standard,
         scale: _hover && !_reduceMotion(context) ? 1.018 : 1,
         child: TextButton(
           onPressed: widget.onPressed,
@@ -1673,7 +1686,10 @@ class _CheckPill extends StatelessWidget {
         border: Border.all(color: ok ? _green.withValues(alpha: 0.5) : _gold),
         borderRadius: BorderRadius.circular(999),
       ),
-      child: Text('$label: $status', style: _smallStyle(ok ? _green : _gold)),
+      child: Text(
+        context.tr.landingStatusLine(label, status),
+        style: _smallStyle(ok ? _green : _gold),
+      ),
     );
   }
 }
@@ -1687,7 +1703,7 @@ class _SkeletonBlock extends StatelessWidget {
   Widget build(BuildContext context) {
     return TweenAnimationBuilder<double>(
       tween: Tween(begin: 0.22, end: _reduceMotion(context) ? 0.22 : 0.72),
-      duration: const Duration(milliseconds: 900),
+      duration: KeroseneMotion.calm,
       builder: (context, value, _) {
         return Container(
           height: height,
@@ -1715,7 +1731,7 @@ class _LandingBackdropPainter extends CustomPainter {
         center: const Alignment(0.42, -0.78),
         radius: 0.88,
         colors: [
-          const Color(0xFF283849).withValues(alpha: 0.22),
+          AppColors.hexFF283849.withValues(alpha: 0.22),
           Colors.transparent,
         ],
       ).createShader(rect);
@@ -1726,7 +1742,7 @@ class _LandingBackdropPainter extends CustomPainter {
         center: const Alignment(-0.78, 0.02),
         radius: 0.7,
         colors: [
-          const Color(0xFF0D2A32).withValues(alpha: 0.22),
+          AppColors.hexFF0D2A32.withValues(alpha: 0.22),
           Colors.transparent,
         ],
       ).createShader(rect);
@@ -1752,7 +1768,7 @@ class _VaultPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final rect = Offset.zero & size;
-    canvas.drawRect(rect, Paint()..color = const Color(0xFF050505));
+    canvas.drawRect(rect, Paint()..color = AppColors.hexFF050505);
 
     final glow = Paint()
       ..shader = RadialGradient(
@@ -1770,9 +1786,9 @@ class _VaultPainter extends CustomPainter {
     final metal = Paint()
       ..shader = RadialGradient(
         colors: const [
-          Color(0xFF383838),
-          Color(0xFF111111),
-          Color(0xFF030303),
+          AppColors.hexFF383838,
+          AppColors.hexFF111111,
+          AppColors.hexFF030303,
         ],
       ).createShader(Rect.fromCircle(center: center, radius: radius * 1.4));
     canvas.drawCircle(center, radius, metal);
@@ -1800,7 +1816,7 @@ class _VaultPainter extends CustomPainter {
     }
 
     final handlePaint = Paint()
-      ..color = const Color(0xFF050505)
+      ..color = AppColors.hexFF050505
       ..style = PaintingStyle.fill;
     canvas.drawCircle(center, radius * 0.18, handlePaint);
     canvas.drawCircle(center, radius * 0.1, Paint()..color = _gold);
@@ -1908,17 +1924,17 @@ class _LandingCardData {
 List<_LandingCardData> _heroFeatureItems(BuildContext context) {
   return [
     _LandingCardData(
-      icon: LucideIcons.link2,
+      icon: KeroseneIcons.onchain,
       title: context.tr.landingHeroFeatureOnchainTitle,
       body: context.tr.landingHeroFeatureOnchainBody,
     ),
     _LandingCardData(
-      icon: LucideIcons.repeat2,
+      icon: KeroseneIcons.internalTransfer,
       title: context.tr.landingHeroFeatureInternalTitle,
       body: context.tr.landingHeroFeatureInternalBody,
     ),
     _LandingCardData(
-      icon: LucideIcons.shieldCheck,
+      icon: KeroseneIcons.security,
       title: context.tr.landingHeroFeatureSecurityTitle,
       body: context.tr.landingHeroFeatureSecurityBody,
     ),
@@ -1928,20 +1944,19 @@ List<_LandingCardData> _heroFeatureItems(BuildContext context) {
 List<_LandingCardData> _productCards(BuildContext context) {
   return [
     _LandingCardData(
-      icon: LucideIcons.eyeOff,
+      icon: KeroseneIcons.privacy,
       title: 'Privacidade Onion',
       body:
           'Total anonimato. Todas as conexões são roteadas nativamente via rede Tor, ocultando seu IP e localização geográfica de qualquer observador externo.',
     ),
     _LandingCardData(
-      icon: LucideIcons.zap,
+      icon: KeroseneIcons.lightning,
       title: 'Liquidez Lightning',
-      body:
-          'Pagamentos instantâneos com taxas próximas de zero. Integrado nativamente para fluxos de caixa empresariais e transferências pessoais globais.',
+      body: _liquidityCardBodyText,
       highlighted: true,
     ),
     _LandingCardData(
-      icon: LucideIcons.shieldCheck,
+      icon: KeroseneIcons.security,
       title: 'Custódia Institucional',
       body:
           'Segurança com tecnologia MPC (Multi-Party Computation) e arquitetura segmentada para proteção contra ataques físicos e digitais.',
@@ -1952,23 +1967,23 @@ List<_LandingCardData> _productCards(BuildContext context) {
 List<_LandingCardData> _architectureCards(BuildContext context) {
   return [
     _LandingCardData(
-      icon: LucideIcons.boxes,
+      icon: KeroseneIcons.stack,
       title: 'Bitcoin Core',
       body: 'Validação total de nós em infraestrutura própria.',
     ),
     _LandingCardData(
-      icon: LucideIcons.globe2,
+      icon: KeroseneIcons.globe,
       title: 'Rede Tor',
       body: 'Ofuscação de tráfego e anonimato de rede mandatórios.',
     ),
     _LandingCardData(
-      icon: LucideIcons.network,
+      icon: KeroseneIcons.network,
       title: 'MPC Tech',
       body: 'Assinaturas distribuídas sem ponto único de falha.',
       highlighted: true,
     ),
     _LandingCardData(
-      icon: LucideIcons.activity,
+      icon: KeroseneIcons.activity,
       title: 'Auditoria Live',
       body: 'Prova de reservas criptográfica em tempo real.',
     ),
@@ -1978,22 +1993,22 @@ List<_LandingCardData> _architectureCards(BuildContext context) {
 List<_LandingCardData> _securityCards(BuildContext context) {
   return [
     _LandingCardData(
-      icon: LucideIcons.keyRound,
+      icon: KeroseneIcons.passkey,
       title: context.tr.landingSecurityPasskeysTitle,
       body: context.tr.landingSecurityPasskeysBody,
     ),
     _LandingCardData(
-      icon: LucideIcons.shieldCheck,
+      icon: KeroseneIcons.security,
       title: context.tr.landingSecurityVaultMpcTitle,
       body: context.tr.landingSecurityVaultMpcBody,
     ),
     _LandingCardData(
-      icon: LucideIcons.eyeOff,
+      icon: KeroseneIcons.privacy,
       title: context.tr.landingSecurityPrivacyTitle,
       body: context.tr.landingSecurityPrivacyBody,
     ),
     _LandingCardData(
-      icon: LucideIcons.scrollText,
+      icon: KeroseneIcons.document,
       title: context.tr.landingSecurityAuditTitle,
       body: context.tr.landingSecurityAuditBody,
     ),
@@ -2002,11 +2017,10 @@ List<_LandingCardData> _securityCards(BuildContext context) {
 
 TextStyle _displayStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
-  return TextStyle(
-    fontFamily: AppTypography.titleFontFamily,
+  return AppTypography.newsreader(
     fontSize: compact ? math.min(size, 52) : size,
-    fontWeight: FontWeight.w300,
-    height: 1.02,
+    fontWeight: FontWeight.w600,
+    height: 1.04,
     letterSpacing: 0,
     color: Colors.white,
   );
@@ -2014,12 +2028,11 @@ TextStyle _displayStyle(BuildContext context, double size) {
 
 TextStyle _sectionTitleStyle(BuildContext context, double size) {
   final compact = MediaQuery.sizeOf(context).width < 760;
-  return TextStyle(
-    fontFamily: AppTypography.titleFontFamily,
+  return AppTypography.inter(
     fontSize: compact ? math.min(size, 34) : size,
-    fontWeight: FontWeight.w300,
+    fontWeight: FontWeight.w700,
     height: 1.12,
-    letterSpacing: 0,
+    letterSpacing: -0.5,
     color: Colors.white,
   );
 }

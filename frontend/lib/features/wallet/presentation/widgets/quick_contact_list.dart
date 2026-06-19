@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
@@ -13,7 +13,7 @@ class QuickContactList extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final contacts = [
-      ('Add', LucideIcons.plus, null),
+      ('Add', KeroseneIcons.plus, null),
       ('GA', null, 'Gilbert'),
       ('SC', null, 'Steph'),
       ('HW', null, 'Harris'),

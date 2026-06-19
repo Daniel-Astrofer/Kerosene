@@ -1,10 +1,8 @@
 import 'package:flutter/material.dart';
-import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
-import 'package:http/http.dart' as http;
 
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/providers/appearance_provider.dart';
@@ -21,16 +19,9 @@ import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.
 import 'package:kerosene/storybook/storybook_mocks.dart';
 
 late SharedPreferences goldenSharedPreferences;
-late http.Client _goldenFontHttpClient;
 
 Future<void> initializeGoldenHarness() async {
-  final fontBytes =
-      (await rootBundle.load('assets/google_fonts/Inter-Regular.ttf'))
-          .buffer
-          .asUint8List();
-  _goldenFontHttpClient = _GoldenFontHttpClient(fontBytes);
-  GoogleFonts.config.allowRuntimeFetching = true;
-  GoogleFonts.config.httpClient = _goldenFontHttpClient;
+  GoogleFonts.config.allowRuntimeFetching = false;
   SharedPreferences.setMockInitialValues(const {});
   goldenSharedPreferences = await SharedPreferences.getInstance();
 }
@@ -48,6 +39,10 @@ Future<void> pumpFullScreenGolden(
   }
 }
 
+Future<void> pumpGoldenAnimationFrame(WidgetTester tester) {
+  return tester.pump(const Duration(milliseconds: 120));
+}
+
 Widget wrapGolden(Widget child) {
   return ProviderScope(
     overrides: [
@@ -57,7 +52,8 @@ Widget wrapGolden(Widget child) {
       authControllerProvider.overrideWith(
         () => MockAuthController(initialOverride: mockAuthenticatedState),
       ),
-      balanceSettingsProvider.overrideWith(() => _GoldenBalanceSettingsNotifier()),
+      balanceSettingsProvider
+          .overrideWith(() => _GoldenBalanceSettingsNotifier()),
       walletProvider.overrideWith(() => MockWalletNotifier()),
       sessionNotificationFeedProvider.overrideWith(
         () => _EmptyNotificationFeedNotifier(),
@@ -117,24 +113,7 @@ class _GoldenBalanceSettingsNotifier extends BalanceSettingsNotifier {
   }
 }
 
-class _EmptyNotificationFeedNotifier
-    extends SessionNotificationFeedNotifier {
+class _EmptyNotificationFeedNotifier extends SessionNotificationFeedNotifier {
   @override
   List<SessionNotificationItem> build() => const [];
-}
-
-class _GoldenFontHttpClient extends http.BaseClient {
-  final List<int> _fontBytes;
-
-  _GoldenFontHttpClient(this._fontBytes);
-
-  @override
-  Future<http.StreamedResponse> send(http.BaseRequest request) async {
-    return http.StreamedResponse(
-      Stream<List<int>>.value(_fontBytes),
-      200,
-      request: request,
-      headers: const {'content-type': 'font/ttf'},
-    );
-  }
 }

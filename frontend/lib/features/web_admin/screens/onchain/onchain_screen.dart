@@ -5,6 +5,8 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
+import '../../theme/admin_copy.dart';
 
 /// On-chain BTC operations module.
 ///
@@ -45,24 +47,24 @@ class OnchainScreen extends ConsumerWidget {
                         AdminMetricCard(
                           label: 'Status',
                           value: '${data['status'] ?? 'UNKNOWN'}',
-                          icon: Icons.link,
+                          icon: KeroseneIcons.onchain,
                           accentColor: _statusColor('${data['status'] ?? ''}'),
                         ),
                         AdminMetricCard(
                           label: 'Block Height',
                           value: '${chain['height'] ?? 0}',
-                          icon: Icons.layers_outlined,
+                          icon: KeroseneIcons.layers,
                         ),
                         AdminMetricCard(
                           label: 'Mempool',
                           value: '${mempool['transactions'] ?? 0} tx',
-                          icon: Icons.memory_outlined,
+                          icon: KeroseneIcons.memory,
                         ),
                         AdminMetricCard(
                           label: 'Fee Rate',
                           value:
                               '${fees['fastestFee'] ?? fees['halfHourFee'] ?? 0} sat/vB',
-                          icon: Icons.payments_outlined,
+                          icon: KeroseneIcons.payments,
                           accentColor: AdminColors.warning,
                         ),
                       ],
@@ -91,7 +93,7 @@ class OnchainScreen extends ConsumerWidget {
                       title: 'Watched transaction fingerprints',
                       child: relevant.isEmpty
                           ? Text(
-                              'No watched on-chain transactions currently require action.',
+                              AdminCopy.noOnchainActions,
                               style: AdminTypography.bodySmall.copyWith(
                                 color: AdminColors.textSecondary,
                               ),
@@ -119,7 +121,7 @@ class OnchainScreen extends ConsumerWidget {
                 ),
               ),
               error: (e, _) => AdminErrorState(
-                message: 'Failed to load blockchain monitor: $e',
+                message: AdminCopy.blockchainMonitorUnavailable,
                 onRetry: () => ref.invalidate(adminBlockchainMonitorProvider),
               ),
             ),
@@ -206,7 +208,7 @@ class _EventRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          const Icon(Icons.fingerprint,
+          const Icon(KeroseneIcons.biometric,
               color: AdminColors.textTertiary, size: 15),
           const SizedBox(width: AdminTheme.spacingMd),
           Expanded(

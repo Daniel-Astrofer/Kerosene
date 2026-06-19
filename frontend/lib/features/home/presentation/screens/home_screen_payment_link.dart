@@ -10,6 +10,12 @@ class _HomeRealtimeBootstrap extends ConsumerWidget {
   }
 }
 
+final _homePaymentLinkPreviewProvider =
+    FutureProvider.family<PaymentLink, String>((ref, linkId) {
+  final repo = ref.watch(transactionRepositoryProvider);
+  return repo.getPaymentLink(linkId);
+});
+
 enum _PaymentPayloadKind {
   empty,
   paymentLink,
@@ -59,7 +65,7 @@ class _PaymentPayloadDraft {
         title: l10n.homePendingLinkTitle,
         destinationLabel: l10n.homePendingLinkMessage,
         actionLabel: l10n.homePayloadActionContinue,
-        icon: LucideIcons.link2,
+        icon: KeroseneIcons.onchain,
       );
     }
 
@@ -83,7 +89,7 @@ class _PaymentPayloadDraft {
             parsed?.message ?? parsed?.label ?? l10n.homeInvoiceOrLnurl,
         actionLabel: l10n.homePayloadActionContinueLightning,
         amountBtc: parsed?.amountBtc ?? _extractLightningAmountBtc(normalized),
-        icon: LucideIcons.zap,
+        icon: KeroseneIcons.lightning,
       );
     }
 
@@ -97,7 +103,7 @@ class _PaymentPayloadDraft {
             parsed?.message ?? parsed?.label ?? l10n.homeBitcoinAddress,
         actionLabel: l10n.homePayloadActionContinueOnchain,
         amountBtc: parsed?.amountBtc,
-        icon: LucideIcons.link,
+        icon: KeroseneIcons.onchain,
       );
     }
 
@@ -114,7 +120,7 @@ class _PaymentPayloadDraft {
         supportingLabel: parsed.address.trim(),
         actionLabel: l10n.homePayloadActionContinueInternal,
         amountBtc: parsed.amountBtc,
-        icon: LucideIcons.repeat2,
+        icon: KeroseneIcons.internalTransfer,
       );
     }
 
@@ -128,7 +134,7 @@ class _PaymentPayloadDraft {
         destinationLabel: '@$username',
         supportingLabel: l10n.homeKeroseneUser,
         actionLabel: l10n.homePayloadActionContinueInternal,
-        icon: LucideIcons.repeat2,
+        icon: KeroseneIcons.internalTransfer,
       );
     }
 
@@ -139,7 +145,7 @@ class _PaymentPayloadDraft {
         title: l10n.homeInvalidLinkTitle,
         destinationLabel: l10n.homeInvalidLinkMessage,
         actionLabel: l10n.homePayloadActionContinue,
-        icon: LucideIcons.alertCircle,
+        icon: KeroseneIcons.warning,
       );
     }
 
@@ -168,7 +174,7 @@ class _PaymentPayloadDraft {
       destinationLabel: _shortPaymentValue(normalizedId),
       supportingLabel: l10n.homePaymentId,
       actionLabel: l10n.homePayloadActionLoadLink,
-      icon: LucideIcons.link2,
+      icon: KeroseneIcons.onchain,
     );
   }
 }
@@ -217,8 +223,9 @@ class _PaymentLinkEntryScreenState
   Widget build(BuildContext context) {
     final draft = _PaymentPayloadDraft.analyze(context, _controller.text);
     final linkId = draft.paymentLinkId;
-    final linkAsync =
-        linkId == null ? null : ref.watch(paymentLinkDetailProvider(linkId));
+    final linkAsync = linkId == null
+        ? null
+        : ref.watch(_homePaymentLinkPreviewProvider(linkId));
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -252,7 +259,7 @@ class _PaymentLinkEntryScreenState
                   onChanged: (_) => setState(() {}),
                   style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                         color: receiveFlowTextColor,
-                        fontFamily: 'IBMPlexSansHebrew',
+                        fontFamily: AppTypography.financialFontFamily,
                         height: 1.35,
                       ),
                   decoration: InputDecoration(
@@ -271,7 +278,7 @@ class _PaymentLinkEntryScreenState
           const SizedBox(height: AppSpacing.md),
           ReceiveFlowSecondaryButton(
             label: context.tr.homePasteAction.toUpperCase(),
-            icon: LucideIcons.clipboardPaste,
+            icon: KeroseneIcons.paste,
             onTap: _pasteFromClipboard,
           ),
           const SizedBox(height: AppSpacing.xl),
@@ -286,7 +293,7 @@ class _PaymentLinkEntryScreenState
           const SizedBox(height: AppSpacing.xl),
           ReceiveFlowPrimaryButton(
             label: draft.actionLabel,
-            icon: LucideIcons.arrowRight,
+            icon: KeroseneIcons.next,
             onTap: draft.canContinue
                 ? () => Navigator.of(context).pop(draft.normalizedPayload)
                 : null,
@@ -451,7 +458,9 @@ class _PaymentPreviewRow extends StatelessWidget {
               textAlign: TextAlign.right,
               style: Theme.of(context).textTheme.bodySmall?.copyWith(
                     color: receiveFlowTextColor,
-                    fontFamily: value.length > 18 ? 'IBMPlexSansHebrew' : null,
+                    fontFamily: value.length > 18
+                        ? AppTypography.financialFontFamily
+                        : AppTypography.bodyFontFamily,
                     fontWeight: FontWeight.w300,
                     height: 1.3,
                   ),

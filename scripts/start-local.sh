@@ -27,7 +27,7 @@ FRONTEND_PID_FILE="$FRONTEND_DIR/.dart_tool/kerosene-local-web.pid"
 FRONTEND_WEB_HOST="${FRONTEND_WEB_HOST:-127.0.0.1}"
 FRONTEND_WEB_PORT="${FRONTEND_WEB_PORT:-3000}"
 FRONTEND_PUBLIC_URL="${FRONTEND_PUBLIC_URL:-http://localhost:${FRONTEND_WEB_PORT}}"
-FRONTEND_API_URL="${FRONTEND_API_URL:-http://localhost:8080}"
+FRONTEND_API_URL="${FRONTEND_API_URL:-}"
 FRONTEND_PASSKEY_RP_ID="${FRONTEND_PASSKEY_RP_ID:-kerosene-device}"
 FRONTEND_PASSKEY_ORIGIN="${FRONTEND_PASSKEY_ORIGIN:-android:apk-key-hash:kerosene}"
 
@@ -272,6 +272,10 @@ start_frontend() {
   if [[ ! -f "$FRONTEND_DIR/pubspec.yaml" ]]; then
     warn "Frontend pubspec not found at $FRONTEND_DIR/pubspec.yaml; backend is up, but frontend was not started."
     return
+  fi
+
+  if [[ -z "$FRONTEND_API_URL" ]]; then
+    FRONTEND_API_URL="http://localhost:${APP_IS_PORT:-8080}"
   fi
 
   local flutter_bin

@@ -35,10 +35,10 @@ class HomeTransactionsList extends ConsumerWidget {
             padding: EdgeInsets.zero,
             child: _HomeEmptyTransactionsPanel(
               icon: !hasWallet
-                  ? LucideIcons.wallet
+                  ? KeroseneIcons.wallet
                   : !hasBalance
-                      ? LucideIcons.landmark
-                      : LucideIcons.receipt,
+                      ? KeroseneIcons.institution
+                      : KeroseneIcons.history,
               title: !hasWallet
                   ? context.tr.homeEmptyNoWalletTitle
                   : !hasBalance
@@ -55,10 +55,10 @@ class HomeTransactionsList extends ConsumerWidget {
                       ? context.tr.homeDepositAction
                       : context.tr.homeRefreshAction,
               actionIcon: !hasWallet
-                  ? LucideIcons.arrowRight
+                  ? KeroseneIcons.next
                   : !hasBalance
-                      ? LucideIcons.download
-                      : LucideIcons.refreshCw,
+                      ? KeroseneIcons.download
+                      : KeroseneIcons.refresh,
               onAction: () {
                 if (!hasWallet) {
                   onCreateWallet();
@@ -175,11 +175,11 @@ class _HomeNotificationsList extends ConsumerWidget {
 
     if (visibleNotifications.isEmpty) {
       return _HomeEmptyTransactionsPanel(
-        icon: LucideIcons.bellOff,
+        icon: KeroseneIcons.notificationsOff,
         title: _homeNoticeEmptyTitle(context),
         description: _homeNoticeEmptyDescription(context),
         actionLabel: _homeNoticeEmptyAction(context),
-        actionIcon: LucideIcons.bell,
+        actionIcon: KeroseneIcons.notifications,
         onAction: () {
           unawaited(openNotificationCenter(context, originKey: GlobalKey()));
         },
@@ -326,10 +326,10 @@ class _HomeNotificationCard extends ConsumerWidget {
 Color _homeNotificationAccent(AppNotificationTone tone) {
   return switch (tone) {
     AppNotificationTone.success => _homePositiveColor,
-    AppNotificationTone.warning => const Color(0xFFF59E0B),
-    AppNotificationTone.error => const Color(0xFFFF5A67),
-    AppNotificationTone.info => const Color(0xFFA7B0BA),
-    AppNotificationTone.neutral => const Color(0xFF9CA3AF),
+    AppNotificationTone.warning => AppColors.hexFFF59E0B,
+    AppNotificationTone.error => AppColors.hexFFFF5A67,
+    AppNotificationTone.info => AppColors.hexFFA7B0BA,
+    AppNotificationTone.neutral => AppColors.hexFF9CA3AF,
   };
 }
 

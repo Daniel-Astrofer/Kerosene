@@ -1,18 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/auth/presentation/widgets/auth_motion.dart';
 
-const Color authEntryInk = Color(0xFF000000);
-const Color authEntrySurface = Color(0xFF0B0B0B);
-const Color authEntrySurfaceRaised = Color(0xFF131313);
-const Color authEntryText = Color(0xFFF1F1ED);
-const Color authEntryMuted = Color(0xFFA0A09B);
-const Color authEntryFaint = Color(0xFF6B6B66);
-const Color authEntryButton = Color(0xFFECECE6);
+const Color authEntryInk = AppColors.hexFF000000;
+const Color authEntrySurface = AppColors.hexFF0B0B0B;
+const Color authEntrySurfaceRaised = AppColors.hexFF131313;
+const Color authEntryText = AppColors.hexFFF1F1ED;
+const Color authEntryMuted = AppColors.hexFFA0A09B;
+const Color authEntryFaint = AppColors.hexFF6B6B66;
+const Color authEntryButton = AppColors.hexFFECECE6;
 
 class AuthEntryScaffold extends StatelessWidget {
   final String eyebrow;
@@ -132,7 +133,7 @@ class AuthEntryHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         if (onBack != null) ...[
-          AuthEntryIconButton(icon: LucideIcons.arrowLeft, onPressed: onBack!),
+          AuthEntryIconButton(icon: KeroseneIcons.back, onPressed: onBack!),
           const SizedBox(width: AppSpacing.md),
         ],
         Expanded(
@@ -142,7 +143,6 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 eyebrow.toUpperCase(),
                 style: AppTypography.caption.copyWith(
-                  fontFamily: 'IBMPlexSansHebrew',
                   color: authEntryFaint,
                   fontWeight: FontWeight.w800,
                   letterSpacing: 0,
@@ -152,11 +152,10 @@ class AuthEntryHeader extends StatelessWidget {
               Text(
                 title,
                 style: AppTypography.h1.copyWith(
-                  fontFamily: 'IBMPlexSansHebrew',
                   color: authEntryText,
                   fontSize: titleSize,
-                  fontWeight: FontWeight.w700,
-                  height: 0.96,
+                  fontWeight: FontWeight.w600,
+                  height: 1.04,
                 ),
                 maxLines: 2,
                 overflow: TextOverflow.ellipsis,
@@ -294,9 +293,8 @@ class AuthEntryButton extends StatelessWidget {
                                 softWrap: false,
                                 textAlign: TextAlign.center,
                                 style: AppTypography.buttonText.copyWith(
-                                  fontFamily: 'IBMPlexSansHebrew',
                                   color: foreground,
-                                  fontWeight: FontWeight.w800,
+                                  fontWeight: FontWeight.w600,
                                   letterSpacing: 0,
                                   height: 1.05,
                                   fontSize: responsive.isCompact ? 14 : null,
@@ -381,7 +379,6 @@ class AuthEntryNote extends StatelessWidget {
                 Text(
                   title.toUpperCase(),
                   style: AppTypography.caption.copyWith(
-                    fontFamily: 'IBMPlexSansHebrew',
                     color: authEntryMuted,
                     fontWeight: FontWeight.w800,
                     letterSpacing: 0,

@@ -15,25 +15,4 @@ abstract class LedgerRepository {
     required double amount,
     String? context,
   });
-
-  // 3.1 Payment Requests (Internal)
-  Future<Either<Failure, Map<String, dynamic>>> createPaymentRequest({
-    required double amount,
-    required String receiverWalletName,
-  });
-
-  Future<Either<Failure, Map<String, dynamic>>> getPaymentRequest(
-      String linkId);
-
-  Future<Either<Failure, Map<String, dynamic>>> payPaymentRequest({
-    required String linkId,
-    required String payerWalletName,
-    String? totpCode,
-    String? confirmationPassphrase,
-    String? passkeyAssertionJson,
-    String? idempotencyKey,
-    int? requestTimestamp,
-  });
-
-  Future<Either<Failure, String>> deleteLedger(String walletName);
 }

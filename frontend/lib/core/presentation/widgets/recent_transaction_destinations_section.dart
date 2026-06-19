@@ -1,14 +1,17 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 
-const Color _recentDestinationPanelColor = Color(0xFF0D0D0D);
-const Color _recentDestinationBorderColor = Color(0xFF262626);
-const Color _recentDestinationTextColor = Color(0xFFF1F1ED);
-const Color _recentDestinationMutedTextColor = Color(0xFFA0A09B);
-const Color _recentDestinationFaintTextColor = Color(0xFF6B6B66);
+const Color _recentDestinationPanelColor = KeroseneBrandTokens.surface;
+const Color _recentDestinationBorderColor = KeroseneBrandTokens.border;
+const Color _recentDestinationTextColor = KeroseneBrandTokens.textPrimary;
+const Color _recentDestinationMutedTextColor =
+    KeroseneBrandTokens.textSecondary;
+const Color _recentDestinationFaintTextColor = KeroseneBrandTokens.textMuted;
 
 class RecentTransactionDestinationsSection extends StatelessWidget {
   final List<RecentTransactionDestination> destinations;
@@ -59,7 +62,7 @@ class RecentTransactionDestinationsSection extends StatelessWidget {
             if (onClearAll != null)
               TextButton.icon(
                 onPressed: onClearAll,
-                icon: const Icon(LucideIcons.trash2, size: 14),
+                icon: const Icon(KeroseneIcons.trash, size: 14),
                 label: Text(clearAllLabel),
                 style: TextButton.styleFrom(
                   foregroundColor: _recentDestinationMutedTextColor,
@@ -166,7 +169,7 @@ class _RecentDestinationRow extends StatelessWidget {
                                 ?.copyWith(
                                   color: _recentDestinationTextColor,
                                   fontWeight: FontWeight.w600,
-                                  fontFamily: 'IBMPlexSansHebrew',
+                                  fontFamily: AppTypography.financialFontFamily,
                                 ),
                           ),
                           const SizedBox(height: 2),
@@ -190,7 +193,7 @@ class _RecentDestinationRow extends StatelessWidget {
             const SizedBox(width: AppSpacing.sm),
             if (onRemove == null)
               Icon(
-                LucideIcons.cornerDownLeft,
+                KeroseneIcons.next,
                 size: 16,
                 color: _recentDestinationFaintTextColor,
               )
@@ -198,7 +201,7 @@ class _RecentDestinationRow extends StatelessWidget {
               IconButton(
                 onPressed: onRemove,
                 tooltip: MaterialLocalizations.of(context).deleteButtonTooltip,
-                icon: const Icon(LucideIcons.trash2, size: 16),
+                icon: const Icon(KeroseneIcons.trash, size: 16),
                 color: _recentDestinationFaintTextColor,
                 style: IconButton.styleFrom(
                   minimumSize: const Size.square(34),
@@ -214,9 +217,9 @@ class _RecentDestinationRow extends StatelessWidget {
 
   IconData _iconFor(RecentTransactionDestinationKind kind) {
     return switch (kind) {
-      RecentTransactionDestinationKind.internal => LucideIcons.user,
-      RecentTransactionDestinationKind.onChain => LucideIcons.link,
-      RecentTransactionDestinationKind.lightning => LucideIcons.zap,
+      RecentTransactionDestinationKind.internal => KeroseneIcons.address,
+      RecentTransactionDestinationKind.onChain => KeroseneIcons.onchain,
+      RecentTransactionDestinationKind.lightning => KeroseneIcons.lightning,
     };
   }
 

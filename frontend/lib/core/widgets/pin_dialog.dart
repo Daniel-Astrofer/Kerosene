@@ -1,5 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
 import 'package:flutter/services.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+
 import 'fingerprint_scanner.dart';
 import '../security/app_pin_service.dart';
 
@@ -81,7 +86,7 @@ class _PinDialogState extends State<PinDialog> {
         } else {
           HapticFeedback.heavyImpact();
           setState(() {
-            _error = 'Incorrect PIN. Try again.';
+            _error = KeroseneUiCopy.pinIncorrect;
             _entered = '';
           });
         }
@@ -92,18 +97,18 @@ class _PinDialogState extends State<PinDialog> {
   String get _title {
     switch (_mode) {
       case _PinMode.setup:
-        return 'Create Security PIN';
+        return KeroseneUiCopy.pinSetupTitle;
       case _PinMode.enter:
-        return 'Enter Security PIN';
+        return KeroseneUiCopy.pinEnterTitle;
     }
   }
 
   String get _subtitle {
     switch (_mode) {
       case _PinMode.setup:
-        return 'Choose a 6-digit PIN to secure the app';
+        return KeroseneUiCopy.pinSetupSubtitle;
       case _PinMode.enter:
-        return 'This local device PIN is the master backup\nthat seals the local trust framework.';
+        return KeroseneUiCopy.pinEnterSubtitle;
     }
   }
 
@@ -126,13 +131,13 @@ class _PinDialogState extends State<PinDialog> {
               // App Logo - Using centered circular image for premium feel
               TweenAnimationBuilder<double>(
                 tween: Tween(begin: 0.0, end: 1.0),
-                duration: const Duration(milliseconds: 1000),
+                duration: KeroseneMotion.calm,
                 builder: (context, value, child) {
                   return Opacity(
                     opacity: value,
                     child: Transform.scale(
                       scale: 0.8 + (0.2 * value),
-                      child: const CyberFingerprintScanner(size: 120),
+                      child: const KeroseneFingerprintScanner(size: 120),
                     ),
                   );
                 },
@@ -146,7 +151,7 @@ class _PinDialogState extends State<PinDialog> {
                   fontSize: 26,
                   fontWeight: FontWeight.w900,
                   letterSpacing: 1.5,
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                 ),
               ),
               const SizedBox(height: 12),
@@ -171,14 +176,14 @@ class _PinDialogState extends State<PinDialog> {
                 children: List.generate(_pinLength, (i) {
                   final filled = i < _entered.length;
                   return AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
+                    duration: KeroseneMotion.short,
                     margin: const EdgeInsets.symmetric(horizontal: 10),
                     width: 14,
                     height: 14,
                     decoration: BoxDecoration(
                       shape: BoxShape.circle,
                       color: filled
-                          ? const Color(0xFF00F0FF)
+                          ? KeroseneBrandTokens.info
                           : Theme.of(context)
                               .colorScheme
                               .onPrimary
@@ -192,7 +197,7 @@ class _PinDialogState extends State<PinDialog> {
               SizedBox(
                 height: 40,
                 child: AnimatedSwitcher(
-                  duration: const Duration(milliseconds: 300),
+                  duration: KeroseneMotion.medium,
                   child: _error != null
                       ? Padding(
                           key: ValueKey(_error),
@@ -200,7 +205,7 @@ class _PinDialogState extends State<PinDialog> {
                           child: Text(
                             _error!,
                             style: const TextStyle(
-                              color: Colors.redAccent,
+                              color: KeroseneBrandTokens.error,
                               fontSize: 14,
                               fontWeight: FontWeight.bold,
                             ),
@@ -228,7 +233,7 @@ class _PinDialogState extends State<PinDialog> {
                         .withValues(alpha: 0.4),
                   ),
                   child: const Text(
-                    'CANCEL AUTHENTICATION',
+                    KeroseneUiCopy.cancelAuthentication,
                     style: TextStyle(
                       fontSize: 12,
                       fontWeight: FontWeight.bold,
@@ -297,7 +302,7 @@ class _PinDialogState extends State<PinDialog> {
                     key,
                     style: TextStyle(
                       color: isAction
-                          ? const Color(0xFF00F0FF).withValues(alpha: 0.8)
+                          ? KeroseneBrandTokens.info.withValues(alpha: 0.8)
                           : Theme.of(context).colorScheme.onPrimary,
                       fontSize: key == '⌫' ? 24 : 28,
                       fontWeight: FontWeight.w300,

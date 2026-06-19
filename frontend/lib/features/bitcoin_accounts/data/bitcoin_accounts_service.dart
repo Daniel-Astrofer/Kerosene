@@ -5,8 +5,29 @@ import 'bitcoin_account_models.dart';
 
 export 'bitcoin_account_models.dart';
 
+enum BitcoinAccountCustody {
+  internal,
+  custodialOnchain,
+  watchOnly,
+}
+
+extension BitcoinAccountCustodyPayload on BitcoinAccountCustody {
+  String get kfeKind {
+    return switch (this) {
+      BitcoinAccountCustody.internal => 'INTERNAL',
+      BitcoinAccountCustody.custodialOnchain => 'CUSTODIAL_ONCHAIN',
+      BitcoinAccountCustody.watchOnly => 'WATCH_ONLY',
+    };
+  }
+}
+
 abstract class BitcoinAccountsService {
   Future<List<BitcoinAccount>> listAccounts();
+
+  Future<BitcoinAccount> createWallet({
+    required String label,
+    required BitcoinAccountCustody custody,
+  });
 
   Future<BitcoinAccount> createInternalCard({
     required String label,
@@ -26,6 +47,15 @@ abstract class BitcoinAccountsService {
     required String expiry,
     required bool oneTime,
   });
+
+  Future<ReceivingRequestView> rotateReceiveAddress(String accountId);
+
+  Future<BitcoinAccount> renameWallet({
+    required String accountId,
+    required String label,
+  });
+
+  Future<BitcoinAccount> archiveWallet(String accountId);
 
   Future<List<ReceivingRequestView>> listReceiveRequestsForAccount(
     String accountId,
@@ -87,20 +117,38 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
   }
 
   @override
+  Future<BitcoinAccount> createWallet({
+    required String label,
+    required BitcoinAccountCustody custody,
+  }) async {
+    if (custody == BitcoinAccountCustody.watchOnly) {
+      throw const ValidationException(
+        message:
+            'Carteiras watch-only precisam ser importadas com material público.',
+        statusCode: 400,
+        errorCode: 'ERR_WATCH_ONLY_REQUIRES_PUBLIC_MATERIAL',
+      );
+    }
+
+    final response = await _api.post(
+      AppConfig.kfeWallets,
+      data: kfeCreateWalletPayload(
+        label: label,
+        custody: custody,
+      ),
+    );
+    return _accountFromKfeWallet(
+      _requireMap(response.data, operation: 'createWallet'),
+    );
+  }
+
+  @override
   Future<BitcoinAccount> createInternalCard({
     required String label,
   }) async {
-    final response = await _api.post(
-      AppConfig.kfeWallets,
-      data: {
-        'kind': 'INTERNAL',
-        'name': _walletNameEnum(label),
-        'label': label,
-        'issueInitialAddress': false,
-      },
-    );
-    return _accountFromKfeWallet(
-      _requireMap(response.data, operation: 'createInternalCard'),
+    return createWallet(
+      label: label,
+      custody: BitcoinAccountCustody.internal,
     );
   }
 
@@ -112,15 +160,18 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     required String derivationPath,
     required String scriptPolicy,
   }) async {
+    final normalizedScriptPolicy = scriptPolicy.trim();
     final response = await _api.post(
       AppConfig.kfeWallets,
       data: {
         'kind': 'WATCH_ONLY',
-        'name': _walletNameEnum(label),
-        'label': label,
-        'xpub': xpub,
-        'fingerprint': fingerprint,
-        'derivationPath': derivationPath,
+        'label': label.trim(),
+        'xpub': xpub.trim(),
+        'fingerprint': fingerprint.trim(),
+        'derivationPath': derivationPath.trim(),
+        if (normalizedScriptPolicy.isNotEmpty)
+          'descriptor': normalizedScriptPolicy,
+        'issueInitialAddress': true,
       },
     );
     return _accountFromKfeWallet(
@@ -135,31 +186,65 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     required String expiry,
     required bool oneTime,
   }) async {
-    final address = await _activeOrRotatedAddress(accountId);
-    return _kfeReceiveRequest(
-      accountId: accountId,
-      address: address,
-      amountSats: amountSats,
-      expiry: expiry,
+    final response = await _api.post(
+      AppConfig.kfePaymentRequests,
+      data: {
+        'walletId': accountId,
+        'rail': 'ONCHAIN',
+        if (amountSats != null) 'amountSats': amountSats,
+        if (_kfeExpiresAt(expiry) != null) 'expiresAt': _kfeExpiresAt(expiry),
+        'issueFreshAddress': oneTime,
+      },
+    );
+    return _receiveRequestFromKfePaymentRequest(
+      _requireMap(response.data, operation: 'createReceiveRequest'),
+      fallbackAccountId: accountId,
       oneTime: oneTime,
     );
   }
 
   @override
   Future<ReceivingRequestView> getReceiveStatus(String requestId) async {
-    if (requestId.startsWith('kfe:')) {
-      final parts = requestId.split(':');
-      return _kfeReceiveRequest(
-        accountId: parts.length > 1 ? parts[1] : '',
-        address: parts.length > 2 ? parts.sublist(2).join(':') : '',
-        expiry: '',
-        oneTime: true,
-      );
-    }
-    throw const ValidationException(
-      message: 'Status de recebimento legado não está disponível no KFE.',
-      statusCode: 410,
-      errorCode: 'ERR_KFE_RECEIVE_STATUS_UNAVAILABLE',
+    final response = await _api.get(
+      _looksLikeUuid(requestId)
+          ? AppConfig.kfePaymentRequest(requestId)
+          : AppConfig.kfePublicPaymentRequest(requestId),
+    );
+    return _receiveRequestFromKfePaymentRequest(
+      _requireMap(response.data, operation: 'getReceiveStatus'),
+    );
+  }
+
+  @override
+  Future<ReceivingRequestView> rotateReceiveAddress(String accountId) async {
+    final response = await _api.post(
+      AppConfig.kfeWalletAddressRotate(accountId),
+    );
+    return _receiveRequestFromKfeAddress(
+      _requireMap(response.data, operation: 'rotateReceiveAddress'),
+      fallbackAccountId: accountId,
+    );
+  }
+
+  @override
+  Future<BitcoinAccount> renameWallet({
+    required String accountId,
+    required String label,
+  }) async {
+    final response = await _api.patch(
+      AppConfig.kfeWallet(accountId),
+      data: {'label': label.trim()},
+    );
+    return _accountFromKfeWallet(
+      _requireMap(response.data, operation: 'renameWallet'),
+    );
+  }
+
+  @override
+  Future<BitcoinAccount> archiveWallet(String accountId) async {
+    final response = await _api.post(AppConfig.kfeWalletArchive(accountId));
+    return _accountFromKfeWallet(
+      _requireMap(response.data, operation: 'archiveWallet'),
     );
   }
 
@@ -167,12 +252,23 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
   Future<List<ReceivingRequestView>> listReceiveRequestsForAccount(
     String accountId,
   ) async {
-    final dashboardResponse = await _api.get(AppConfig.kfeDashboard);
-    final dashboard = _requireMap(
-      dashboardResponse.data,
-      operation: 'listReceiveRequestsDashboard',
-    );
-    return receiveRequestsFromKfeDashboard(dashboard, accountId);
+    final response = await _api.get(AppConfig.kfePaymentRequests);
+    final requests = response.data;
+    if (requests is! List) {
+      throw ServerException(
+        message: 'Resposta inesperada da lista de requests KFE.',
+        errorCode: 'ERR_KFE_RECEIVE_REQUESTS_INVALID_RESPONSE',
+        data: response.data,
+      );
+    }
+    return requests
+        .map((item) => _requireMap(item, operation: 'listReceiveRequests'))
+        .where((item) => (item['walletId'] ?? '').toString() == accountId)
+        .map((item) => _receiveRequestFromKfePaymentRequest(
+              item,
+              fallbackAccountId: accountId,
+            ))
+        .toList();
   }
 
   static List<ReceivingRequestView> receiveRequestsFromKfeDashboard(
@@ -215,11 +311,16 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
   static BitcoinAccount _accountFromKfeWallet(Map<String, dynamic> wallet) {
     final kind = wallet['kind']?.toString().toUpperCase() ?? 'INTERNAL';
     final isWatchOnly = kind == 'WATCH_ONLY';
+    final isCustodialOnchain = kind == 'CUSTODIAL_ONCHAIN';
     final id = (wallet['walletId'] ?? wallet['id'] ?? '').toString();
     return BitcoinAccount.fromJson({
       'id': id,
       'type': isWatchOnly ? 'WATCH_ONLY_COLD_WALLET' : 'INTERNAL_CARD',
-      'custody': isWatchOnly ? 'WATCH_ONLY' : 'KEROSENE_CUSTODIAL',
+      'custody': isWatchOnly
+          ? 'WATCH_ONLY'
+          : isCustodialOnchain
+              ? 'CUSTODIAL_ONCHAIN'
+              : 'KEROSENE_CUSTODIAL',
       'status': wallet['status']?.toString() ?? 'ACTIVE',
       'label': (wallet['walletName'] ?? wallet['label'])?.toString() ?? '',
       'walletTypeDescription': wallet['walletTypeDescription']?.toString(),
@@ -243,28 +344,14 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     return int.tryParse('$value') ?? 0;
   }
 
-  static String _walletNameEnum(String value) {
-    final normalized = value
-        .trim()
-        .toLowerCase()
-        .replaceAll('í', 'i')
-        .replaceAll('é', 'e')
-        .replaceAll('ê', 'e')
-        .replaceAll('á', 'a')
-        .replaceAll('ã', 'a')
-        .replaceAll('ç', 'c')
-        .replaceAll(RegExp(r'[^a-z0-9]+'), '_')
-        .replaceAll(RegExp(r'^_+|_+$'), '');
-    return switch (normalized) {
-      'investimento' || 'investment' || 'reserva' => 'INVESTMENT',
-      'veiculo' || 'vehicle' => 'VEHICLE',
-      'futuros_gastos' ||
-      'futuro_gastos' ||
-      'gastos_futuros' ||
-      'gastos_mensais' =>
-        'FUTURE_EXPENSES',
-      'dia_a_dia' || 'daily' => 'DAILY',
-      _ => 'DAILY',
+  static Map<String, dynamic> kfeCreateWalletPayload({
+    required String label,
+    required BitcoinAccountCustody custody,
+  }) {
+    return {
+      'kind': custody.kfeKind,
+      'label': label.trim(),
+      'issueInitialAddress': false,
     };
   }
 
@@ -285,14 +372,43 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
   Future<List<ColdWalletUtxoView>> listColdWalletUtxos(
     String coldWalletId,
   ) async {
-    return const <ColdWalletUtxoView>[];
+    final response = await _api.get(AppConfig.kfeColdWalletUtxos(coldWalletId));
+    final utxos = response.data;
+    if (utxos is! List) {
+      throw ServerException(
+        message: 'Resposta inesperada da lista de UTXOs KFE.',
+        errorCode: 'ERR_KFE_COLD_WALLET_UTXOS_INVALID_RESPONSE',
+        data: response.data,
+      );
+    }
+    return utxos
+        .map((item) => _requireMap(item, operation: 'listColdWalletUtxos'))
+        .map(ColdWalletUtxoView.fromJson)
+        .toList();
   }
 
   @override
   Future<List<PsbtWorkflowView>> listColdWalletPsbt(
     String coldWalletId,
   ) async {
-    return const <PsbtWorkflowView>[];
+    final response = await _api.get(
+      '${AppConfig.kfeColdWalletPsbts}?walletId=$coldWalletId',
+    );
+    final workflows = response.data;
+    if (workflows is! List) {
+      throw ServerException(
+        message: 'Resposta inesperada da lista de PSBT KFE.',
+        errorCode: 'ERR_KFE_COLD_WALLET_PSBT_LIST_INVALID_RESPONSE',
+        data: response.data,
+      );
+    }
+    return workflows
+        .map((item) => _requireMap(item, operation: 'listColdWalletPsbt'))
+        .map((item) => PsbtWorkflowView.fromJson({
+              ...item,
+              'coldWalletId': coldWalletId,
+            }))
+        .toList();
   }
 
   @override
@@ -303,20 +419,28 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     int? feeRate,
     List<String> selectedUtxoIds = const [],
   }) async {
-    throw const ValidationException(
-      message:
-          'Criação de PSBT para cold wallet ainda não está disponível no KFE.',
-      statusCode: 501,
-      errorCode: 'ERR_KFE_COLD_WALLET_PSBT_UNAVAILABLE',
+    final response = await _api.post(
+      AppConfig.kfeColdWalletPsbtCreate(coldWalletId),
+      data: {
+        'destinationAddress': destinationAddress,
+        'amountSats': amountSats,
+        if (feeRate != null) 'feeRateSatsPerVbyte': feeRate,
+        if (selectedUtxoIds.isNotEmpty) 'inputs': _psbtInputs(selectedUtxoIds),
+      },
     );
+    return PsbtWorkflowView.fromJson({
+      ..._requireMap(response.data, operation: 'createColdWalletPsbt'),
+      'coldWalletId': coldWalletId,
+    });
   }
 
   @override
   Future<PsbtWorkflowView> getPsbtWorkflow(String workflowId) async {
-    throw const ValidationException(
-      message: 'Consulta de PSBT ainda não está disponível no KFE.',
-      statusCode: 501,
-      errorCode: 'ERR_KFE_COLD_WALLET_PSBT_UNAVAILABLE',
+    final response = await _api.get(
+      AppConfig.kfeColdWalletPsbtWorkflow(workflowId),
+    );
+    return PsbtWorkflowView.fromJson(
+      _requireMap(response.data, operation: 'getPsbtWorkflow'),
     );
   }
 
@@ -326,25 +450,46 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     required String signedPsbt,
     required bool broadcast,
   }) async {
-    throw const ValidationException(
-      message: 'Envio de PSBT assinado ainda não está disponível no KFE.',
-      statusCode: 501,
-      errorCode: 'ERR_KFE_COLD_WALLET_PSBT_UNAVAILABLE',
+    final signedResponse = await _api.post(
+      AppConfig.kfeColdWalletPsbtSigned(workflowId),
+      data: {'signedPsbt': signedPsbt},
+    );
+    if (!broadcast) {
+      return PsbtWorkflowView.fromJson(
+        _requireMap(signedResponse.data, operation: 'submitSignedPsbt'),
+      );
+    }
+
+    final broadcastResponse = await _api.post(
+      AppConfig.kfeColdWalletPsbtBroadcast(workflowId),
+    );
+    return PsbtWorkflowView.fromJson(
+      _requireMap(broadcastResponse.data, operation: 'broadcastSignedPsbt'),
     );
   }
 
   @override
   Future<List<TaxEventView>> listTaxEvents() async {
-    return const <TaxEventView>[];
+    final response = await _api.get(AppConfig.kfeTaxEvents);
+    final events = response.data;
+    if (events is! List) {
+      throw ServerException(
+        message: 'Resposta inesperada dos eventos fiscais KFE.',
+        errorCode: 'ERR_KFE_TAX_EVENTS_INVALID_RESPONSE',
+        data: response.data,
+      );
+    }
+    return events
+        .map((item) => _requireMap(item, operation: 'listTaxEvents'))
+        .map(TaxEventView.fromJson)
+        .toList();
   }
 
   @override
   Future<TaxEventsExportView> exportTaxEvents({required String format}) async {
-    return TaxEventsExportView(
-      format: format,
-      filename: 'kerosene-tax-events.$format',
-      educationalNotice:
-          'Eventos fiscais financeiros legados ainda não foram migrados para o KFE.',
+    final response = await _api.get(AppConfig.kfeTaxEventsExport(format));
+    return TaxEventsExportView.fromJson(
+      _requireMap(response.data, operation: 'exportTaxEvents'),
     );
   }
 
@@ -353,68 +498,117 @@ class RemoteBitcoinAccountsService implements BitcoinAccountsService {
     required String eventId,
     required String classification,
   }) async {
-    return TaxEventView(
-      id: eventId,
-      eventType: '',
-      asset: 'BTC',
-      quantitySats: 0,
-      classification: classification,
-      sourceRef: '',
-      createdAt: '',
+    final response = await _api.post(
+      AppConfig.kfeTaxEventClassify(eventId),
+      data: {'classification': classification},
+    );
+    return TaxEventView.fromJson(
+      _requireMap(response.data, operation: 'classifyTaxEvent'),
     );
   }
 
-  Future<String> _activeOrRotatedAddress(String accountId) async {
-    final dashboardResponse = await _api.get(AppConfig.kfeDashboard);
-    final dashboard = _requireMap(
-      dashboardResponse.data,
-      operation: 'createReceiveRequestDashboard',
-    );
-    final wallets = dashboard['wallets'];
-    if (wallets is List) {
-      for (final item in wallets) {
-        final wallet = _requireMap(item, operation: 'createReceiveRequest');
-        final id = (wallet['walletId'] ?? wallet['id'] ?? '').toString();
-        if (id == accountId) {
-          final activeAddress = wallet['activeAddress']?.toString().trim();
-          if (activeAddress != null && activeAddress.isNotEmpty) {
-            return activeAddress;
-          }
-          break;
-        }
-      }
-    }
-
-    final rotateResponse = await _api.post(
-      AppConfig.kfeWalletAddressRotate(accountId),
-    );
-    final rotated = _requireMap(
-      rotateResponse.data,
-      operation: 'createReceiveRequestRotate',
-    );
-    final address = rotated['address']?.toString().trim() ?? '';
-    if (address.isEmpty) {
-      throw const ServerException(
-        message: 'KFE não retornou endereço de recebimento.',
-        errorCode: 'ERR_KFE_RECEIVE_ADDRESS_EMPTY',
-      );
-    }
-    return address;
+  String? _kfeExpiresAt(String value) {
+    final normalized = value.trim().toUpperCase();
+    if (normalized.isEmpty || normalized == 'PERMANENT') return null;
+    final parsed = DateTime.tryParse(value.trim());
+    if (parsed != null) return parsed.toUtc().toIso8601String();
+    final now = DateTime.now().toUtc();
+    final expiresAt = switch (normalized) {
+      '15M' => now.add(const Duration(minutes: 15)),
+      '1H' => now.add(const Duration(hours: 1)),
+      '24H' => now.add(const Duration(hours: 24)),
+      _ => null,
+    };
+    return expiresAt?.toIso8601String();
   }
 
-  ReceivingRequestView _kfeReceiveRequest({
-    required String accountId,
-    required String address,
-    int? amountSats,
-    required String expiry,
-    required bool oneTime,
+  ReceivingRequestView _receiveRequestFromKfePaymentRequest(
+    Map<String, dynamic> json, {
+    String? fallbackAccountId,
+    bool oneTime = true,
   }) {
+    final accountId =
+        (json['walletId'] ?? json['accountId'] ?? fallbackAccountId ?? '')
+            .toString();
+    final address = json['address']?.toString().trim() ?? '';
+    final amountSats =
+        json['amountSats'] == null ? null : _intFromJson(json['amountSats']);
+    final amountBtc = amountSats == null
+        ? null
+        : (amountSats / 100000000.0).toStringAsFixed(8);
+    final bip21 = amountBtc == null
+        ? 'bitcoin:$address'
+        : 'bitcoin:$address?amount=$amountBtc';
+    final createdAt = DateTime.tryParse(
+          (json['createdAt'] ?? '').toString(),
+        ) ??
+        DateTime.now();
+    return ReceivingRequestView(
+      id: (json['id'] ?? json['publicId'] ?? '').toString(),
+      accountId: accountId,
+      address: address,
+      bip21: bip21,
+      status: _receiveRequestStatus(json['status']?.toString()),
+      amountSats: amountSats,
+      expiry: (json['expiresAt'] ?? '').toString(),
+      oneTime: oneTime,
+      createdAt: createdAt,
+    );
+  }
+
+  ReceivingRequestView _receiveRequestFromKfeAddress(
+    Map<String, dynamic> json, {
+    required String fallbackAccountId,
+  }) {
+    final accountId = (json['walletId'] ?? fallbackAccountId).toString();
+    final address = json['address']?.toString().trim() ?? '';
+    final createdAt = DateTime.tryParse(json['createdAt']?.toString() ?? '');
     return ReceivingRequestView.fromKfeActiveAddress(
       accountId: accountId,
       address: address,
-      amountSats: amountSats,
-      expiry: expiry,
-      oneTime: oneTime,
+      createdAt: createdAt,
     );
+  }
+
+  String _receiveRequestStatus(String? status) {
+    return switch ((status ?? '').toUpperCase()) {
+      'OPEN' => 'ACTIVE',
+      'PAID' => 'PAID',
+      'EXPIRED' => 'EXPIRED',
+      'HIDDEN' => 'HIDDEN',
+      'CANCELLED' => 'CANCELLED',
+      _ => status ?? 'ACTIVE',
+    };
+  }
+
+  bool _looksLikeUuid(String value) {
+    return RegExp(
+      r'^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$',
+    ).hasMatch(value.trim());
+  }
+
+  List<Map<String, dynamic>> _psbtInputs(List<String> selectedUtxoIds) {
+    return selectedUtxoIds.map((id) {
+      final separator = id.lastIndexOf(':');
+      if (separator <= 0 || separator == id.length - 1) {
+        throw ValidationException(
+          message: 'Identificador de UTXO inválido para PSBT: $id',
+          statusCode: 400,
+          errorCode: 'ERR_KFE_COLD_WALLET_INVALID_UTXO_ID',
+        );
+      }
+      final vout = int.tryParse(id.substring(separator + 1));
+      if (vout == null || vout < 0) {
+        throw ValidationException(
+          message: 'Vout inválido para PSBT: $id',
+          statusCode: 400,
+          errorCode: 'ERR_KFE_COLD_WALLET_INVALID_UTXO_VOUT',
+        );
+      }
+      return {
+        'txid': id.substring(0, separator),
+        'vout': vout,
+      };
+    }).toList();
   }
 }

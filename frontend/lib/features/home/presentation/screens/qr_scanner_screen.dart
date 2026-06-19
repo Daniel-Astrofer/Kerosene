@@ -1,8 +1,10 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_animate/flutter_animate.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 
 class QrScannerScreen extends StatefulWidget {
@@ -87,7 +89,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                 child: Row(
                   children: [
                     IconButton(
-                      icon: Icon(LucideIcons.chevronLeft,
+                      icon: Icon(KeroseneIcons.back,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 24),
                       onPressed: () => Navigator.of(context).pop(),
@@ -100,7 +102,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     ),
                     const Spacer(),
                     Text(
-                      'ESCANEIE QR CODE',
+                      context.tr.scanQR.toUpperCase(),
                       style: Theme.of(context)
                           .textTheme
                           .titleMedium!
@@ -113,8 +115,8 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                         return IconButton(
                           icon: Icon(
                             state.torchState == TorchState.on
-                                ? LucideIcons.zap
-                                : LucideIcons.zapOff,
+                                ? KeroseneIcons.lightning
+                                : KeroseneIcons.unavailable,
                             color: state.torchState == TorchState.on
                                 ? Theme.of(context).colorScheme.primary
                                 : Theme.of(context).colorScheme.onPrimary,
@@ -136,7 +138,7 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
                     ),
                     const SizedBox(width: AppSpacing.xs),
                     IconButton(
-                      icon: Icon(LucideIcons.refreshCcw,
+                      icon: Icon(KeroseneIcons.refresh,
                           color: Theme.of(context).colorScheme.onPrimary,
                           size: 20),
                       onPressed: () => _controller.switchCamera(),
@@ -176,14 +178,14 @@ class _QrScannerScreenState extends State<QrScannerScreen> {
               child: Column(
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  Icon(LucideIcons.qrCode,
+                  Icon(KeroseneIcons.qr,
                           color: Theme.of(context).colorScheme.primary,
                           size: 24)
                       .animate(onPlay: (c) => c.repeat())
                       .shimmer(duration: 1500.ms),
                   const SizedBox(height: AppSpacing.sm),
                   Text(
-                    'Aponte a câmera para um código QR de pagamento',
+                    context.tr.qrScannerInstruction,
                     style: Theme.of(context).textTheme.bodySmall!.copyWith(
                           color: Theme.of(context)
                               .colorScheme
@@ -316,11 +318,11 @@ class _ScanningLineState extends State<_ScanningLine>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(seconds: 2),
+      duration: KeroseneMotion.loop,
     )..repeat(reverse: true);
 
     _animation = Tween<double>(begin: 0, end: widget.size).animate(
-      CurvedAnimation(parent: _controller, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _controller, curve: KeroseneMotion.standard),
     );
   }
 

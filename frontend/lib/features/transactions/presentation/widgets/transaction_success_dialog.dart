@@ -1,10 +1,14 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import '../../../wallet/domain/entities/transaction.dart';
+
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class TransactionSuccessDialog extends ConsumerStatefulWidget {
   final TransactionType type;
@@ -35,41 +39,41 @@ class _TransactionSuccessDialogState
   Color get _color => AppNotificationStyle.accentFor(
         _isReceived ? AppNotificationTone.success : AppNotificationTone.warning,
       );
-  IconData get _icon => _isReceived ? Icons.arrow_downward : Icons.arrow_upward;
+  IconData get _icon => _isReceived ? KeroseneIcons.down : KeroseneIcons.up;
 
   @override
   void initState() {
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1500),
+      duration: KeroseneMotion.status,
     );
 
     _scaleAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.0, 0.4, curve: Curves.elasticOut),
+        curve: const Interval(0.0, 0.4, curve: KeroseneMotion.spring),
       ),
     );
 
     _checkAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.4, 0.7, curve: Curves.easeOut),
+        curve: const Interval(0.4, 0.7, curve: KeroseneMotion.standard),
       ),
     );
 
     _opacityAnimation = Tween<double>(begin: 0.0, end: 1.0).animate(
       CurvedAnimation(
         parent: _controller,
-        curve: const Interval(0.6, 0.8, curve: Curves.easeOut),
+        curve: const Interval(0.6, 0.8, curve: KeroseneMotion.standard),
       ),
     );
 
     _controller.forward();
 
     // Auto-close after 2.5 seconds
-    Future.delayed(const Duration(milliseconds: 2500), () {
+    Future.delayed(KeroseneMotion.ceremonial, () {
       if (mounted) Navigator.of(context).pop();
     });
   }
@@ -182,7 +186,7 @@ class _TransactionSuccessDialogState
                             color: _color,
                             fontSize: 15,
                             fontWeight: FontWeight.bold,
-                            fontFamily: 'IBMPlexSansHebrew',
+                            fontFamily: AppTypography.financialFontFamily,
                           ),
                         ),
                         const SizedBox(height: 4),

@@ -1,5 +1,11 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+
 import '../../../transactions/domain/entities/payment_link.dart';
+
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class PendingPaymentLinkItem extends StatelessWidget {
   final PaymentLink paymentLink;
@@ -13,6 +19,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final amountLabel = 'VALOR';
     final timeLeft = paymentLink.expiresAt != null
         ? paymentLink.expiresAt!.difference(DateTime.now())
         : Duration.zero;
@@ -24,7 +31,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
-        duration: const Duration(milliseconds: 300),
+        duration: KeroseneMotion.medium,
         margin: const EdgeInsets.only(right: 12),
         padding: const EdgeInsets.all(16),
         width: 280, // Fixed width for horizontal scroll
@@ -34,16 +41,15 @@ class PendingPaymentLinkItem extends StatelessWidget {
           borderRadius: BorderRadius.circular(24),
           border: Border.all(
             color: isCompleted
-                ? const Color(0xFF00FF94).withValues(alpha: 0.2)
-                : const Color(0xFFFFB800).withValues(alpha: 0.1),
+                ? AppColors.hexFF00FF94.withValues(alpha: 0.2)
+                : AppColors.hexFFFFB800.withValues(alpha: 0.1),
             width: 1.5,
           ),
           boxShadow: [
             BoxShadow(
-              color: (isCompleted
-                      ? const Color(0xFF00FF94)
-                      : const Color(0xFFFFB800))
-                  .withValues(alpha: 0.02),
+              color:
+                  (isCompleted ? AppColors.hexFF00FF94 : AppColors.hexFFFFB800)
+                      .withValues(alpha: 0.02),
               blurRadius: 10,
               spreadRadius: 0,
             ),
@@ -60,17 +66,15 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   padding: const EdgeInsets.all(10),
                   decoration: BoxDecoration(
                     color: isCompleted
-                        ? const Color(0xFF00FF94).withValues(alpha: 0.1)
-                        : const Color(0xFFFFB800).withValues(alpha: 0.1),
+                        ? AppColors.hexFF00FF94.withValues(alpha: 0.1)
+                        : AppColors.hexFFFFB800.withValues(alpha: 0.1),
                     borderRadius: BorderRadius.circular(12),
                   ),
                   child: Icon(
-                    isCompleted
-                        ? Icons.check_circle_rounded
-                        : Icons.hourglass_top_rounded,
+                    isCompleted ? KeroseneIcons.success : KeroseneIcons.pending,
                     color: isCompleted
-                        ? const Color(0xFF00FF94)
-                        : const Color(0xFFFFB800),
+                        ? AppColors.hexFF00FF94
+                        : AppColors.hexFFFFB800,
                     size: 18,
                   ),
                 ),
@@ -87,10 +91,10 @@ class PendingPaymentLinkItem extends StatelessWidget {
                             : (isExpired ? 'EXPIRADO' : 'PENDENTE'),
                         style: TextStyle(
                           color: isCompleted
-                              ? const Color(0xFF00FF94)
+                              ? AppColors.hexFF00FF94
                               : (isExpired
                                   ? Colors.redAccent
-                                  : const Color(0xFFFFB800)),
+                                  : AppColors.hexFFFFB800),
                           fontSize: 10,
                           fontWeight: FontWeight.w900,
                           letterSpacing: 1.2,
@@ -117,7 +121,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
                     Text(
-                      'VALOR',
+                      amountLabel,
                       style: TextStyle(
                         color: Theme.of(context)
                             .colorScheme
@@ -133,7 +137,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w800,
-                        fontFamily: 'IBMPlexSansHebrew',
+                        fontFamily: AppTypography.financialFontFamily,
                       ),
                     ),
                   ],
@@ -177,7 +181,7 @@ class PendingPaymentLinkItem extends StatelessWidget {
                   ),
                 ),
                 Icon(
-                  Icons.arrow_forward_ios_rounded,
+                  KeroseneIcons.chevronRight,
                   size: 12,
                   color: Theme.of(context)
                       .colorScheme

@@ -1,6 +1,8 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 enum LoginAccessMotionHeroMode {
   passkeyConnect,
@@ -41,7 +43,7 @@ class _LoginAccessMotionHeroState extends State<LoginAccessMotionHero>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 2200),
+      duration: KeroseneMotion.heroLoop,
     )..repeat();
   }
 
@@ -59,7 +61,7 @@ class _LoginAccessMotionHeroState extends State<LoginAccessMotionHero>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          final progress = Curves.easeInOutCubic.transform(_controller.value);
+          final progress = KeroseneMotion.standard.transform(_controller.value);
           final pulse = 0.97 + (math.sin(progress * math.pi * 2) * 0.025);
 
           return Stack(
@@ -89,9 +91,9 @@ class _LoginAccessMotionHeroState extends State<LoginAccessMotionHero>
                 progress: progress,
               ),
               AnimatedSwitcher(
-                duration: const Duration(milliseconds: 320),
-                switchInCurve: Curves.easeOutCubic,
-                switchOutCurve: Curves.easeInCubic,
+                duration: KeroseneMotion.long,
+                switchInCurve: KeroseneMotion.standard,
+                switchOutCurve: KeroseneMotion.exit,
                 transitionBuilder: (child, animation) {
                   final slide = Tween<Offset>(
                     begin: const Offset(0, 0.06),
@@ -276,31 +278,31 @@ class _SceneLayer extends StatelessWidget {
           color: color,
           progress: progress,
           size: size,
-          icon: Icons.verified_user_rounded,
+          icon: KeroseneIcons.security,
         ),
       LoginAccessMotionHeroMode.warning => _StatusScene(
           color: color,
           progress: progress,
           size: size,
-          icon: Icons.warning_amber_rounded,
+          icon: KeroseneIcons.warning,
         ),
       LoginAccessMotionHeroMode.rejected => _StatusScene(
           color: color,
           progress: progress,
           size: size,
-          icon: Icons.key_off_rounded,
+          icon: KeroseneIcons.keyOff,
         ),
       LoginAccessMotionHeroMode.missingUser => _StatusScene(
           color: color,
           progress: progress,
           size: size,
-          icon: Icons.person_off_rounded,
+          icon: KeroseneIcons.userUnavailable,
         ),
       LoginAccessMotionHeroMode.sessionExpired => _StatusScene(
           color: color,
           progress: progress,
           size: size,
-          icon: Icons.timer_off_rounded,
+          icon: KeroseneIcons.timerOff,
         ),
     };
   }
@@ -330,14 +332,14 @@ class _PasskeyConnectScene extends StatelessWidget {
           Positioned(
             left: size * 0.14,
             child: _IconBadge(
-              icon: Icons.cloud_outlined,
+              icon: KeroseneIcons.server,
               color: color,
             ),
           ),
           Positioned(
             right: size * 0.14,
             child: _IconBadge(
-              icon: Icons.hub_rounded,
+              icon: KeroseneIcons.hub,
               color: color,
             ),
           ),
@@ -396,14 +398,14 @@ class _PasskeyTransferScene extends StatelessWidget {
           Positioned(
             left: size * 0.16,
             child: _IconBadge(
-              icon: Icons.key_rounded,
+              icon: KeroseneIcons.key,
               color: color,
             ),
           ),
           Positioned(
             right: size * 0.16,
             child: _IconBadge(
-              icon: Icons.lock_open_rounded,
+              icon: KeroseneIcons.unlock,
               color: color,
             ),
           ),
@@ -485,7 +487,7 @@ class _PasskeyPromptScene extends StatelessWidget {
               mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Icon(
-                  Icons.fingerprint_rounded,
+                  KeroseneIcons.biometric,
                   size: 44,
                   color: color,
                 ),
@@ -552,7 +554,7 @@ class _PassphraseScene extends StatelessWidget {
             right: size * 0.20,
             top: size * 0.23,
             child: _IconBadge(
-              icon: Icons.key_rounded,
+              icon: KeroseneIcons.key,
               color: color,
               compact: true,
             ),
@@ -690,7 +692,7 @@ class _MultisigScene extends StatelessWidget {
             child: Transform.scale(
               scale: pulse,
               child: Icon(
-                Icons.shield_rounded,
+                KeroseneIcons.shield,
                 size: 40,
                 color: color,
               ),

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class PushNotificationCard extends StatelessWidget {
   final String title;
@@ -36,7 +37,7 @@ class PushNotificationCard extends StatelessWidget {
       message: message,
       footerLabel: footerLabel,
       tone: tone,
-      leadingIcon: leadingIcon ?? Icons.notifications_rounded,
+      leadingIcon: leadingIcon ?? KeroseneIcons.info,
       padding: padding,
       borderRadius: borderRadius,
       minHeight: minHeight,

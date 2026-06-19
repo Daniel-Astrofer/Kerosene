@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 class SeedGrid extends StatefulWidget {
   final int selectedLength;
@@ -26,7 +28,7 @@ class _SeedGridState extends State<SeedGrid> {
           width: 200,
           height: 40,
           decoration: BoxDecoration(
-            color: const Color(0xFF0A0A0E),
+            color: KeroseneBrandTokens.backgroundSoft,
             borderRadius: BorderRadius.circular(20),
             border: Border.all(
               color: Theme.of(context)
@@ -49,10 +51,10 @@ class _SeedGridState extends State<SeedGrid> {
         Container(
           padding: const EdgeInsets.all(24),
           decoration: BoxDecoration(
-            color: const Color(0xFF030303),
+            color: KeroseneBrandTokens.background,
             borderRadius: BorderRadius.circular(24),
             border: Border.all(
-              color: const Color(0xFF1E3A8A)
+              color: KeroseneBrandTokens.info
                   .withValues(alpha: 0.3), // subtle blue border
               width: 1,
             ),
@@ -74,7 +76,7 @@ class _SeedGridState extends State<SeedGrid> {
                   Text(
                     number,
                     style: TextStyle(
-                      fontFamily: 'Inter',
+                      fontFamily: AppTypography.bodyFontFamily,
                       color: Theme.of(context)
                           .colorScheme
                           .onPrimary
@@ -88,7 +90,7 @@ class _SeedGridState extends State<SeedGrid> {
                     child: TextField(
                       controller: widget.controllers[index],
                       style: TextStyle(
-                        fontFamily: 'Inter',
+                        fontFamily: AppTypography.bodyFontFamily,
                         color: Theme.of(context).colorScheme.onPrimary,
                         fontSize: 14,
                         fontWeight: FontWeight.w500,
@@ -116,14 +118,14 @@ class _SeedGridState extends State<SeedGrid> {
         onTap: () => widget.onLengthChanged(length),
         child: Container(
           decoration: BoxDecoration(
-            color: isSelected ? const Color(0xFF2563EB) : Colors.transparent,
+            color: isSelected ? KeroseneBrandTokens.info : Colors.transparent,
             borderRadius: BorderRadius.circular(20),
           ),
           alignment: Alignment.center,
           child: Text(
             length.toString(),
             style: TextStyle(
-              fontFamily: 'Inter',
+              fontFamily: AppTypography.bodyFontFamily,
               color: isSelected
                   ? Theme.of(context).colorScheme.onPrimary
                   : Theme.of(context)

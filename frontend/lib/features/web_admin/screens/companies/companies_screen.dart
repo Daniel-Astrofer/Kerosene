@@ -8,6 +8,7 @@ import '../../theme/admin_colors.dart';
 import '../../theme/admin_typography.dart';
 import '../../theme/admin_theme.dart';
 import '../../widgets/admin_widgets.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class CompaniesScreen extends ConsumerWidget {
   const CompaniesScreen({super.key});
@@ -36,7 +37,7 @@ class CompaniesScreen extends ConsumerWidget {
               subtitle: context.tr.adminCompaniesSubtitle,
               trailing: OutlinedButton.icon(
                 onPressed: () => _invalidate(ref),
-                icon: const Icon(Icons.refresh, size: 16),
+                icon: const Icon(KeroseneIcons.refresh, size: 16),
                 label: Text(context.tr.adminActionRefresh),
               ),
             ),
@@ -45,13 +46,13 @@ class CompaniesScreen extends ConsumerWidget {
                 _AsyncEntityMetric(
                   title: context.tr.adminCompaniesMetricControlPlane,
                   asyncValue: health,
-                  icon: Icons.dns_outlined,
+                  icon: KeroseneIcons.dns,
                   subtitleKey: 'service',
                 ),
                 _AsyncEntityMetric(
                   title: 'Bitcoin Core',
                   asyncValue: blockchain,
-                  icon: Icons.currency_bitcoin,
+                  icon: KeroseneIcons.bitcoin,
                   subtitleBuilder: (data) {
                     final chain = _map(data['chain']);
                     return context.tr
@@ -61,7 +62,7 @@ class CompaniesScreen extends ConsumerWidget {
                 _AsyncEntityMetric(
                   title: 'Lightning LND',
                   asyncValue: lightning,
-                  icon: Icons.flash_on_outlined,
+                  icon: KeroseneIcons.lightning,
                   subtitleBuilder: (data) {
                     final node = _map(data['node']);
                     return context.tr.adminActiveChannelsValue(
@@ -72,7 +73,7 @@ class CompaniesScreen extends ConsumerWidget {
                 _AsyncEntityMetric(
                   title: context.tr.adminCompaniesMetricVaultRaft,
                   asyncValue: vault,
-                  icon: Icons.account_tree_outlined,
+                  icon: KeroseneIcons.network,
                   subtitleBuilder: (data) => context.tr.adminVotersValue(
                     '${data['votingServers'] ?? 0}',
                     '${data['expectedServers'] ?? 3}',
@@ -246,7 +247,7 @@ class _OperationalEntitiesPanel extends StatelessWidget {
 
     return AdminPanel(
       title: context.tr.adminCompaniesOperationalEntities,
-      icon: Icons.business_outlined,
+      icon: KeroseneIcons.business,
       child: AdminDataTable(
         columns: [
           context.tr.adminColumnEntity,
@@ -270,7 +271,7 @@ class _RoutingPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     return AdminPanel(
       title: context.tr.adminCompaniesRoutingDependencies,
-      icon: Icons.route_outlined,
+      icon: KeroseneIcons.route,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [

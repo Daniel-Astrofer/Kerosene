@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/utils/money_display.dart';
@@ -51,7 +51,7 @@ class SelfCustodyBlockedCard extends StatelessWidget {
           Row(
             children: [
               const Icon(
-                LucideIcons.shieldAlert,
+                KeroseneIcons.review,
                 color: receiveFlowTextColor,
                 size: 16,
               ),

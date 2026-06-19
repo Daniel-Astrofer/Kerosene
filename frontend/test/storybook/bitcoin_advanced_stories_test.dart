@@ -36,7 +36,9 @@ void main() {
     expect(tester.takeException(), isNull);
     expect(find.byType(BitcoinAccountsScreen), findsOneWidget);
     expect(find.text('Cartão Kerosene'), findsWidgets);
-    expect(find.text('Carteira interna'), findsOneWidget);
+    expect(find.text('STATUS DA CARTEIRA'), findsOneWidget);
+    expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
+    expect(find.text('Criar Carteira'), findsOneWidget);
   });
 
   testWidgets('cold wallet creation story renders the first flow screen',

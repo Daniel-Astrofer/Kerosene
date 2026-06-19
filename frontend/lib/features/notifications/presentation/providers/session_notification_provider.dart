@@ -1,4 +1,6 @@
 import 'dart:async';
+
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -8,6 +10,7 @@ import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/notifications/data/datasources/notification_remote_datasource.dart';
 import 'package:kerosene/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/notifications/domain/entities/device_token.dart';
 import 'package:kerosene/features/notifications/domain/repositories/notification_repository.dart';
 
 class SessionNotificationFeedNotifier
@@ -203,7 +206,7 @@ class NotificationBannerNotifier extends Notifier<SessionNotificationItem?> {
   void show(SessionNotificationItem notification) {
     _dismissTimer?.cancel();
     state = notification;
-    _dismissTimer = Timer(const Duration(seconds: 6), dismiss);
+    _dismissTimer = Timer(KeroseneMotion.notificationLongHold, dismiss);
   }
 
   void dismiss() {
@@ -248,3 +251,13 @@ final notificationBannerProvider =
     NotifierProvider<NotificationBannerNotifier, SessionNotificationItem?>(
   NotificationBannerNotifier.new,
 );
+
+final activeDeviceTokensProvider =
+    FutureProvider.autoDispose<List<DeviceToken>>((ref) async {
+  final result =
+      await ref.read(notificationRepositoryProvider).activeDeviceTokens();
+  return result.fold(
+    (failure) => throw Exception(failure.message),
+    (tokens) => tokens,
+  );
+});

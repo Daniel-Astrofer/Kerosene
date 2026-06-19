@@ -1,8 +1,10 @@
 import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 
@@ -38,13 +40,13 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
   IconData get icon {
     switch (this) {
       case AppPrimaryDestination.home:
-        return LucideIcons.home;
+        return KeroseneIcons.home;
       case AppPrimaryDestination.card:
-        return LucideIcons.walletCards;
+        return KeroseneIcons.wallet;
       case AppPrimaryDestination.history:
-        return LucideIcons.receipt;
+        return KeroseneIcons.history;
       case AppPrimaryDestination.settings:
-        return LucideIcons.settings;
+        return KeroseneIcons.settings;
     }
   }
 }
@@ -142,7 +144,7 @@ class _AppPrimaryCircularNavigationOverlay extends StatelessWidget {
                 width: AppPrimaryNavigationBar._gestureIndicatorWidth,
                 height: AppPrimaryNavigationBar._gestureIndicatorHeight,
                 decoration: BoxDecoration(
-                  color: Colors.white,
+                  color: KeroseneBrandTokens.textPrimary,
                   borderRadius: BorderRadius.circular(999),
                 ),
               ),
@@ -175,10 +177,10 @@ class _AppPrimaryFloatingMenuButtonState
     super.initState();
     _pressController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 100),
+      duration: KeroseneMotion.fast,
     );
     _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
-      CurvedAnimation(parent: _pressController, curve: Curves.easeInOut),
+      CurvedAnimation(parent: _pressController, curve: KeroseneMotion.standard),
     );
   }
 
@@ -221,7 +223,7 @@ class _AppPrimaryFloatingMenuButtonState
                   end: Alignment.bottomRight,
                   colors: [
                     AppColors.surface,
-                    Color(0xFF0C0E10),
+                    KeroseneBrandTokens.backgroundSoft,
                   ],
                 ),
                 border: Border.all(
@@ -242,8 +244,8 @@ class _AppPrimaryFloatingMenuButtonState
                 ],
               ),
               child: const Icon(
-                LucideIcons.menu,
-                color: Colors.white,
+                KeroseneIcons.menu,
+                color: KeroseneBrandTokens.textPrimary,
                 size: 24,
               ),
             ),
@@ -297,7 +299,7 @@ class _AppPrimaryMenuPanelState extends State<_AppPrimaryMenuPanel>
     super.initState();
     _controller = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 320),
+      duration: KeroseneMotion.long,
     );
     _controller.forward();
   }
@@ -316,8 +318,8 @@ class _AppPrimaryMenuPanelState extends State<_AppPrimaryMenuPanel>
         filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
         child: Container(
           decoration: BoxDecoration(
-            color:
-                const Color(0xCC0A0D10), // Elegant dark translucent background
+            color: KeroseneBrandTokens.backgroundSoft
+                .withValues(alpha: 0.80), // Elegant dark translucent background
             borderRadius: BorderRadius.circular(20),
             border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
             boxShadow: [
@@ -338,7 +340,7 @@ class _AppPrimaryMenuPanelState extends State<_AppPrimaryMenuPanel>
 
                 final animation = CurvedAnimation(
                   parent: _controller,
-                  curve: Interval(start, end, curve: Curves.easeOutQuart),
+                  curve: Interval(start, end, curve: KeroseneMotion.entrance),
                 );
 
                 return AnimatedBuilder(
@@ -389,13 +391,15 @@ class _AppPrimaryMenuDestinationTileState
     // Determine colors based on selection and state
     final Color contentColor = widget.selected
         ? activeColor
-        : (_isPressed ? Colors.white : Colors.white.withValues(alpha: 0.85));
+        : (_isPressed
+            ? KeroseneBrandTokens.textPrimary
+            : KeroseneBrandTokens.textSecondary);
 
     return Padding(
       padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
       child: AnimatedScale(
         scale: _isPressed ? 0.98 : 1.0,
-        duration: const Duration(milliseconds: 100),
+        duration: KeroseneMotion.fast,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
@@ -412,8 +416,8 @@ class _AppPrimaryMenuDestinationTileState
                   },
             borderRadius: BorderRadius.circular(12),
             child: AnimatedContainer(
-              duration: const Duration(milliseconds: 200),
-              curve: Curves.easeOutCubic,
+              duration: KeroseneMotion.short,
+              curve: KeroseneMotion.standard,
               decoration: BoxDecoration(
                 borderRadius: BorderRadius.circular(12),
                 color: widget.selected
@@ -439,7 +443,7 @@ class _AppPrimaryMenuDestinationTileState
                   const SizedBox(width: 16),
                   Expanded(
                     child: AnimatedDefaultTextStyle(
-                      duration: const Duration(milliseconds: 200),
+                      duration: KeroseneMotion.short,
                       style: TextStyle(
                         color: contentColor,
                         fontSize: 14.5,
@@ -457,13 +461,13 @@ class _AppPrimaryMenuDestinationTileState
                   if (widget.selected)
                     TweenAnimationBuilder<double>(
                       tween: Tween<double>(begin: 0.0, end: 1.0),
-                      duration: const Duration(milliseconds: 280),
-                      curve: Curves.easeOutBack,
+                      duration: KeroseneMotion.medium,
+                      curve: KeroseneMotion.spring,
                       builder: (context, value, child) {
                         return Transform.scale(
                           scale: value,
                           child: const Icon(
-                            LucideIcons.check,
+                            KeroseneIcons.success,
                             color: AppColors.primary,
                             size: 16,
                           ),

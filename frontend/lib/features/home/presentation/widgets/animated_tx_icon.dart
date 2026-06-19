@@ -1,5 +1,6 @@
 import 'dart:math';
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 
 // ─────────────────────────────────────────────────────────────────────────────
 // Animated Transaction Icon — factory per type + method
@@ -94,19 +95,19 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
   Duration _primaryDuration(TxIconKind k) {
     switch (k) {
       case TxIconKind.nfc:
-        return const Duration(milliseconds: 1600);
+        return KeroseneMotion.status;
       case TxIconKind.pending:
-        return const Duration(seconds: 2);
+        return KeroseneMotion.loop;
       case TxIconKind.swap:
-        return const Duration(milliseconds: 1800);
+        return KeroseneMotion.loop;
       case TxIconKind.qrCode:
-        return const Duration(milliseconds: 2400);
+        return KeroseneMotion.ceremonial;
       case TxIconKind.confirmed:
-        return const Duration(milliseconds: 700);
+        return KeroseneMotion.calm;
       case TxIconKind.failed:
-        return const Duration(milliseconds: 500);
+        return KeroseneMotion.slow;
       default:
-        return const Duration(milliseconds: 1400);
+        return KeroseneMotion.status;
     }
   }
 
@@ -116,9 +117,9 @@ class _AnimatedTxIconState extends State<AnimatedTxIcon>
       case TxIconKind.receive:
       case TxIconKind.deposit:
       case TxIconKind.withdrawal:
-        return const Duration(milliseconds: 800);
+        return KeroseneMotion.calm;
       default:
-        return const Duration(seconds: 1);
+        return KeroseneMotion.calm;
     }
   }
 
@@ -226,7 +227,8 @@ class _SendPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Animated dot sliding up the stem
-    final dotY = stemBot - (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    final dotY =
+        stemBot - (stemBot - stemTop) * KeroseneMotion.standard.transform(t);
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
@@ -274,7 +276,8 @@ class _ReceivePainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // dot travels down
-    final dotY = stemTop + (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    final dotY =
+        stemTop + (stemBot - stemTop) * KeroseneMotion.standard.transform(t);
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
@@ -327,7 +330,8 @@ class _DepositPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Dot sliding down
-    final dotY = stemTop + (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    final dotY =
+        stemTop + (stemBot - stemTop) * KeroseneMotion.standard.transform(t);
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
@@ -378,7 +382,8 @@ class _WithdrawalPainter extends CustomPainter {
     canvas.drawPath(path, paint);
 
     // Dot travels up from floor
-    final dotY = stemBot - (stemBot - stemTop) * Curves.easeInOut.transform(t);
+    final dotY =
+        stemBot - (stemBot - stemTop) * KeroseneMotion.standard.transform(t);
     canvas.drawCircle(
       Offset(cx, dotY),
       sw * 1.1,
@@ -744,7 +749,7 @@ class _ConfirmedPainter extends CustomPainter {
     final pm = path.computeMetrics();
     for (final m in pm) {
       final extracted =
-          m.extractPath(0, m.length * Curves.easeOut.transform(t));
+          m.extractPath(0, m.length * KeroseneMotion.standard.transform(t));
       canvas.drawPath(
         extracted,
         Paint()
@@ -803,7 +808,7 @@ class _FailedPainter extends CustomPainter {
     for (final path in [p1, p2]) {
       for (final m in path.computeMetrics()) {
         canvas.drawPath(
-          m.extractPath(0, m.length * Curves.easeOut.transform(t)),
+          m.extractPath(0, m.length * KeroseneMotion.standard.transform(t)),
           strokePaint,
         );
       }

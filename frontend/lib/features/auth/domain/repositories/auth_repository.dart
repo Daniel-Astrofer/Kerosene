@@ -43,8 +43,11 @@ abstract class AuthRepository {
   /// Fazer logout
   Future<Either<Failure, void>> logout();
 
-  /// Obter usuário atual do cache
-  Future<Either<Failure, User>> getCurrentUser();
+  /// Obter usuário atual.
+  Future<Either<Failure, User>> getCurrentUser({bool forceRemote = false});
+
+  /// Verificar se a API de autenticação está respondendo.
+  Future<Either<Failure, void>> checkServerAvailability();
 
   /// Obter Backup Codes do cache local
   Future<Either<Failure, List<String>>> getBackupCodes();

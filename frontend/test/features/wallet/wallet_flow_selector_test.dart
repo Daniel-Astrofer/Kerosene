@@ -55,7 +55,7 @@ void main() {
     expect(selectedWallet?.id, mockWallets[1].id);
   });
 
-  testWidgets('wallet flow selector falls back to grid for three wallets',
+  testWidgets('wallet flow selector uses two column layout for three wallets',
       (tester) async {
     Wallet? selectedWallet;
     final wallets = [
@@ -80,7 +80,7 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.byType(GridView), findsOneWidget);
+    expect(find.byType(ListView), findsNothing);
     expect(find.text('Travel\nwallet'), findsOneWidget);
 
     final firstTile = tester.getRect(
@@ -89,8 +89,9 @@ void main() {
     final thirdTile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${wallets[2].id}')),
     );
-    expect(firstTile.height, lessThan(400));
-    expect(thirdTile.top, greaterThan(firstTile.top));
+    expect(firstTile.top, closeTo(64, 1));
+    expect(firstTile.bottom, closeTo(900, 1));
+    expect(thirdTile.top, closeTo(firstTile.top, 1));
 
     await tester.tap(find.byKey(ValueKey('wallet-flow-tile-${wallets[2].id}')));
     await tester.pump(const Duration(milliseconds: 220));
@@ -131,6 +132,75 @@ void main() {
     await tester.pump();
 
     expect(selectedWallet?.id, wallets.first.id);
+  });
+
+  testWidgets('wallet flow selector keeps inactive wallets visible',
+      (tester) async {
+    final wallets = [
+      mockWallets.first.copyWith(isActive: false),
+      mockWallets[1],
+    ];
+
+    await tester.binding.setSurfaceSize(const Size(430, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpSelector(
+      tester,
+      wallets: wallets,
+      onContinue: (_) {},
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Reserva\nprincipal'), findsOneWidget);
+    expect(find.text('Cold\nvault'), findsOneWidget);
+  });
+
+  testWidgets('wallet flow selector shows wallet name and custody label',
+      (tester) async {
+    final wallets = [
+      Wallet(
+        id: 'wallet-global',
+        name: 'Carteira Global',
+        address: 'kerosene:global',
+        walletMode: 'INTERNAL',
+        balance: 0.01,
+        derivationPath: "m/84'/0'/0'/0/0",
+        type: WalletType.nativeSegwit,
+        createdAt: DateTime(2026, 6, 1),
+        updatedAt: DateTime(2026, 6, 1),
+      ),
+      Wallet(
+        id: 'wallet-custodial',
+        name: 'Reserva on-chain',
+        address: 'bc1qcustodial',
+        walletMode: 'CUSTODIAL_ONCHAIN',
+        balance: 0.02,
+        derivationPath: "m/84'/0'/1'/0/0",
+        type: WalletType.nativeSegwit,
+        createdAt: DateTime(2026, 6, 1),
+        updatedAt: DateTime(2026, 6, 1),
+      ),
+    ];
+
+    await tester.binding.setSurfaceSize(const Size(430, 900));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
+    await _pumpSelector(
+      tester,
+      wallets: wallets,
+      onContinue: (_) {},
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Carteira\nGlobal'), findsOneWidget);
+    expect(find.text('Carteira global'), findsOneWidget);
+    expect(find.text('Reserva\non-chain'), findsOneWidget);
+    expect(find.text('Custodial on-chain'), findsOneWidget);
+    expect(find.text('KEROSENE'), findsNothing);
   });
 }
 

@@ -38,16 +38,12 @@ blocksonly=0
 maxmempool=${max_mempool_mb}
 dbcache=${dbcache_mb}
 fallbackfee=0.0002
-port=${p2p_port}
-rpcbind=0.0.0.0
-rpcport=${rpc_port}
 rpcallowip=0.0.0.0/0
 rpcuser=${BITCOIN_RPC_USER}
 rpcpassword=${BITCOIN_RPC_PASSWORD}
 zmqpubrawtx=tcp://0.0.0.0:28332
 zmqpubhashblock=tcp://0.0.0.0:28333
 zmqpubrawblock=tcp://0.0.0.0:28334
-wallet=${wallet}
 EOF
 
 case "$chain" in
@@ -63,7 +59,14 @@ case "$chain" in
     printf '%s\n' "signet=1" >> "$bitcoin_dir/bitcoin.conf"
     ;;
   regtest)
-    printf '%s\n' "regtest=1" >> "$bitcoin_dir/bitcoin.conf"
+    cat >> "$bitcoin_dir/bitcoin.conf" <<EOF
+regtest=1
+[regtest]
+port=${p2p_port}
+rpcbind=0.0.0.0
+rpcport=${rpc_port}
+wallet=${wallet}
+EOF
     ;;
   *)
     echo "Unsupported BITCOIN_CHAIN: $chain" >&2

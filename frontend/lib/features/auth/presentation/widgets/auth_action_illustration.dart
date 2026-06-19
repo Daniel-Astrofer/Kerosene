@@ -1,12 +1,14 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 double _sceneProgress(
   double progress,
   double begin,
   double end, {
-  Curve curve = Curves.easeInOutCubic,
+  Curve curve = KeroseneMotion.standard,
 }) {
   final t = ((progress - begin) / (end - begin)).clamp(0.0, 1.0);
   return curve.transform(t);
@@ -35,7 +37,7 @@ class AuthActionIllustration extends StatefulWidget {
     required this.mode,
     required this.color,
     this.size = 172,
-    this.duration = const Duration(milliseconds: 5200),
+    this.duration = KeroseneMotion.secureLoop,
   });
 
   @override
@@ -107,7 +109,7 @@ class _AuthActionIllustrationState extends State<AuthActionIllustration>
       child: AnimatedBuilder(
         animation: _controller,
         builder: (context, _) {
-          final progress = Curves.easeInOutCubic.transform(_controller.value);
+          final progress = KeroseneMotion.standard.transform(_controller.value);
           return Stack(
             alignment: Alignment.center,
             clipBehavior: Clip.none,
@@ -151,14 +153,14 @@ class _ModeScene extends StatelessWidget {
       AuthActionIllustrationMode.connectingServer => _ConnectionScene(
           color: color,
           progress: progress,
-          sourceIcon: Icons.cloud_queue_rounded,
-          targetIcon: Icons.dns_rounded,
+          sourceIcon: KeroseneIcons.server,
+          targetIcon: KeroseneIcons.network,
         ),
       AuthActionIllustrationMode.keyTransfer => _ConnectionScene(
           color: color,
           progress: progress,
-          sourceIcon: Icons.key_rounded,
-          targetIcon: Icons.lock_open_rounded,
+          sourceIcon: KeroseneIcons.key,
+          targetIcon: KeroseneIcons.unlock,
           emphasizeTarget: true,
         ),
       AuthActionIllustrationMode.fingerprintScan => _FingerprintScene(
@@ -172,36 +174,36 @@ class _ModeScene extends StatelessWidget {
       AuthActionIllustrationMode.shieldSuccess => _TerminalScene(
           color: color,
           progress: progress,
-          icon: Icons.verified_user_rounded,
-          badgeIcon: Icons.check_rounded,
+          icon: KeroseneIcons.security,
+          badgeIcon: KeroseneIcons.check,
           badgeColor: color,
         ),
       AuthActionIllustrationMode.userMissing => _TerminalScene(
           color: color,
           progress: progress,
-          icon: Icons.person_off_rounded,
-          badgeIcon: Icons.search_off_rounded,
+          icon: KeroseneIcons.userUnavailable,
+          badgeIcon: KeroseneIcons.searchUnavailable,
           badgeColor: color,
         ),
       AuthActionIllustrationMode.warning => _TerminalScene(
           color: color,
           progress: progress,
-          icon: Icons.warning_amber_rounded,
-          badgeIcon: Icons.priority_high_rounded,
+          icon: KeroseneIcons.warning,
+          badgeIcon: KeroseneIcons.warning,
           badgeColor: color,
         ),
       AuthActionIllustrationMode.keyRejected => _TerminalScene(
           color: color,
           progress: progress,
-          icon: Icons.key_off_rounded,
-          badgeIcon: Icons.close_rounded,
+          icon: KeroseneIcons.keyOff,
+          badgeIcon: KeroseneIcons.close,
           badgeColor: color,
         ),
       AuthActionIllustrationMode.sessionExpired => _TerminalScene(
           color: color,
           progress: progress,
-          icon: Icons.timer_off_rounded,
-          badgeIcon: Icons.refresh_rounded,
+          icon: KeroseneIcons.timerOff,
+          badgeIcon: KeroseneIcons.refresh,
           badgeColor: color,
         ),
     };
@@ -482,16 +484,16 @@ class _ConnectionScene extends StatelessWidget {
                 alignment: Alignment.center,
                 children: [
                   Icon(
-                    sourceIcon == Icons.key_rounded
-                        ? Icons.shield_rounded
-                        : Icons.sync_rounded,
+                    sourceIcon == KeroseneIcons.key
+                        ? KeroseneIcons.shield
+                        : KeroseneIcons.sync,
                     size: 44,
                     color: color.withValues(alpha: 0.14),
                   ),
                   Icon(
-                    sourceIcon == Icons.key_rounded
-                        ? Icons.key_rounded
-                        : Icons.cloud_sync_rounded,
+                    sourceIcon == KeroseneIcons.key
+                        ? KeroseneIcons.key
+                        : KeroseneIcons.sync,
                     size: 34,
                     color: color.withValues(alpha: 0.96),
                   ),
@@ -522,7 +524,7 @@ class _FingerprintScene extends StatelessWidget {
       progress,
       0.32,
       0.96,
-      curve: Curves.easeInOutSine,
+      curve: KeroseneMotion.standard,
     );
     final promptReveal = _sceneProgress(progress, 0.62, 0.92);
     final scanAlignment = -0.78 + (scanProgress * 1.56);
@@ -550,7 +552,7 @@ class _FingerprintScene extends StatelessWidget {
               child: Opacity(
                 opacity: 0.20 + (printReveal * 0.80),
                 child: Icon(
-                  Icons.fingerprint_rounded,
+                  KeroseneIcons.biometric,
                   size: 58,
                   color: color.withValues(alpha: 0.96),
                 ),
@@ -601,7 +603,7 @@ class _FingerprintScene extends StatelessWidget {
                 border: Border.all(color: color.withValues(alpha: 0.18)),
               ),
               child: Icon(
-                Icons.touch_app_rounded,
+                KeroseneIcons.touch,
                 size: 16,
                 color: color.withValues(alpha: 0.88),
               ),
@@ -685,7 +687,7 @@ class _RecoveryScene extends StatelessWidget {
             color: color,
             alpha: 0.10,
             reveal: firstReveal,
-            icon: Icons.key_rounded,
+            icon: KeroseneIcons.key,
           ),
         ),
         Transform.translate(
@@ -694,7 +696,7 @@ class _RecoveryScene extends StatelessWidget {
             color: color,
             alpha: 0.14,
             reveal: secondReveal,
-            icon: Icons.security_rounded,
+            icon: KeroseneIcons.security,
           ),
         ),
         Transform.translate(
@@ -720,7 +722,7 @@ class _RecoveryScene extends StatelessWidget {
                 mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Icon(
-                    Icons.inventory_2_rounded,
+                    KeroseneIcons.archive,
                     size: 34,
                     color: color.withValues(alpha: 0.96),
                   ),
@@ -827,7 +829,7 @@ class _TerminalScene extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final reveal = Curves.easeOutBack.transform(progress.clamp(0.0, 1.0));
+    final reveal = KeroseneMotion.spring.transform(progress.clamp(0.0, 1.0));
     return Stack(
       alignment: Alignment.center,
       children: [

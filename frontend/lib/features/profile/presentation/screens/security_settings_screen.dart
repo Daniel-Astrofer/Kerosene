@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
-import 'package:kerosene/core/presentation/widgets/cyber_background.dart';
+import 'package:kerosene/core/presentation/widgets/kerosene_screen_background.dart';
 import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
@@ -15,6 +15,9 @@ import 'package:kerosene/features/security/domain/entities/account_security_prof
 import 'package:kerosene/features/security/domain/entities/passkey_inventory.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/design_system/icons.dart';
+
+import 'package:kerosene/core/theme/app_typography.dart';
 
 class SecuritySettingsScreen extends ConsumerStatefulWidget {
   const SecuritySettingsScreen({super.key});
@@ -276,7 +279,7 @@ class _SecuritySettingsScreenState
                             code,
                             style: const TextStyle(
                               color: monoTextColor,
-                              fontFamily: 'IBMPlexSansHebrew',
+                              fontFamily: AppTypography.financialFontFamily,
                               fontWeight: FontWeight.w700,
                               letterSpacing: 1.2,
                             ),
@@ -357,7 +360,7 @@ class _SecuritySettingsScreenState
     final backupCodesAsync = ref.watch(backupCodesStatusProvider);
     final securityProfileAsync = ref.watch(accountSecurityProfileProvider);
 
-    return CyberBackground.authenticated(
+    return KeroseneScreenBackground(
       useScroll: true,
       child: Padding(
         padding: const EdgeInsets.all(AppSpacing.lg),
@@ -368,7 +371,7 @@ class _SecuritySettingsScreenState
               children: [
                 IconButton(
                   onPressed: () => Navigator.of(context).maybePop(),
-                  icon: const Icon(Icons.arrow_back_ios_new_rounded),
+                  icon: const Icon(KeroseneIcons.back),
                   style: IconButton.styleFrom(
                     backgroundColor: monoSurfaceAltColor,
                     foregroundColor: monoTextColor,
@@ -413,7 +416,7 @@ class _SecuritySettingsScreenState
                   if (security.unprotected)
                     _BannerCard(
                       color: Colors.white54,
-                      icon: Icons.warning_amber_rounded,
+                      icon: KeroseneIcons.warning,
                       title: context.tr.securityUnprotectedTitle,
                       body: security.warningMessage.isNotEmpty
                           ? security.warningMessage
@@ -737,7 +740,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
             child: Row(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                Icon(Icons.devices_rounded, color: summaryColor),
+                Icon(KeroseneIcons.devices, color: summaryColor),
                 const SizedBox(width: AppSpacing.sm),
                 Expanded(
                   child: Text(
@@ -776,7 +779,7 @@ class _PasskeyInventoryCard extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             _BannerCard(
               color: Colors.white54,
-              icon: Icons.history_toggle_off_rounded,
+              icon: KeroseneIcons.historyOff,
               title: context.tr.securityLegacyCredentialsTitle,
               body: context.tr.securityLegacyCredentialsBody,
             ),
@@ -1162,7 +1165,7 @@ class _InventoryContextChip extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'IBMPlexSansHebrew',
+                fontFamily: AppTypography.financialFontFamily,
                 fontWeight: FontWeight.w600,
               ),
             ),
@@ -1322,7 +1325,7 @@ class _PasskeyDeviceRowState extends ConsumerState<_PasskeyDeviceRow> {
                         : () => _updateDeviceStatus(
                               revoke: false,
                             ),
-                    icon: const Icon(Icons.block_rounded, size: 16),
+                    icon: const Icon(KeroseneIcons.blocked, size: 16),
                     label: Text(
                       context.tr.securityDeviceBlockAction.toUpperCase(),
                     ),
@@ -1335,7 +1338,7 @@ class _PasskeyDeviceRowState extends ConsumerState<_PasskeyDeviceRow> {
                         : () => _updateDeviceStatus(
                               revoke: true,
                             ),
-                    icon: const Icon(Icons.link_off_rounded, size: 16),
+                    icon: const Icon(KeroseneIcons.linkOff, size: 16),
                     label: Text(
                       context.tr.securityDeviceRevokeAction.toUpperCase(),
                     ),
@@ -1453,7 +1456,7 @@ class _DeviceMetaLine extends StatelessWidget {
               text: value,
               style: const TextStyle(
                 color: monoTextColor,
-                fontFamily: 'IBMPlexSansHebrew',
+                fontFamily: AppTypography.financialFontFamily,
               ),
             ),
           ],
@@ -1622,7 +1625,7 @@ class _TotpSetupCard extends StatelessWidget {
             textAlign: TextAlign.center,
             style: Theme.of(context).textTheme.bodyMedium?.copyWith(
                   color: monoTextColor,
-                  fontFamily: 'IBMPlexSansHebrew',
+                  fontFamily: AppTypography.financialFontFamily,
                   fontWeight: FontWeight.w700,
                 ),
           ),
@@ -1689,7 +1692,7 @@ class _ErrorCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return _BannerCard(
       color: Colors.white24,
-      icon: Icons.error_outline_rounded,
+      icon: KeroseneIcons.error,
       title: title,
       body: body,
     );

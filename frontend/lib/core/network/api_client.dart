@@ -199,6 +199,31 @@ class ApiClient {
     }
   }
 
+  /// PATCH request
+  Future<Response> patch(
+    String path, {
+    dynamic data,
+    Map<String, dynamic>? queryParameters,
+    Map<String, String>? headers,
+    Options? options,
+  }) async {
+    try {
+      _validatePayloadSize(path, data);
+      await _prepareRequestRoute();
+      final mergedOptions = _mergeOptions(options, headers);
+      final response = await _dio.patch(
+        path,
+        data: data,
+        queryParameters: queryParameters,
+        options: mergedOptions,
+      );
+      ref.read(networkStatusProvider.notifier).markOnline();
+      return response;
+    } catch (e) {
+      throw _handleError(e);
+    }
+  }
+
   /// DELETE request
   Future<Response> delete(
     String path, {
@@ -283,8 +308,11 @@ class ApiClient {
   }
 
   int _maxPayloadBytesForPath(String path) {
-    if (path.startsWith('/bitcoin/psbt/') ||
-        (path.contains('/cold-wallets/') && path.endsWith('/psbt'))) {
+    if (((path.startsWith('/api/admin/kfe/reserves/psbts/') ||
+                path.startsWith('/kfe/cold-wallet/psbts/')) &&
+            (path.endsWith('/signed') || path.endsWith('/broadcast'))) ||
+        (path.startsWith('/kfe/wallets/') &&
+            path.endsWith('/cold-wallet/psbt'))) {
       return _psbtMaxPayloadBytes;
     }
     return _paranoidMaxPayloadBytes;

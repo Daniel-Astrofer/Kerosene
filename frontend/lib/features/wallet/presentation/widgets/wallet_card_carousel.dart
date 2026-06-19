@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import '../../domain/entities/wallet.dart';
 import 'wallet_credit_card.dart';
 
@@ -33,7 +34,7 @@ class WalletCardCarousel extends StatelessWidget {
 
           return AnimatedScale(
             scale: isSelected ? 1.0 : 0.9,
-            duration: const Duration(milliseconds: 300),
+            duration: KeroseneMotion.medium,
             child: _buildWalletCard(wallet),
           );
         },

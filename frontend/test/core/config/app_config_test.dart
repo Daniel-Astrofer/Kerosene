@@ -13,7 +13,7 @@ void main() {
     expect(AppConfig.activeNodeName, 'localhost');
   });
 
-  test('active domain endpoints remain mapped to backend contracts', () {
+  test('active domain endpoints remain mapped to KFE backend contracts', () {
     expect(AppConfig.authLogin, '/auth/login');
     expect(
       AppConfig.authEmergencyRecoveryStart,
@@ -23,36 +23,51 @@ void main() {
       AppConfig.authEmergencyRecoveryFinish,
       '/auth/recovery/emergency/finish',
     );
-    expect(AppConfig.walletAll, '/kfe/dashboard');
-    expect(AppConfig.ledgerPaymentRequest, '/kfe/transactions');
+
+    expect(AppConfig.kfeDashboard, '/kfe/dashboard');
+    expect(AppConfig.kfeWallets, '/kfe/wallets');
+    expect(AppConfig.kfeTransactions, '/kfe/transactions');
+    expect(AppConfig.kfeTransactionQuote, '/kfe/transactions/quote');
+    expect(AppConfig.kfePaymentRequests, '/kfe/payment-requests');
     expect(
-        AppConfig.transactionsPaymentLinksList, '/transactions/payment-links');
-    expect(
-      AppConfig.bitcoinAccountReceiveRequests('account-1'),
-      '/kfe/wallets/account-1/addresses/rotate',
+      AppConfig.kfePaymentRequest('request-1'),
+      '/kfe/payment-requests/request-1',
     );
     expect(
-      AppConfig.bitcoinColdWalletUtxos('cold-1'),
-      '/kfe/wallets',
+      AppConfig.kfePublicPaymentRequest('public-1'),
+      '/api/public/kfe/payment-requests/public-1',
     );
     expect(
-      AppConfig.bitcoinColdWalletPsbt('cold-1'),
-      '/kfe/wallets',
-    );
-    expect(AppConfig.bitcoinPsbt('workflow-1'), '/kfe/transactions');
-    expect(
-      AppConfig.bitcoinPsbtSigned('workflow-1'),
-      '/kfe/transactions',
-    );
-    expect(AppConfig.bitcoinTaxEvents, '/kfe/dashboard');
-    expect(
-      AppConfig.bitcoinTaxEventsExport('csv'),
-      '/kfe/dashboard',
+      AppConfig.kfeColdWalletUtxos('cold-1'),
+      '/kfe/wallets/cold-1/utxos',
     );
     expect(
-      AppConfig.bitcoinTaxEventClassify('event-1'),
-      '/kfe/dashboard',
+      AppConfig.kfeColdWalletPsbtCreate('cold-1'),
+      '/kfe/wallets/cold-1/cold-wallet/psbt',
     );
+    expect(
+      AppConfig.kfeColdWalletPsbtWorkflow('workflow-1'),
+      '/kfe/cold-wallet/psbts/workflow-1',
+    );
+    expect(
+      AppConfig.kfeColdWalletPsbtSigned('workflow-1'),
+      '/kfe/cold-wallet/psbts/workflow-1/signed',
+    );
+    expect(
+      AppConfig.kfeColdWalletPsbtBroadcast('workflow-1'),
+      '/kfe/cold-wallet/psbts/workflow-1/broadcast',
+    );
+    expect(AppConfig.kfeTaxEvents, '/kfe/tax-events');
+    expect(
+      AppConfig.kfeTaxEventsExport('csv'),
+      '/kfe/tax-events/export?format=csv',
+    );
+    expect(
+      AppConfig.kfeTaxEventClassify('event-1'),
+      '/kfe/tax-events/event-1/classify',
+    );
+    expect(AppConfig.kfeReserveOverview, '/api/admin/kfe/reserves/overview');
+
     expect(AppConfig.notificationsList, '/notifications');
     expect(AppConfig.auditStats, '/v1/audit/stats');
     expect(

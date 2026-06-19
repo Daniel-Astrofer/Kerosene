@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:lucide_icons/lucide_icons.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:qr_flutter/qr_flutter.dart';
 import 'package:kerosene/core/errors/exceptions.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
@@ -110,7 +110,7 @@ class _EmergencyRecoveryScreenState
                           if (_error != null) ...[
                             const SizedBox(height: AppSpacing.xl2),
                             _RecoveryNotice(
-                              icon: LucideIcons.alertTriangle,
+                              icon: KeroseneIcons.error,
                               title: _copy(
                                 pt: 'Não foi possível continuar',
                                 en: 'Unable to continue',
@@ -186,7 +186,7 @@ class _EmergencyRecoveryScreenState
         _RecoveryTextField(
           controller: _usernameController,
           label: context.tr.username,
-          icon: LucideIcons.user,
+          icon: KeroseneIcons.user,
           enabled: !_busy,
           textInputAction: TextInputAction.next,
           onChanged: (_) => _clearError(),
@@ -199,7 +199,7 @@ class _EmergencyRecoveryScreenState
             en: 'New account password',
             es: 'Nueva contraseña de cuenta',
           ),
-          icon: LucideIcons.lock,
+          icon: KeroseneIcons.lock,
           enabled: !_busy,
           obscureText: true,
           autofillHints: const [AutofillHints.newPassword],
@@ -214,7 +214,7 @@ class _EmergencyRecoveryScreenState
             en: 'Confirm new password',
             es: 'Confirmar nueva contraseña',
           ),
-          icon: LucideIcons.keyRound,
+          icon: KeroseneIcons.passkey,
           enabled: !_busy,
           obscureText: true,
           autofillHints: const [AutofillHints.newPassword],
@@ -242,7 +242,7 @@ class _EmergencyRecoveryScreenState
               en: 'Code ${i + 1}',
               es: 'Código ${i + 1}',
             ),
-            icon: LucideIcons.binary,
+            icon: KeroseneIcons.binary,
             enabled: !_busy,
             keyboardType: TextInputType.number,
             inputFormatters: [
@@ -262,7 +262,7 @@ class _EmergencyRecoveryScreenState
             onPressed: _busy || _codeControllers.length >= 10
                 ? null
                 : _addRecoveryCodeField,
-            icon: const Icon(LucideIcons.plus, size: 16),
+            icon: const Icon(KeroseneIcons.plus, size: 16),
             label: Text(
               _copy(
                 pt: 'Adicionar código',
@@ -297,7 +297,7 @@ class _EmergencyRecoveryScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _RecoveryNotice(
-          icon: LucideIcons.timer,
+          icon: KeroseneIcons.timer,
           title: _copy(
             pt: 'Sessão temporária',
             en: 'Temporary session',
@@ -319,7 +319,7 @@ class _EmergencyRecoveryScreenState
         _RecoveryTextField(
           controller: _totpController,
           label: context.tr.totpCodeLabel,
-          icon: LucideIcons.shieldCheck,
+          icon: KeroseneIcons.security,
           enabled: !_busy,
           keyboardType: TextInputType.number,
           inputFormatters: [
@@ -374,7 +374,7 @@ class _EmergencyRecoveryScreenState
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
         _RecoveryNotice(
-          icon: LucideIcons.checkCircle2,
+          icon: KeroseneIcons.success,
           title: _copy(
             pt: 'Credenciais rotacionadas',
             en: 'Credentials rotated',
@@ -396,7 +396,7 @@ class _EmergencyRecoveryScreenState
             en: 'Copy new codes',
             es: 'Copiar nuevos códigos',
           ),
-          icon: LucideIcons.copy,
+          icon: KeroseneIcons.copy,
           loading: false,
           onPressed: codes.isEmpty
               ? null
@@ -408,7 +408,7 @@ class _EmergencyRecoveryScreenState
         OutlinedButton.icon(
           onPressed: () => Navigator.of(context)
               .pushNamedAndRemoveUntil('/login', (route) => false),
-          icon: const Icon(LucideIcons.logIn, size: 18),
+          icon: const Icon(KeroseneIcons.login, size: 18),
           label: Text(
             _copy(
               pt: 'Entrar novamente',
@@ -601,7 +601,7 @@ class _RecoveryTopBar extends StatelessWidget {
       children: [
         IconButton(
           onPressed: onBack,
-          icon: const Icon(LucideIcons.arrowLeft, size: 22),
+          icon: const Icon(KeroseneIcons.back, size: 22),
           color: Colors.white,
           tooltip: MaterialLocalizations.of(context).backButtonTooltip,
         ),
@@ -820,7 +820,7 @@ class _TotpQrPanel extends StatelessWidget {
             const SizedBox(height: AppSpacing.md),
             OutlinedButton.icon(
               onPressed: onCopy,
-              icon: const Icon(LucideIcons.copy, size: 16),
+              icon: const Icon(KeroseneIcons.copy, size: 16),
               label: Text(MaterialLocalizations.of(context).copyButtonLabel),
             ),
           ],
@@ -893,7 +893,7 @@ class _RecoveryActionButton extends StatelessWidget {
                 height: 18,
                 child: CircularProgressIndicator(strokeWidth: 2),
               )
-            : Icon(icon ?? LucideIcons.arrowRight, size: 18),
+            : Icon(icon ?? KeroseneIcons.next, size: 18),
         label: Text(label),
       ),
     );

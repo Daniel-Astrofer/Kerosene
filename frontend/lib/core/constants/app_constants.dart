@@ -1,3 +1,5 @@
+import 'package:kerosene/core/motion/app_motion.dart';
+
 /// Constantes da aplicação
 class AppConstants {
   // Prevent instantiation
@@ -50,9 +52,9 @@ class AppConstants {
   static const String timeFormat = 'HH:mm';
 
   // Animation Durations
-  static const Duration shortAnimationDuration = Duration(milliseconds: 200);
-  static const Duration mediumAnimationDuration = Duration(milliseconds: 300);
-  static const Duration longAnimationDuration = Duration(milliseconds: 500);
+  static const Duration shortAnimationDuration = KeroseneMotion.short;
+  static const Duration mediumAnimationDuration = KeroseneMotion.medium;
+  static const Duration longAnimationDuration = KeroseneMotion.long;
 
   // Debounce Durations
   static const Duration searchDebounce = Duration(milliseconds: 500);

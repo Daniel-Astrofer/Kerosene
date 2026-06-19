@@ -1,5 +1,5 @@
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
-import 'package:flutter/material.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 class NotificationService {
   static final NotificationService _instance = NotificationService._internal();
@@ -54,42 +54,65 @@ class NotificationService {
     return androidGranted ?? iosGranted ?? macosGranted ?? true;
   }
 
-  Future<void> showSubtleNotification({
+  Future<void> showTransactionNotification({
     required int id,
     required String title,
     required String body,
+    String? summary,
+    String? payload,
+    bool incoming = true,
   }) async {
-    const AndroidNotificationDetails androidNotificationDetails =
-        AndroidNotificationDetails(
-      'kerosene_updates',
-      'Kerosene Updates',
-      channelDescription: 'Notifications for transaction updates',
-      importance: Importance.max, // MAX for Heads-up
+    final androidNotificationDetails = AndroidNotificationDetails(
+      'kerosene_transactions',
+      'Kerosene transactions',
+      channelDescription: 'Beautiful Android alerts for sends and receives.',
+      importance: Importance.max,
       priority: Priority.high,
       showWhen: true,
-      color: Color(0xFF00FF94),
-      visibility: NotificationVisibility.public, // Show content on lock screen
+      color:
+          incoming ? KeroseneBrandTokens.success : KeroseneBrandTokens.warning,
+      visibility: NotificationVisibility.public,
       category: AndroidNotificationCategory.status,
-      styleInformation: BigTextStyleInformation(''),
+      ticker: title,
+      subText: summary,
+      styleInformation: BigTextStyleInformation(
+        body,
+        contentTitle: title,
+        summaryText: summary,
+      ),
       playSound: true,
       enableVibration: true,
     );
 
-    const NotificationDetails notificationDetails = NotificationDetails(
-      android: androidNotificationDetails,
-      iOS: DarwinNotificationDetails(
-        presentAlert: true,
-        presentBadge: true,
-        presentSound: true,
-        interruptionLevel: InterruptionLevel.active, // Ensure it breaks through
-      ),
+    const darwinNotificationDetails = DarwinNotificationDetails(
+      presentAlert: true,
+      presentBadge: true,
+      presentSound: true,
+      interruptionLevel: InterruptionLevel.active,
     );
 
     await flutterLocalNotificationsPlugin.show(
       id: id,
       title: title,
       body: body,
-      notificationDetails: notificationDetails,
+      notificationDetails: NotificationDetails(
+        android: androidNotificationDetails,
+        iOS: darwinNotificationDetails,
+      ),
+      payload: payload,
+    );
+  }
+
+  Future<void> showSubtleNotification({
+    required int id,
+    required String title,
+    required String body,
+  }) {
+    return showTransactionNotification(
+      id: id,
+      title: title,
+      body: body,
+      summary: 'Kerosene',
     );
   }
 }

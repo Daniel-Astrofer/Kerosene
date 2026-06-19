@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/features/transactions/presentation/widgets/transaction_list_item.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 /// Reusable wallet transaction list with empty, loading and retry states.
 class TransactionList extends StatelessWidget {
@@ -32,7 +33,7 @@ class TransactionList extends StatelessWidget {
 
     if (isLoading && transactions.isEmpty) {
       child = _StateContainer(
-        icon: Icons.receipt_long_rounded,
+        icon: KeroseneIcons.receipt,
         title: 'Carregando transações',
         message: 'Sincronizando seu histórico recente.',
         trailing: const SizedBox.square(
@@ -42,7 +43,7 @@ class TransactionList extends StatelessWidget {
       );
     } else if ((errorMessage ?? '').trim().isNotEmpty && transactions.isEmpty) {
       child = _StateContainer(
-        icon: Icons.warning_amber_rounded,
+        icon: KeroseneIcons.warning,
         title: 'Não foi possível carregar',
         message: errorMessage!.trim(),
         actionLabel: onRetry == null ? null : 'Tentar novamente',
@@ -50,7 +51,7 @@ class TransactionList extends StatelessWidget {
       );
     } else if (transactions.isEmpty) {
       child = const _StateContainer(
-        icon: Icons.history_rounded,
+        icon: KeroseneIcons.history,
         title: 'Sem transações ainda',
         message:
             'Quando você enviar, receber ou movimentar saldo, o histórico aparece aqui.',

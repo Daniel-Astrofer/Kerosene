@@ -976,8 +976,9 @@ class AuthRemoteDataSourceImpl implements AuthRemoteDataSource {
   Future<OnboardingPaymentLinkDto> getOnboardingPaymentLink(
       String linkId) async {
     try {
-      final response =
-          await apiClient.get('${AppConfig.transactionsPaymentLink}/$linkId');
+      final response = await apiClient.get(
+        AppConfig.kfePublicPaymentRequest(linkId),
+      );
       final body = response.data;
       if (body is Map) {
         return OnboardingPaymentLinkDto.fromJson(

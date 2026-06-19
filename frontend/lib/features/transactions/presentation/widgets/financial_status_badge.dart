@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/constants/app_copy.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
+import 'package:kerosene/design_system/icons.dart';
 
 class FinancialStatusMeta {
   final LocalizedCopy label;
@@ -25,10 +27,10 @@ class FinancialStatusBadge extends StatelessWidget {
     this.compact = false,
   });
 
-  static const Color pendingColor = Color(0xFFFBBF24);
-  static const Color successColor = Color(0xFF10B981);
-  static const Color errorColor = Color(0xFFEF4444);
-  static const Color infoColor = Color(0xFF38BDF8);
+  static const Color pendingColor = AppColors.hexFFFBBF24;
+  static const Color successColor = AppColors.hexFF10B981;
+  static const Color errorColor = AppColors.hexFFEF4444;
+  static const Color infoColor = AppColors.hexFF38BDF8;
 
   static FinancialStatusMeta paymentLink(String status) {
     switch (status.toUpperCase()) {
@@ -36,7 +38,7 @@ class FinancialStatusBadge extends StatelessWidget {
         return const FinancialStatusMeta(
           label: LocalizedCopy(en: 'Paid', pt: 'Pago', es: 'Pagado'),
           color: successColor,
-          icon: Icons.check_circle_outline_rounded,
+          icon: KeroseneIcons.success,
         );
       case 'COMPLETED':
       case 'SETTLED':
@@ -48,13 +50,13 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Completado',
           ),
           color: successColor,
-          icon: Icons.verified_rounded,
+          icon: KeroseneIcons.verified,
         );
       case 'EXPIRED':
         return const FinancialStatusMeta(
           label: LocalizedCopy(en: 'Expired', pt: 'Expirado', es: 'Expirado'),
           color: errorColor,
-          icon: Icons.cancel_outlined,
+          icon: KeroseneIcons.cancel,
         );
       case 'CANCELLED':
         return const FinancialStatusMeta(
@@ -64,7 +66,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Cancelado',
           ),
           color: errorColor,
-          icon: Icons.block_rounded,
+          icon: KeroseneIcons.blocked,
         );
       case 'VERIFYING_ONBOARDING':
       case 'AUTO_RESOLUTION_PENDING':
@@ -75,7 +77,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'En revisión',
           ),
           color: infoColor,
-          icon: Icons.sync_rounded,
+          icon: KeroseneIcons.sync,
         );
       case 'USER_ACTION_REQUIRED':
         return const FinancialStatusMeta(
@@ -85,7 +87,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Acción necesaria',
           ),
           color: pendingColor,
-          icon: Icons.touch_app_rounded,
+          icon: KeroseneIcons.touch,
         );
       case 'MEMPOOL':
       case 'DETECTED':
@@ -97,7 +99,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Detectado',
           ),
           color: infoColor,
-          icon: Icons.radar_rounded,
+          icon: KeroseneIcons.radar,
         );
       case 'PENDING':
       default:
@@ -108,7 +110,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Pendiente',
           ),
           color: pendingColor,
-          icon: Icons.schedule_rounded,
+          icon: KeroseneIcons.schedule,
         );
     }
   }
@@ -123,7 +125,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Completado',
           ),
           color: successColor,
-          icon: Icons.verified_rounded,
+          icon: KeroseneIcons.verified,
         );
       case TransactionStatus.confirming:
         return const FinancialStatusMeta(
@@ -133,13 +135,13 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Confirmando',
           ),
           color: pendingColor,
-          icon: Icons.sync_rounded,
+          icon: KeroseneIcons.sync,
         );
       case TransactionStatus.failed:
         return const FinancialStatusMeta(
           label: LocalizedCopy(en: 'Failed', pt: 'Falhou', es: 'Fallo'),
           color: errorColor,
-          icon: Icons.error_outline_rounded,
+          icon: KeroseneIcons.error,
         );
       case TransactionStatus.pending:
         return const FinancialStatusMeta(
@@ -149,7 +151,7 @@ class FinancialStatusBadge extends StatelessWidget {
             es: 'Pendiente',
           ),
           color: pendingColor,
-          icon: Icons.schedule_rounded,
+          icon: KeroseneIcons.schedule,
         );
     }
   }

@@ -8,7 +8,7 @@ import '../../domain/entities/account_security_profile.dart';
 import '../../domain/entities/admin_access.dart';
 import '../../domain/repositories/security_repository.dart';
 import '../../domain/entities/security_status.dart';
-import '../../domain/entities/treasury_overview.dart';
+import '../../domain/entities/kfe_reserve_overview.dart';
 
 final securityRemoteDataSourceProvider =
     Provider<SecurityRemoteDataSource>((ref) {
@@ -30,9 +30,9 @@ final sovereigntyStatusProvider = FutureProvider<SecurityStatus>((ref) async {
   );
 });
 
-final treasuryOverviewProvider = FutureProvider<TreasuryOverview>((ref) async {
+final kfeReserveOverviewProvider = FutureProvider<KfeReserveOverview>((ref) async {
   final repository = ref.watch(securityRepositoryProvider);
-  final result = await repository.getTreasuryOverview();
+  final result = await repository.getKfeReserveOverview();
   return result.fold(
     (failure) => throw Exception(failure.message),
     (overview) => overview,
