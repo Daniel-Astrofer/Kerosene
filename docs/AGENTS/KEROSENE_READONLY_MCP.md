@@ -6,6 +6,7 @@
 
 - `list_directory`: lists a directory inside the configured project root.
 - `read_file`: reads bounded text from a file.
+- `read_file_lines`: reads bounded line ranges from large text files without returning one oversized payload.
 - `search_text`: searches literal text across source, docs, config, and logs.
 - `get_project_tree`: returns an ASCII project tree.
 - `search_code`: alias for `search_text`.
@@ -21,7 +22,7 @@
 - It implements no delete or process-control tools.
 - It refuses sensitive files such as `.env`, private keys, keystores, local databases, wallet files, `.git/**`, and `secrets/**`.
 - Search skips excluded build/cache folders, binary files, sensitive files, and oversized files.
-- Shell commands inherit a scrubbed environment with secret-like variables removed before execution.
+- Shell commands inherit the full server environment by default so local tooling can work normally. Set `KEROSENE_MCP_SCRUB_SHELL_ENV=1` to strip secret-like variables before execution.
 
 ## Agent Commit Rule
 
@@ -52,6 +53,8 @@ Sensitive content must still be blocked by context, not by generic words. Keep r
 Do not refuse legitimate refactors because a file path or file content mentions words such as `wallet`, `payment`, `error`, `secret`, `token`, `auth`, `vault`, or `card`. Refuse only when the path matches real sensitive material.
 
 The server allows large edits throughout the repository, and the shell tool is available for local validation and build commands such as `./gradlew build`, `./gradlew test`, `java -version`, `flutter analyze`, `flutter test`, `dart format`, `go test`, `git diff`, `git status`, `grep`, `rg`, `sed`, and `find`.
+
+For large files, agents should call `read_file_lines` with `start_line` and `max_lines` instead of asking `read_file` for a very large byte payload. This keeps the MCP bridge responsive while still allowing full source inspection in chunks.
 
 This policy is enforced by `scripts/kerosene_readonly_mcp.py`.
 
@@ -110,6 +113,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_directory","arguments":{"path":"."}}}' \
+  '{"jsonrpc":"2.0","id":4,"method":"tools/call","params":{"name":"read_file_lines","arguments":{"path":"scripts/kerosene_readonly_mcp.py","start_line":1,"max_lines":20}}}' \
   | /home/omega/Kerosene/scripts/kerosene-mcp
 ```
 

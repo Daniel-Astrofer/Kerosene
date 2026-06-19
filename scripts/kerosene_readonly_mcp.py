@@ -14,11 +14,15 @@ from typing import Any, Iterable
 
 
 SERVER_NAME = "kerosene-mcp"
-SERVER_VERSION = "0.2.0"
+SERVER_VERSION = "0.3.0"
 DEFAULT_ROOT = Path(os.environ.get("KEROSENE_MCP_ROOT", "/home/omega/Kerosene"))
 
-MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "5000000"))
-DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "200000"))
+MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "20000000"))
+DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "65536"))
+MAX_READ_LINES = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES", "5000"))
+DEFAULT_READ_LINES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_LINES", "250"))
+MAX_READ_LINE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINE_CHARS", "8000"))
+MAX_READ_LINES_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES_CHARS", "1000000"))
 MAX_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_RESULTS", "1000"))
 DEFAULT_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESULTS", "100"))
 MAX_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILES", "100000"))
@@ -101,6 +105,13 @@ SENSITIVE_ENV_MARKERS = {
     "PRIVATE_KEY",
     "SECRET",
     "TOKEN",
+}
+
+SCRUB_SHELL_ENV = os.environ.get("KEROSENE_MCP_SCRUB_SHELL_ENV", "0").strip().lower() in {
+    "1",
+    "true",
+    "yes",
+    "on",
 }
 
 BINARY_SUFFIXES = {
@@ -188,6 +199,11 @@ def is_sensitive_path(path: Path) -> bool:
 
 
 def shell_environment(root: Path) -> dict[str, str]:
+    if not SCRUB_SHELL_ENV:
+        env = os.environ.copy()
+        env["KEROSENE_MCP_ROOT"] = str(root)
+        return env
+
     env: dict[str, str] = {}
     for key, value in os.environ.items():
         upper_key = key.upper()
@@ -519,6 +535,59 @@ def read_file(root: Path, args: dict[str, Any]) -> dict[str, Any]:
     }
 
 
+def read_file_lines(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    if "path" not in args:
+        raise ReadOnlyMcpError("read_file_lines requires a path")
+    path = ensure_readable_file(root, args["path"])
+    size = path.stat().st_size
+    start_line = clamp_int(args.get("start_line"), 1, 1, 2_000_000_000)
+    max_lines = clamp_int(args.get("max_lines"), DEFAULT_READ_LINES, 1, MAX_READ_LINES)
+    max_chars = clamp_int(args.get("max_chars"), 200_000, 1_000, MAX_READ_LINES_CHARS)
+    max_line_chars = clamp_int(args.get("max_line_chars"), MAX_READ_LINE_CHARS, 100, MAX_READ_LINE_CHARS)
+
+    lines: list[dict[str, Any]] = []
+    emitted_chars = 0
+    last_line = start_line - 1
+    truncated = False
+    encoding = "utf-8"
+
+    with path.open("rb") as handle:
+        sample = handle.read(4096)
+        if is_probably_binary(sample):
+            raise ReadOnlyMcpError(f"Refusing to read binary file: {relative_path(root, path)}")
+        handle.seek(0)
+        for line_number, raw_line in enumerate(handle, start=1):
+            if line_number < start_line:
+                continue
+            if len(lines) >= max_lines or emitted_chars >= max_chars:
+                truncated = True
+                break
+
+            line_text, line_encoding = decode_text(raw_line)
+            if line_encoding != "utf-8":
+                encoding = line_encoding
+            line_text = line_text.rstrip("\r\n")
+            if len(line_text) > max_line_chars:
+                line_text = truncate_text(line_text, max_line_chars)
+            emitted_chars += len(line_text)
+            lines.append({"line": line_number, "text": line_text})
+            last_line = line_number
+
+    return {
+        "path": relative_path(root, path),
+        "size": size,
+        "start_line": start_line,
+        "line_count": len(lines),
+        "last_line": last_line if lines else None,
+        "next_start_line": last_line + 1 if truncated else None,
+        "max_lines": max_lines,
+        "max_chars": max_chars,
+        "truncated": truncated,
+        "encoding": encoding,
+        "lines": lines,
+    }
+
+
 def prune_dirnames(parent: Path, dirnames: list[str], include_hidden: bool, stats: Counter[str]) -> None:
     kept: list[str] = []
     for name in sorted(dirnames, key=str.lower):
@@ -787,7 +856,8 @@ def project_summary(root: Path, _args: dict[str, Any]) -> dict[str, Any]:
             "all paths are resolved under the configured project root",
             "all non-sensitive project files are writable, including backend, frontend, docs, scripts, and infrastructure files",
             "sensitive files such as .env files, private keys, .git internals, local databases, and secrets directories are refused",
-            "shell commands run from inside the project root with secret-like environment variables stripped",
+            "shell commands run from inside the project root and inherit the full server environment by default",
+            "set KEROSENE_MCP_SCRUB_SHELL_ENV=1 to strip secret-like environment variables before shell execution",
             "binary and oversized files are skipped for search",
         ],
         "components": components,
@@ -823,6 +893,22 @@ def tool_schema() -> list[dict[str, Any]]:
                     "path": {"type": "string", "description": "Path relative to the project root."},
                     "offset": {"type": "integer", "minimum": 0, "default": 0},
                     "max_bytes": {"type": "integer", "minimum": 1, "maximum": MAX_READ_BYTES, "default": DEFAULT_READ_BYTES},
+                },
+                "required": ["path"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "read_file_lines",
+            "description": "Read a text file by line range with bounded output. Prefer this for large source files and logs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Path relative to the project root."},
+                    "start_line": {"type": "integer", "minimum": 1, "default": 1},
+                    "max_lines": {"type": "integer", "minimum": 1, "maximum": MAX_READ_LINES, "default": DEFAULT_READ_LINES},
+                    "max_chars": {"type": "integer", "minimum": 1000, "maximum": MAX_READ_LINES_CHARS, "default": 200000},
+                    "max_line_chars": {"type": "integer", "minimum": 100, "maximum": MAX_READ_LINE_CHARS, "default": MAX_READ_LINE_CHARS},
                 },
                 "required": ["path"],
                 "additionalProperties": False,
@@ -938,6 +1024,8 @@ def call_tool(root: Path, name: str, args: dict[str, Any]) -> Any:
         return list_directory(root, args)
     if name == "read_file":
         return read_file(root, args)
+    if name == "read_file_lines":
+        return read_file_lines(root, args)
     if name in {"search_text", "search_code"}:
         return search_text(root, args)
     if name == "write_file":
