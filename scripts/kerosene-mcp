@@ -1,0 +1,8 @@
+#!/bin/sh
+set -eu
+
+SCRIPT_DIR="$(CDPATH= cd -- "$(dirname -- "$0")" && pwd)"
+export PATH="/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin:${PATH:-}"
+export KEROSENE_MCP_ROOT="${KEROSENE_MCP_ROOT:-/home/omega/Kerosene}"
+
+exec python3 "$SCRIPT_DIR/kerosene_readonly_mcp.py" "$@"

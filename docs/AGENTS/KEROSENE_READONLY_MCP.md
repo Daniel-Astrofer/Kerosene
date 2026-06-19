@@ -1,6 +1,6 @@
 # Kerosene MCP
 
-`scripts/kerosene-readonly-mcp` exposes the Kerosene repository through a local MCP server with read, write, replace, and shell tools.
+`scripts/kerosene-mcp` exposes the Kerosene repository through a local MCP server with read, write, replace, and shell tools. `scripts/kerosene-readonly-mcp` is kept as a compatibility wrapper for existing local client configs.
 
 ## Tools
 
@@ -17,10 +17,11 @@
 ## Safety Boundary
 
 - The server resolves every requested path under `KEROSENE_MCP_ROOT`, defaulting to `/home/omega/Kerosene`.
-- It allows file writes and shell commands only inside the project root and still refuses sensitive files.
+- It allows file reads, large file writes, replace operations, and shell commands only inside the project root and still refuses sensitive files.
 - It implements no delete or process-control tools.
-- It refuses sensitive files such as `.env`, private keys, keystores, local databases, and wallet files.
+- It refuses sensitive files such as `.env`, private keys, keystores, local databases, wallet files, `.git/**`, and `secrets/**`.
 - Search skips excluded build/cache folders, binary files, sensitive files, and oversized files.
+- Shell commands inherit a scrubbed environment with secret-like variables removed before execution.
 
 ## Agent Commit Rule
 
@@ -30,17 +31,9 @@
 
 ## Project Refactor Mode
 
-The MCP is intended for project-wide refactors across frontend, backend, docs, and infrastructure files inside the repository root.
+The MCP is intended for project-wide refactors across frontend, backend, docs, scripts, tests, assets, and infrastructure files inside the repository root.
 
-Explicitly writable areas include:
-
-- `frontend/lib/**`
-- `frontend/assets/**`
-- `frontend/tool/**`
-- `frontend/pubspec.yaml`
-- `backend/**`
-- `docs/backend/api/**`
-- `docs/AGENTS/**`
+Every non-sensitive text file under `/home/omega/Kerosene` is writable. Do not maintain a small allowlist of source directories; agents must be able to edit the project broadly when the requested task requires it.
 
 Files like `docs/backend/api/WALLET.md` and `docs/backend/api/SOVEREIGNTY.md` are normal documentation targets and must not be blocked just because they contain technical terms or legacy references.
 
@@ -51,17 +44,14 @@ Sensitive content must still be blocked by context, not by generic words. Keep r
 - `*.pem`
 - `*.key`
 - `*.crt`
+- `.git/**`
 - `secrets/**`
-- `vault/**`
-- `docker-compose*.yml`
-- `application*.properties`
-- `application*.yml`
 - binary files
 - local databases and wallet material
 
-Do not refuse legitimate refactors because a file mentions words such as `wallet`, `payment`, `error`, `secret`, `token`, `auth`, or `card`. Refuse only when the path or content matches real sensitive material.
+Do not refuse legitimate refactors because a file path or file content mentions words such as `wallet`, `payment`, `error`, `secret`, `token`, `auth`, `vault`, or `card`. Refuse only when the path matches real sensitive material.
 
-The server now allows large edits in backend and frontend source files, and the shell tool is available for local validation commands such as `flutter analyze`, `dart format`, `git diff`, `git status`, `grep`, `rg`, `sed`, and `find`.
+The server allows large edits throughout the repository, and the shell tool is available for local validation and build commands such as `./gradlew build`, `./gradlew test`, `java -version`, `flutter analyze`, `flutter test`, `dart format`, `go test`, `git diff`, `git status`, `grep`, `rg`, `sed`, and `find`.
 
 This policy is enforced by `scripts/kerosene_readonly_mcp.py`.
 
@@ -73,7 +63,7 @@ Use this entry in an MCP-capable local client:
 {
   "mcpServers": {
     "kerosene-mcp": {
-      "command": "/home/omega/Kerosene/scripts/kerosene-readonly-mcp",
+      "command": "/home/omega/Kerosene/scripts/kerosene-mcp",
       "args": [],
       "env": {
         "KEROSENE_MCP_ROOT": "/home/omega/Kerosene"
@@ -86,7 +76,7 @@ Use this entry in an MCP-capable local client:
 For Codex CLI, the equivalent registration is:
 
 ```bash
-codex mcp add kerosene-mcp -- /home/omega/Kerosene/scripts/kerosene-readonly-mcp
+codex mcp add kerosene-mcp -- /home/omega/Kerosene/scripts/kerosene-mcp
 ```
 
 ## ChatGPT Web
@@ -103,7 +93,7 @@ tunnel-client init \
   --sample sample_mcp_stdio_local \
   --profile kerosene-mcp \
   --tunnel-id tunnel_... \
-  --mcp-command "/home/omega/Kerosene/scripts/kerosene-readonly-mcp"
+  --mcp-command "/home/omega/Kerosene/scripts/kerosene-mcp"
 ```
 
 Then keep `tunnel-client run --profile kerosene-mcp` running and create a custom ChatGPT connector using the tunnel.
@@ -120,7 +110,7 @@ printf '%s\n' \
   '{"jsonrpc":"2.0","id":1,"method":"initialize","params":{"protocolVersion":"2024-11-05"}}' \
   '{"jsonrpc":"2.0","id":2,"method":"tools/list","params":{}}' \
   '{"jsonrpc":"2.0","id":3,"method":"tools/call","params":{"name":"list_directory","arguments":{"path":"."}}}' \
-  | /home/omega/Kerosene/scripts/kerosene-readonly-mcp
+  | /home/omega/Kerosene/scripts/kerosene-mcp
 ```
 
 
@@ -134,7 +124,7 @@ export CONTROL_PLANE_API_KEY="<CONTROL_PLANE_API_KEY>"
 --sample sample_mcp_stdio_local \
 --profile kerosene-readonly \
 --tunnel-id tunnel_... \
---mcp-command "/home/omega/Kerosene/scripts/kerosene-readonly-mcp"
+--mcp-command "/home/omega/Kerosene/scripts/kerosene-mcp"
 
 ./tunnel-client doctor --profile kerosene-readonly --explain
 ./tunnel-client run --profile kerosene-readonly 
