@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for startup diagnostics task
+ID: fase-6/startup: add fast backend diagnostics
+Agent: codex5
+Status: running startup diagnostics agent in isolated worktree
 
 ## Last completed work
 
