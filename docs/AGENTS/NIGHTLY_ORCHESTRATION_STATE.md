@@ -11,7 +11,7 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ID: fase-6/architecture: add backend cleanup audit
 Agent: codex2
-Status: preparing dispatch; codex1 stale running state verified as dead process
+Status: dispatching read-only audit agent; codex1 stale running state verified as dead process and worktree cleaned
 
 ## Last completed work
 
