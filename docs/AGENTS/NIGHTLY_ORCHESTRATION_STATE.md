@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for KFE invariant tests task
+ID: fase-6/kfe: add financial invariant tests
+Agent: codex8
+Status: running KFE invariant test agent in isolated worktree
 
 ## Last completed work
 
