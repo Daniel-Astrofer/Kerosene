@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for frontend KFE-only API client task
+ID: fase-6/frontend: align financial api client to kfe only
+Agent: codex4
+Status: running in isolated worktree
 
 ## Last completed work
 
