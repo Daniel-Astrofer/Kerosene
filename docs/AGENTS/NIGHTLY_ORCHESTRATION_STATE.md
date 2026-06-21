@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for domain audit event task
+ID: fase-6/audit: add structured domain audit events
+Agent: codex6
+Status: running audit foundation agent in isolated worktree
 
 ## Last completed work
 
