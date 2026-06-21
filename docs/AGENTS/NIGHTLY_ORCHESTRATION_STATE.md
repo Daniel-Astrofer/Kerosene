@@ -9,12 +9,13 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: fase-6/docs: update developer troubleshooting guide
-Agent: codex6
-Status: running in isolated worktree
+ID: none currently running
+Agent: none
+Status: queue completed
 
 ## Last completed work
 
+- `0d5c7b0 fase-6/docs: update developer troubleshooting guide`
 - `15d6d4ec fase-6/observability: propagate trace ids between app and backend`
 - `15cd525a fase-6/frontend: align financial api client to kfe only`
 - `9b2dd662 fase-6/kfe-transaction: clean submit transaction use case`
@@ -32,7 +33,7 @@ Status: running in isolated worktree
 
 ## Next task
 
-`fase-6/docs: update developer troubleshooting guide`
+`completed: no pending queue item`
 
 ## Blockers
 
