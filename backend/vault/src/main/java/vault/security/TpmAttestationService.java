@@ -9,9 +9,16 @@ import jakarta.annotation.PostConstruct;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyFactory;
 import java.security.MessageDigest;
+import java.security.PublicKey;
 import java.security.SecureRandom;
+import java.security.Signature;
+import java.security.spec.X509EncodedKeySpec;
 import java.util.Base64;
+import java.util.Map;
+import java.util.UUID;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * ─── TPM ATTESTATION SERVICE (Atestação Remota) ──────────────────────────────
@@ -31,6 +38,7 @@ public class TpmAttestationService {
     private String clusterAttestationSecret;
 
     private byte[] clusterAttestationSecretBytes;
+    private final Map<String, PendingChallenge> pendingChallenges = new ConcurrentHashMap<>();
 
     @PostConstruct
     void loadClusterAttestationSecret() {
@@ -70,6 +78,49 @@ public class TpmAttestationService {
         return mktTemporary; // Criptografe isto depois se precisar enviar em um envelope
     }
 
+    public AttestationChallenge issueChallenge(String nodeId) {
+        if (nodeId == null || nodeId.isBlank()) {
+            throw new IllegalArgumentException("node_id is required.");
+        }
+        String challengeId = UUID.randomUUID().toString();
+        String challengeNonce = randomUrlToken(32);
+        pendingChallenges.put(challengeId, new PendingChallenge(nodeId, challengeNonce));
+        return new AttestationChallenge(challengeId, challengeNonce);
+    }
+
+    public String validateV2AndIssueToken(
+            String challengeId,
+            String challengeNonce,
+            String nodeId,
+            String publicKeyBase64,
+            String attestationSignatureBase64) {
+        log.info("[ATTESTATION] Validating v2 software identity attestation from {}", nodeId);
+
+        if (challengeId == null || challengeId.isBlank()) {
+            throw new SecurityException("Invalid or replayed attestation challenge.");
+        }
+
+        PendingChallenge challenge = pendingChallenges.remove(challengeId);
+        if (challenge == null
+                || nodeId == null
+                || publicKeyBase64 == null
+                || attestationSignatureBase64 == null
+                || !nodeId.equals(challenge.nodeId())
+                || !MessageDigest.isEqual(
+                        challenge.nonce().getBytes(StandardCharsets.UTF_8),
+                        nullToEmpty(challengeNonce).getBytes(StandardCharsets.UTF_8))) {
+            throw new SecurityException("Invalid or replayed attestation challenge.");
+        }
+
+        if (!verifyV2Signature(nodeId, publicKeyBase64, challengeId, challengeNonce, attestationSignatureBase64)) {
+            throw new SecurityException("Invalid attestation signature.");
+        }
+
+        String mktTemporary = generateProvisionToken();
+        log.info("[ATTESTATION] SUCCESS. Node {} passed v2 software identity attestation.", nodeId);
+        return mktTemporary;
+    }
+
     private boolean verifyContainerAttestation(String quote, String nodeId, String publicKeyBase64) {
         if (quote == null || !quote.startsWith("v1:") || nodeId == null || publicKeyBase64 == null) {
             return false;
@@ -92,13 +143,66 @@ public class TpmAttestationService {
         }
     }
 
+    private boolean verifyV2Signature(
+            String nodeId,
+            String publicKeyBase64,
+            String challengeId,
+            String challengeNonce,
+            String attestationSignatureBase64) {
+        try {
+            byte[] pubKeyBytes = Base64.getDecoder().decode(publicKeyBase64);
+            byte[] signatureBytes = Base64.getDecoder().decode(attestationSignatureBase64);
+
+            KeyFactory keyFactory = KeyFactory.getInstance("Ed25519");
+            PublicKey publicKey = keyFactory.generatePublic(new X509EncodedKeySpec(pubKeyBytes));
+
+            Signature signature = Signature.getInstance("Ed25519");
+            signature.initVerify(publicKey);
+            signature.update(attestationMessageV2(nodeId, publicKeyBase64, challengeId, challengeNonce)
+                    .getBytes(StandardCharsets.UTF_8));
+            return signature.verify(signatureBytes);
+        } catch (Exception exception) {
+            log.warn("[ATTESTATION] v2 signature verification failed for node {}: {}", nodeId, exception.getMessage());
+            return false;
+        }
+    }
+
     private String attestationMessage(String nodeId, String publicKeyBase64) {
         return "shard-attest:v1:" + nodeId + ":" + publicKeyBase64;
     }
 
+    private String attestationMessageV2(
+            String nodeId,
+            String publicKeyBase64,
+            String challengeId,
+            String challengeNonce) {
+        return "vault-attest:v2\n"
+                + "node_id=" + nodeId + "\n"
+                + "public_key=" + publicKeyBase64 + "\n"
+                + "challenge_id=" + challengeId + "\n"
+                + "challenge_nonce=" + challengeNonce;
+    }
+
     private String generateProvisionToken() {
+        return randomUrlToken(32);
+    }
+
+    private String randomUrlToken(int bytes) {
         byte[] tokenBytes = new byte[32];
+        if (bytes != tokenBytes.length) {
+            tokenBytes = new byte[bytes];
+        }
         TOKEN_RANDOM.nextBytes(tokenBytes);
         return Base64.getUrlEncoder().withoutPadding().encodeToString(tokenBytes);
+    }
+
+    private String nullToEmpty(String value) {
+        return value == null ? "" : value;
+    }
+
+    public record AttestationChallenge(String challengeId, String challengeNonce) {
+    }
+
+    private record PendingChallenge(String nodeId, String nonce) {
     }
 }

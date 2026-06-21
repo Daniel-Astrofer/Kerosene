@@ -18,6 +18,9 @@ import vault.service.WatchdogService;
 import javax.crypto.Mac;
 import javax.crypto.spec.SecretKeySpec;
 import java.nio.charset.StandardCharsets;
+import java.security.KeyPair;
+import java.security.KeyPairGenerator;
+import java.security.Signature;
 import java.util.Base64;
 import java.util.Map;
 
@@ -69,6 +72,44 @@ class VaultControllerTest {
         verify(memoryLocker, never()).getMasterKey();
     }
 
+    @Test
+    void v2AttestationAcceptsChallengeBoundSignature() throws Exception {
+        VaultController controller = controller(mock(VaultMemoryLocker.class), 60_000);
+        KeyPair keyPair = keyPair();
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+
+        ResponseEntity<String> response = controller.attestShard(v2Payload(controller, keyPair, publicKey));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(response.getBody()).isNotBlank();
+    }
+
+    @Test
+    void v2AttestationRejectsReplayedChallenge() throws Exception {
+        VaultController controller = controller(mock(VaultMemoryLocker.class), 60_000);
+        KeyPair keyPair = keyPair();
+        String publicKey = Base64.getEncoder().encodeToString(keyPair.getPublic().getEncoded());
+        Map<String, String> payload = v2Payload(controller, keyPair, publicKey);
+
+        ResponseEntity<String> firstResponse = controller.attestShard(payload);
+        ResponseEntity<String> replayResponse = controller.attestShard(payload);
+
+        assertThat(firstResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(replayResponse.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
+    @Test
+    void v2AttestationRejectsWrongSignature() throws Exception {
+        VaultController controller = controller(mock(VaultMemoryLocker.class), 60_000);
+        KeyPair signer = keyPair();
+        KeyPair advertisedKey = keyPair();
+        String publicKey = Base64.getEncoder().encodeToString(advertisedKey.getPublic().getEncoded());
+
+        ResponseEntity<String> response = controller.attestShard(v2Payload(controller, signer, publicKey));
+
+        assertThat(response.getStatusCode()).isEqualTo(HttpStatus.FORBIDDEN);
+    }
+
     private VaultController controller(VaultMemoryLocker memoryLocker, long provisionTokenTtlMs) {
         VaultController controller = new VaultController();
         WatchdogService watchdogService = mock(WatchdogService.class);
@@ -111,5 +152,39 @@ class VaultControllerTest {
         } catch (Exception exception) {
             throw new IllegalStateException("Failed to sign test attestation.", exception);
         }
+    }
+
+    private Map<String, String> v2Payload(VaultController controller, KeyPair keyPair, String publicKey)
+            throws Exception {
+        ResponseEntity<Map<String, String>> challengeResponse = controller.challenge(NODE_ID);
+        assertThat(challengeResponse.getStatusCode()).isEqualTo(HttpStatus.OK);
+        assertThat(challengeResponse.getBody()).isNotNull();
+
+        String challengeId = challengeResponse.getBody().get("challenge_id");
+        String challengeNonce = challengeResponse.getBody().get("challenge_nonce");
+        String signature = signV2(keyPair, publicKey, challengeId, challengeNonce);
+
+        return Map.of(
+                "challenge_id", challengeId,
+                "challenge_nonce", challengeNonce,
+                "public_key", publicKey,
+                "node_id", NODE_ID,
+                "attestation_signature", signature);
+    }
+
+    private KeyPair keyPair() throws Exception {
+        return KeyPairGenerator.getInstance("Ed25519").generateKeyPair();
+    }
+
+    private String signV2(KeyPair keyPair, String publicKey, String challengeId, String challengeNonce)
+            throws Exception {
+        Signature signature = Signature.getInstance("Ed25519");
+        signature.initSign(keyPair.getPrivate());
+        signature.update(("vault-attest:v2\n"
+                + "node_id=" + NODE_ID + "\n"
+                + "public_key=" + publicKey + "\n"
+                + "challenge_id=" + challengeId + "\n"
+                + "challenge_nonce=" + challengeNonce).getBytes(StandardCharsets.UTF_8));
+        return Base64.getEncoder().encodeToString(signature.sign());
     }
 }

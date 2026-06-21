@@ -222,6 +222,23 @@ public class VaultController {
     }
 
     /**
+     * GET /challenge
+     * Issues a one-time challenge for v2 software identity attestation.
+     */
+    @GetMapping("/challenge")
+    public ResponseEntity<Map<String, String>> challenge(
+            @RequestHeader(value = "X-Node-Id", required = false) String nodeId) {
+        if (nodeId == null || nodeId.isBlank()) {
+            return ResponseEntity.badRequest().body(Map.of("error", "Requires X-Node-Id header."));
+        }
+
+        TpmAttestationService.AttestationChallenge challenge = tpmAttestation.issueChallenge(nodeId);
+        return ResponseEntity.ok(Map.of(
+                "challenge_id", challenge.challengeId(),
+                "challenge_nonce", challenge.challengeNonce()));
+    }
+
+    /**
      * POST /attest
      * Shard manda sua prova via mTLS provando pureza de código.
      */
@@ -242,13 +259,26 @@ public class VaultController {
                     .body("Vault network is compromised (Quorum Loss).");
         }
 
-        if (tpmQuote == null || nodeId == null) {
-            return ResponseEntity.badRequest().body("Requires 'tpm_quote' and 'node_id'");
+        if (nodeId == null) {
+            return ResponseEntity.badRequest().body("Requires 'node_id'");
         }
 
         try {
-            // Atesta o hardware. Se passar, recebe Token. Se falhar, SecurityException.
-            String mkt = tpmAttestation.validateAndIssueToken(tpmQuote, nodeId, pubKey);
+            String mkt;
+            if (isV2Attestation(payload)) {
+                mkt = tpmAttestation.validateV2AndIssueToken(
+                        payload.get("challenge_id"),
+                        payload.get("challenge_nonce"),
+                        nodeId,
+                        pubKey,
+                        payload.get("attestation_signature"));
+            } else {
+                if (tpmQuote == null) {
+                    return ResponseEntity.badRequest().body("Requires 'tpm_quote' and 'node_id'");
+                }
+                // Atesta o hardware. Se passar, recebe Token. Se falhar, SecurityException.
+                mkt = tpmAttestation.validateAndIssueToken(tpmQuote, nodeId, pubKey);
+            }
             purgeExpiredProvisionTokens();
 
             if (pubKey != null && !pubKey.isBlank()) {
@@ -267,6 +297,12 @@ public class VaultController {
             log.error("[ATTEST] Attestation failed: {}", e.getMessage());
             return ResponseEntity.status(HttpStatus.FORBIDDEN).body(e.getMessage());
         }
+    }
+
+    private boolean isV2Attestation(Map<String, String> payload) {
+        return payload.containsKey("challenge_id")
+                || payload.containsKey("challenge_nonce")
+                || payload.containsKey("attestation_signature");
     }
 
     /**
