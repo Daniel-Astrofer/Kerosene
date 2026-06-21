@@ -9,12 +9,13 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: fase-6/audit: add structured domain audit events
-Agent: codex6
-Status: running audit foundation agent in isolated worktree
+ID: none currently running
+Agent: none
+Status: ready for startup diagnostics task
 
 ## Last completed work
 
+- `a695ce67 fase-6/audit: add structured domain audit event foundation`
 - `2619fc4b fase-6/logging: add structured runtime logging foundation`
 - `4ece67c fase-6/orchestration: complete docs standard task`
 - `a99d50b fase-6/docs: define backend code documentation standard`
@@ -26,7 +27,7 @@ Status: running audit foundation agent in isolated worktree
 
 ## Next task
 
-`fase-6/audit: add structured domain audit events`
+`fase-6/startup: add fast backend diagnostics`
 
 ## Blockers
 
