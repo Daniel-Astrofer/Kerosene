@@ -9,12 +9,13 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: fase-6/frontend: align financial api client to kfe only
-Agent: codex4
-Status: running in isolated worktree
+ID: none currently running
+Agent: none
+Status: ready for observability trace propagation task
 
 ## Last completed work
 
+- `15cd525a fase-6/frontend: align financial api client to kfe only`
 - `9b2dd662 fase-6/kfe-transaction: clean submit transaction use case`
 - `b97cdaf4 fase-6/kfe: add financial invariant tests`
 - `78f4dc30 fase-6/startup: add fast backend diagnostics`
@@ -30,7 +31,7 @@ Status: running in isolated worktree
 
 ## Next task
 
-`fase-6/frontend: align financial api client to kfe only`
+`fase-6/observability: propagate trace ids between app and backend`
 
 ## Blockers
 
