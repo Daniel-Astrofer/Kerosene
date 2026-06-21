@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for next cycle
+ID: fase-6/architecture: add backend cleanup audit
+Agent: codex2
+Status: preparing dispatch; codex1 stale running state verified as dead process
 
 ## Last completed work
 
@@ -21,7 +21,7 @@ Status: ready for next cycle
 
 ## Next task
 
-`fase-6/architecture: add backend cleanup audit`
+`fase-6/docs: define backend code documentation standard`
 
 ## Blockers
 
@@ -34,7 +34,7 @@ Status: ready for next cycle
 1. Check `git status --short`.
 2. Check active agents.
 3. If an agent is active, inspect status and do not start another implementation task.
-4. If working tree is dirty, clean it before continuing: inspect the diff, preserve unknown/user changes, commit validated task-owned changes when safe, revert only disposable/generated changes, stash only with a state-file note, and block only when changes are unsafe or ambiguous.
+4. If working tree is dirty, clean it before continuing: inspect the diff, preserve unknown/user changes, commit validated task-owned changes when safe, revert only disposable/generated changes, stash only with a state-file note, then continue to the next pending task whenever a safe path exists.
 5. Pick the next queue item only when safe.
 6. Dispatch at most one implementation agent.
 7. Require scoped files, `git diff --check`, focused validation, and isolated commit.
