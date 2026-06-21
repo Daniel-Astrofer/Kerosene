@@ -9,12 +9,13 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: fase-6/kfe-transaction: clean submit transaction use case
-Agent: codex5
-Status: running in isolated worktree
+ID: none currently running
+Agent: none
+Status: ready for frontend KFE-only API client task
 
 ## Last completed work
 
+- `9b2dd662 fase-6/kfe-transaction: clean submit transaction use case`
 - `b97cdaf4 fase-6/kfe: add financial invariant tests`
 - `78f4dc30 fase-6/startup: add fast backend diagnostics`
 - `a695ce67 fase-6/audit: add structured domain audit event foundation`
@@ -29,7 +30,7 @@ Status: running in isolated worktree
 
 ## Next task
 
-`fase-6/kfe-transaction: clean submit transaction use case`
+`fase-6/frontend: align financial api client to kfe only`
 
 ## Blockers
 
