@@ -9,12 +9,13 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for logging scope selection
+ID: fase-6/logging: add structured runtime logging foundation
+Agent: codex7
+Status: running implementation agent in isolated worktree
 
 ## Last completed work
 
+- `4ece67c fase-6/orchestration: complete docs standard task`
 - `a99d50b fase-6/docs: define backend code documentation standard`
 - `e3135c0 fase-6/architecture: add backend cleanup audit`
 - `659efd10 fase-6/mcp: stabilize tunnel script paths`
