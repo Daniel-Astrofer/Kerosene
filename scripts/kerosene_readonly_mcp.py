@@ -15,7 +15,7 @@ from typing import Any, Iterable
 
 
 SERVER_NAME = "kerosene-mcp"
-SERVER_VERSION = "0.3.0"
+SERVER_VERSION = "0.4.0"
 SCRIPT_DIR = Path(__file__).resolve().parent
 PROJECT_ROOT = SCRIPT_DIR.parent
 DEFAULT_ROOT = Path(os.environ.get("KEROSENE_MCP_ROOT") or str(PROJECT_ROOT))
@@ -23,6 +23,12 @@ CODEX_FLEET_SCRIPT = Path(
     os.environ.get("KEROSENE_MCP_CODEX_FLEET_SCRIPT") or str(PROJECT_ROOT / "AGENTS" / "codex-fleet-mcp")
 )
 AGY_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_AGY_FLEET_SCRIPT") or str(PROJECT_ROOT / "AGENTS" / "agy-fleet-mcp"))
+CODEX_FLEET_STATE_DIR = Path(os.environ.get("CODEX_FLEET_HOME", "/home/omega/.codex-fleet"))
+CODEX_FLEET_WORKTREES_DIR = CODEX_FLEET_STATE_DIR / "worktrees"
+NIGHTLY_QUEUE_REL = Path(os.environ.get("KEROSENE_MCP_NIGHTLY_QUEUE", "docs/AGENTS/NIGHTLY_ORCHESTRATION_QUEUE.md"))
+NIGHTLY_STATE_REL = Path(os.environ.get("KEROSENE_MCP_NIGHTLY_STATE", "docs/AGENTS/NIGHTLY_ORCHESTRATION_STATE.md"))
+DEFAULT_NIGHTLY_AGENT_ID = os.environ.get("KEROSENE_MCP_NIGHTLY_AGENT_ID", "codex2")
+DEFAULT_NIGHTLY_MODEL = os.environ.get("KEROSENE_MCP_NIGHTLY_MODEL", "gpt-5.5")
 
 MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "100000000"))
 DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "262144"))
@@ -555,6 +561,635 @@ def proxy_timeout_seconds(tool_name: str, arguments: dict[str, Any]) -> int:
         if tool_name.endswith("_quota_probe_all"):
             timeout = max(timeout, requested * 8 + 240)
     return min(timeout, MAX_MCP_PROXY_TIMEOUT_SECONDS)
+
+
+def run_local_command(command: list[str], *, cwd: Path, timeout_seconds: int = 60) -> dict[str, Any]:
+    try:
+        completed = subprocess.run(
+            command,
+            cwd=str(cwd),
+            text=True,
+            stdout=subprocess.PIPE,
+            stderr=subprocess.PIPE,
+            timeout=timeout_seconds,
+            check=False,
+        )
+        return {
+            "command": command,
+            "cwd": str(cwd),
+            "returncode": completed.returncode,
+            "stdout": completed.stdout,
+            "stderr": completed.stderr,
+            "timed_out": False,
+            "ok": completed.returncode == 0,
+        }
+    except subprocess.TimeoutExpired as exc:
+        return {
+            "command": command,
+            "cwd": str(cwd),
+            "returncode": None,
+            "stdout": exc.stdout or "",
+            "stderr": exc.stderr or "",
+            "timed_out": True,
+            "ok": False,
+            "error": f"Command timed out after {timeout_seconds} seconds",
+        }
+
+
+def run_git(repo: Path, args: list[str], *, timeout_seconds: int = 60) -> dict[str, Any]:
+    return run_local_command(["git", *args], cwd=repo, timeout_seconds=timeout_seconds)
+
+
+def git_text(repo: Path, args: list[str], *, timeout_seconds: int = 60) -> str:
+    result = run_git(repo, args, timeout_seconds=timeout_seconds)
+    return result["stdout"].strip() if result.get("returncode") == 0 else ""
+
+
+def ensure_git_repo(path: Path) -> Path:
+    result = run_git(path, ["rev-parse", "--show-toplevel"])
+    if result.get("returncode") != 0:
+        raise ReadOnlyMcpError(result.get("stderr") or f"Not a git repository: {path}")
+    return Path(str(result["stdout"]).strip()).resolve()
+
+
+def allowed_orchestration_repo(root: Path, candidate: Path) -> Path:
+    try:
+        resolved = candidate.expanduser().resolve(strict=True)
+    except OSError as exc:
+        raise ReadOnlyMcpError(f"Cannot resolve repository path: {candidate}") from exc
+    allowed_roots = [root.resolve(strict=True), CODEX_FLEET_WORKTREES_DIR.expanduser().resolve(strict=False)]
+    if not any(is_relative_to(resolved, allowed_root) for allowed_root in allowed_roots):
+        raise ReadOnlyMcpError(f"Refusing repository path outside Kerosene orchestration roots: {resolved}")
+    return ensure_git_repo(resolved)
+
+
+def queue_path(root: Path) -> Path:
+    return resolve_existing_path(root, NIGHTLY_QUEUE_REL.as_posix())
+
+
+def state_path(root: Path) -> Path:
+    return resolve_existing_path(root, NIGHTLY_STATE_REL.as_posix())
+
+
+def parse_heading_block(content: str, heading: str) -> str:
+    match = re.search(rf"^## {re.escape(heading)}\n(?P<body>.*?)(?=^## |\Z)", content, re.M | re.S)
+    return match.group("body").strip() if match else ""
+
+
+def replace_heading_block(content: str, heading: str, body: str) -> str:
+    replacement = f"## {heading}\n\n{body.strip()}\n\n"
+    pattern = rf"^## {re.escape(heading)}\n.*?(?=^## |\Z)"
+    if re.search(pattern, content, re.M | re.S):
+        return re.sub(pattern, replacement, content, count=1, flags=re.M | re.S)
+    return content.rstrip() + "\n\n" + replacement
+
+
+def parse_nightly_state(root: Path) -> dict[str, str | None]:
+    try:
+        content = state_path(root).read_text(encoding="utf-8")
+    except OSError:
+        content = ""
+    current = parse_heading_block(content, "Current task")
+    next_block = parse_heading_block(content, "Next task")
+
+    def field(name: str) -> str | None:
+        match = re.search(rf"^{re.escape(name)}:\s*(.+?)\s*$", current, re.M)
+        return match.group(1).strip() if match else None
+
+    next_match = re.search(r"`([^`]+)`", next_block)
+    return {
+        "current_task": field("ID"),
+        "agent_id": field("Agent"),
+        "status": field("Status"),
+        "next_task": next_match.group(1).strip() if next_match else None,
+    }
+
+
+def parse_nightly_queue(root: Path) -> list[dict[str, str]]:
+    content = queue_path(root).read_text(encoding="utf-8")
+    matches = list(re.finditer(r"^###\s+\d+\.\s+`([^`]+)`\s*$", content, re.M))
+    tasks: list[dict[str, str]] = []
+    for index, match in enumerate(matches):
+        start = match.end()
+        end = matches[index + 1].start() if index + 1 < len(matches) else len(content)
+        body = content[start:end].strip()
+        mode_match = re.search(r"^Mode:\s*(.+?)\s*$", body, re.M)
+        tasks.append(
+            {
+                "id": match.group(1).strip(),
+                "body": body,
+                "mode": mode_match.group(1).strip() if mode_match else "",
+            }
+        )
+    return tasks
+
+
+def completed_commit_subjects(root: Path) -> set[str]:
+    output = git_text(root, ["log", "--format=%s", "-n", "300"])
+    return {line.strip() for line in output.splitlines() if line.strip()}
+
+
+def find_queue_task(root: Path, task_id: str) -> dict[str, str] | None:
+    for task in parse_nightly_queue(root):
+        if task["id"] == task_id:
+            return task
+    return None
+
+
+def next_queue_task(root: Path, *, preferred_task_id: str | None = None) -> dict[str, str] | None:
+    tasks = parse_nightly_queue(root)
+    completed = completed_commit_subjects(root)
+    if preferred_task_id:
+        preferred = next((task for task in tasks if task["id"] == preferred_task_id), None)
+        if preferred and preferred["id"] not in completed:
+            return preferred
+    state = parse_nightly_state(root)
+    state_next = state.get("next_task")
+    if state_next:
+        preferred = next((task for task in tasks if task["id"] == state_next), None)
+        if preferred and preferred["id"] not in completed:
+            return preferred
+    for task in tasks:
+        if task["id"] not in completed:
+            return task
+    return None
+
+
+def task_after(root: Path, completed_task_id: str) -> dict[str, str] | None:
+    tasks = parse_nightly_queue(root)
+    for index, task in enumerate(tasks):
+        if task["id"] == completed_task_id:
+            for later in tasks[index + 1 :]:
+                if later["id"] not in completed_commit_subjects(root):
+                    return later
+            return None
+    return next_queue_task(root)
+
+
+def git_dirty_files(repo: Path) -> list[str]:
+    tracked = git_text(repo, ["diff", "--name-only", "HEAD", "--"]).splitlines()
+    untracked = git_text(repo, ["ls-files", "--others", "--exclude-standard"]).splitlines()
+    seen: set[str] = set()
+    files: list[str] = []
+    for path in [*tracked, *untracked]:
+        path = path.strip()
+        if path and path not in seen:
+            seen.add(path)
+            files.append(path)
+    return files
+
+
+def unsafe_git_paths(repo: Path, paths: list[str]) -> list[str]:
+    unsafe: list[str] = []
+    for rel in paths:
+        path = (repo / rel).resolve(strict=False)
+        if ".git" in path.parts or is_sensitive_path(path):
+            unsafe.append(rel)
+    return unsafe
+
+
+def stage_git_paths(repo: Path, paths: list[str]) -> dict[str, Any]:
+    if not paths:
+        return {"ok": True, "staged": []}
+    for offset in range(0, len(paths), 50):
+        batch = paths[offset : offset + 50]
+        result = run_git(repo, ["add", "--", *batch])
+        if result.get("returncode") != 0:
+            return {"ok": False, "failed_batch": batch, "stdout": result["stdout"], "stderr": result["stderr"]}
+    return {"ok": True, "staged": paths}
+
+
+def commit_if_changed(repo: Path, message: str, paths: list[str] | None = None) -> dict[str, Any]:
+    paths = paths if paths is not None else git_dirty_files(repo)
+    if not paths:
+        return {"ok": True, "committed": False, "reason": "no changes"}
+    unsafe = unsafe_git_paths(repo, paths)
+    if unsafe:
+        return {"ok": False, "committed": False, "blocked_reason": "unsafe_paths", "unsafe_paths": unsafe}
+    staged = stage_git_paths(repo, paths)
+    if not staged.get("ok"):
+        return {"ok": False, "committed": False, "blocked_reason": "git_add_failed", "stage": staged}
+    result = run_git(repo, ["commit", "-m", message], timeout_seconds=120)
+    if result.get("returncode") != 0:
+        return {
+            "ok": False,
+            "committed": False,
+            "blocked_reason": "git_commit_failed",
+            "stdout": result["stdout"],
+            "stderr": result["stderr"],
+        }
+    return {
+        "ok": True,
+        "committed": True,
+        "commit": git_text(repo, ["rev-parse", "--short", "HEAD"]),
+        "message": message,
+        "paths": paths,
+    }
+
+
+def compact_agent_record(record: dict[str, Any]) -> dict[str, Any]:
+    keys = [
+        "agent_id",
+        "alive",
+        "status",
+        "last_status",
+        "thread_id",
+        "cwd",
+        "run_as_user",
+        "model",
+        "event_count",
+        "errors",
+        "diagnostic",
+        "stderr_tail",
+    ]
+    compact = {key: record.get(key) for key in keys if key in record}
+    if isinstance(record.get("last_agent_message"), str):
+        compact["last_agent_message"] = truncate_text(record["last_agent_message"], 2000)
+    return compact
+
+
+def fleet_status_snapshot(agent_id: str | None = None) -> dict[str, Any]:
+    args = {"agent_id": agent_id} if agent_id else {}
+    status = call_mcp_proxy(CODEX_FLEET_SCRIPT, "fleet_status", args, timeout_seconds=1200)
+    if not isinstance(status, dict):
+        raise ReadOnlyMcpError("fleet_status returned an unexpected payload")
+    return status
+
+
+def active_fleet_agents(status: dict[str, Any]) -> dict[str, Any]:
+    agents = status.get("agents") if isinstance(status.get("agents"), dict) else {}
+    return {agent_id: record for agent_id, record in agents.items() if isinstance(record, dict) and record.get("alive")}
+
+
+def current_or_requested_agent(root: Path, args: dict[str, Any]) -> str | None:
+    requested = args.get("agent_id")
+    if isinstance(requested, str) and requested.strip():
+        return requested.strip()
+    state = parse_nightly_state(root)
+    agent_id = state.get("agent_id")
+    if agent_id and agent_id.lower() != "none":
+        return agent_id
+    return DEFAULT_NIGHTLY_AGENT_ID
+
+
+def repo_from_args(root: Path, args: dict[str, Any]) -> Path:
+    if isinstance(args.get("agent_id"), str) and args["agent_id"].strip():
+        status = fleet_status_snapshot(args["agent_id"].strip())
+        record = (status.get("agents") or {}).get(args["agent_id"].strip())
+        if not isinstance(record, dict) or not record.get("cwd"):
+            raise ReadOnlyMcpError(f"No cwd recorded for agent {args['agent_id']}")
+        return allowed_orchestration_repo(root, Path(str(record["cwd"])))
+    raw_path = args.get("path")
+    if raw_path:
+        candidate = Path(str(raw_path)).expanduser()
+        if not candidate.is_absolute():
+            candidate = root / candidate
+        return allowed_orchestration_repo(root, candidate)
+    return ensure_git_repo(root)
+
+
+def kerosene_git_status(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    repo = repo_from_args(root, args)
+    status = run_git(repo, ["status", "--short"])
+    branch = git_text(repo, ["branch", "--show-current"])
+    head = git_text(repo, ["rev-parse", "--short", "HEAD"])
+    upstream = git_text(repo, ["rev-parse", "--abbrev-ref", "--symbolic-full-name", "@{u}"])
+    dirty_files = git_dirty_files(repo)
+    return {
+        "ok": status.get("returncode") == 0,
+        "repo": str(repo),
+        "branch": branch or None,
+        "head": head or None,
+        "upstream": upstream or None,
+        "clean": not dirty_files,
+        "dirty_file_count": len(dirty_files),
+        "dirty_files": dirty_files,
+        "status_short": status["stdout"],
+        "stderr": status["stderr"],
+    }
+
+
+def kerosene_clean_worktree(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    repo = repo_from_args(root, args)
+    status = kerosene_git_status(root, {**args, "path": str(repo)})
+    if status["clean"]:
+        return {"ok": True, "clean": True, "repo": str(repo), "action": "none"}
+    diff_check = run_git(repo, ["diff", "--check"], timeout_seconds=120)
+    return {
+        "ok": False,
+        "clean": False,
+        "repo": str(repo),
+        "action": "blocked",
+        "blocked_reason": "dirty_worktree_requires_explicit_commit_or_human_review",
+        "diff_check": {
+            "ok": diff_check.get("returncode") == 0,
+            "stdout": diff_check["stdout"],
+            "stderr": diff_check["stderr"],
+        },
+        "status": status,
+        "policy": "This tool does not discard or stash unknown work. Use kerosene_commit_agent_output for validated agent output.",
+    }
+
+
+def build_nightly_task_prompt(root: Path, task: dict[str, str]) -> str:
+    return f"""You are a Codex implementation agent working inside the Kerosene repository.
+
+Task: {task['id']}
+
+Use the repository-local orchestration queue as the source of truth:
+- {NIGHTLY_QUEUE_REL.as_posix()}
+- {NIGHTLY_STATE_REL.as_posix()}
+
+Implement only the task section below. Do not broaden scope. Do not run scripts/start-local.sh.
+Do not commit; the Kerosene MCP orchestrator will validate and commit locally.
+Do not use git add . If validation is blocked by sandbox, report the exact command and error.
+
+Task section:
+{task['body']}
+
+Final report must include changed files, validation commands/results, and blockers or residual risks.
+"""
+
+
+def commit_state_update(root: Path, message: str = "fase-6/orchestration: update nightly state") -> dict[str, Any]:
+    rel = NIGHTLY_STATE_REL.as_posix()
+    status = run_git(root, ["status", "--short", "--", rel])
+    if not status["stdout"].strip():
+        return {"ok": True, "committed": False, "reason": "state unchanged"}
+    return commit_if_changed(root, message, [rel])
+
+
+def update_nightly_state(
+    root: Path,
+    *,
+    current_task_id: str | None,
+    agent_id: str | None,
+    status_text: str,
+    last_completed: str | None = None,
+    next_task_id: str | None = None,
+) -> dict[str, Any]:
+    path = state_path(root)
+    content = path.read_text(encoding="utf-8")
+    current_body = "\n".join(
+        [
+            f"ID: {current_task_id or 'none'}",
+            f"Agent: {agent_id or 'none'}",
+            f"Status: {status_text}",
+        ]
+    )
+    content = replace_heading_block(content, "Current task", current_body)
+    next_body = f"`{next_task_id}`" if next_task_id else "None"
+    content = replace_heading_block(content, "Next task", next_body)
+    if last_completed:
+        last_body = parse_heading_block(content, "Last completed work")
+        bullet = f"- `{last_completed}`"
+        if bullet not in last_body:
+            last_body = (bullet + "\n" + last_body).strip()
+            content = replace_heading_block(content, "Last completed work", last_body)
+    path.write_text(content, encoding="utf-8")
+    return {"ok": True, "path": relative_path(root, path)}
+
+
+def kerosene_dispatch_next(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    mode = str(args.get("mode") or "nightly")
+    if mode != "nightly":
+        raise ReadOnlyMcpError("Only mode='nightly' is supported")
+    if as_bool(args.get("require_clean_worktree"), True):
+        root_status = kerosene_git_status(root, {})
+        if not root_status["clean"]:
+            return {"ok": False, "action": "blocked", "blocked_reason": "root_worktree_dirty", "git_status": root_status}
+
+    status = fleet_status_snapshot()
+    active = active_fleet_agents(status)
+    if active:
+        return {
+            "ok": True,
+            "action": "wait",
+            "reason": "agent_already_running",
+            "active_agents": {agent_id: compact_agent_record(record) for agent_id, record in active.items()},
+        }
+
+    task = next_queue_task(root, preferred_task_id=args.get("task_id") if isinstance(args.get("task_id"), str) else None)
+    if not task:
+        return {"ok": True, "action": "none", "reason": "no_pending_queue_task"}
+
+    agent_id = str(args.get("agent_id") or DEFAULT_NIGHTLY_AGENT_ID)
+    prompt = build_nightly_task_prompt(root, task)
+    if as_bool(args.get("dry_run"), False):
+        return {"ok": True, "action": "dry_run", "task_id": task["id"], "agent_id": agent_id}
+
+    fleet_args = {
+        "agent_id": agent_id,
+        "model": str(args.get("model") or DEFAULT_NIGHTLY_MODEL),
+        "task": prompt,
+        "cwd": str(root),
+        "sandbox": str(args.get("sandbox") or "workspace-write"),
+        "approval_policy": str(args.get("approval_policy") or "never"),
+        "create_worktree": as_bool(args.get("create_worktree"), True),
+    }
+    if isinstance(args.get("reasoning_effort"), str):
+        fleet_args["reasoning_effort"] = args["reasoning_effort"]
+    result = call_mcp_proxy(CODEX_FLEET_SCRIPT, "fleet_start_worker", fleet_args, timeout_seconds=1200)
+    next_after = task_after(root, task["id"])
+    update_nightly_state(
+        root,
+        current_task_id=task["id"],
+        agent_id=agent_id,
+        status_text="dispatched by kerosene_dispatch_next",
+        next_task_id=next_after["id"] if next_after else None,
+    )
+    state_commit = commit_state_update(root, "fase-6/orchestration: dispatch nightly task")
+    record = ((result or {}).get("agents") or {}).get(agent_id) if isinstance(result, dict) else None
+    return {
+        "ok": True,
+        "action": "dispatched",
+        "task_id": task["id"],
+        "agent_id": agent_id,
+        "state_commit": state_commit,
+        "agent": compact_agent_record(record) if isinstance(record, dict) else None,
+    }
+
+
+def kerosene_collect_agent_result(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    agent_id = current_or_requested_agent(root, args)
+    status = fleet_status_snapshot(agent_id)
+    agents = status.get("agents") if isinstance(status.get("agents"), dict) else {}
+    record = agents.get(agent_id) if agent_id else None
+    if not isinstance(record, dict):
+        return {"ok": False, "action": "blocked", "blocked_reason": "agent_not_found", "agent_id": agent_id}
+    tail_lines_count = clamp_int(args.get("lines"), 80, 1, 500)
+    tail = call_mcp_proxy(
+        CODEX_FLEET_SCRIPT,
+        "fleet_tail",
+        {"agent_id": agent_id, "stream": "events", "lines": tail_lines_count},
+        timeout_seconds=1200,
+    )
+    repo_status: dict[str, Any] | None = None
+    cwd = record.get("cwd")
+    if isinstance(cwd, str) and cwd:
+        try:
+            repo_status = kerosene_git_status(root, {"path": cwd})
+        except ReadOnlyMcpError as exc:
+            repo_status = {"ok": False, "error": str(exc), "repo": cwd}
+    ready_to_commit = not bool(record.get("alive")) and bool(repo_status and not repo_status.get("clean"))
+    return {
+        "ok": True,
+        "action": "agent_running" if record.get("alive") else "agent_finished",
+        "ready_to_commit": ready_to_commit,
+        "agent": compact_agent_record(record),
+        "worktree_status": repo_status,
+        "tail": {
+            "agent_id": agent_id,
+            "stream": "events",
+            "line_count": len(tail.get("lines") or []) if isinstance(tail, dict) else None,
+            "last_lines": (tail.get("lines") or [])[-10:] if isinstance(tail, dict) else [],
+        },
+    }
+
+
+def kerosene_commit_agent_output(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    mode = str(args.get("mode") or "nightly")
+    if mode != "nightly":
+        raise ReadOnlyMcpError("Only mode='nightly' is supported")
+    agent_id = current_or_requested_agent(root, args)
+    status = fleet_status_snapshot(agent_id)
+    record = ((status.get("agents") or {}).get(agent_id)) if agent_id else None
+    if not isinstance(record, dict):
+        return {"ok": False, "action": "blocked", "blocked_reason": "agent_not_found", "agent_id": agent_id}
+    if record.get("alive"):
+        return {"ok": True, "action": "wait", "reason": "agent_still_running", "agent": compact_agent_record(record)}
+
+    cwd = record.get("cwd")
+    repo = allowed_orchestration_repo(root, Path(str(cwd))) if isinstance(cwd, str) and cwd else root
+    dirty_files = git_dirty_files(repo)
+    if not dirty_files:
+        return {"ok": True, "action": "none", "reason": "agent_worktree_clean", "repo": str(repo)}
+    diff_check = run_git(repo, ["diff", "--check"], timeout_seconds=120)
+    if diff_check.get("returncode") != 0:
+        return {
+            "ok": False,
+            "action": "blocked",
+            "blocked_reason": "diff_check_failed",
+            "repo": str(repo),
+            "stdout": diff_check["stdout"],
+            "stderr": diff_check["stderr"],
+        }
+
+    state = parse_nightly_state(root)
+    message = str(args.get("message") or state.get("current_task") or "").strip()
+    if not message or message == "none":
+        return {"ok": False, "action": "blocked", "blocked_reason": "missing_commit_message"}
+
+    commit_result = commit_if_changed(repo, message, dirty_files)
+    if not commit_result.get("ok"):
+        return {"ok": False, "action": "blocked", "blocked_reason": "agent_commit_failed", "commit": commit_result}
+
+    integrated: dict[str, Any] | None = None
+    if repo != root and as_bool(args.get("integrate_to_root"), True):
+        root_status = kerosene_git_status(root, {})
+        if not root_status["clean"]:
+            return {
+                "ok": False,
+                "action": "blocked",
+                "blocked_reason": "root_dirty_before_cherry_pick",
+                "agent_commit": commit_result,
+                "root_status": root_status,
+            }
+        commit_hash = str(commit_result.get("commit") or "")
+        cherry_pick = run_git(root, ["cherry-pick", commit_hash], timeout_seconds=120)
+        if cherry_pick.get("returncode") != 0:
+            abort = run_git(root, ["cherry-pick", "--abort"], timeout_seconds=120)
+            return {
+                "ok": False,
+                "action": "blocked",
+                "blocked_reason": "cherry_pick_failed",
+                "agent_commit": commit_result,
+                "stdout": cherry_pick["stdout"],
+                "stderr": cherry_pick["stderr"],
+                "abort": {"returncode": abort["returncode"], "stderr": abort["stderr"]},
+            }
+        integrated = {
+            "ok": True,
+            "commit": git_text(root, ["rev-parse", "--short", "HEAD"]),
+            "stdout": cherry_pick["stdout"],
+            "stderr": cherry_pick["stderr"],
+        }
+
+    next_task = task_after(root, message)
+    next_after = task_after(root, next_task["id"]) if next_task else None
+    update_nightly_state(
+        root,
+        current_task_id=next_task["id"] if next_task else None,
+        agent_id=None,
+        status_text="ready to dispatch next task" if next_task else "queue complete",
+        last_completed=message,
+        next_task_id=next_after["id"] if next_after else None,
+    )
+    state_commit = commit_state_update(root)
+    return {
+        "ok": True,
+        "action": "committed",
+        "agent_id": agent_id,
+        "repo": str(repo),
+        "agent_commit": commit_result,
+        "integrated_to_root": integrated,
+        "state_commit": state_commit,
+        "next_task": next_task["id"] if next_task else None,
+    }
+
+
+def kerosene_cycle_once(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    mode = str(args.get("mode") or "nightly")
+    if mode != "nightly":
+        raise ReadOnlyMcpError("Only mode='nightly' is supported")
+    steps: list[dict[str, Any]] = []
+
+    root_status = kerosene_git_status(root, {})
+    steps.append({"step": "kerosene_git_status", "clean": root_status["clean"], "dirty_file_count": root_status["dirty_file_count"]})
+    if not root_status["clean"]:
+        clean = kerosene_clean_worktree(root, {})
+        steps.append({"step": "kerosene_clean_worktree", "result": clean})
+        return {"ok": False, "action": "blocked", "blocked_reason": "root_worktree_dirty", "steps": steps}
+
+    status = fleet_status_snapshot()
+    active = active_fleet_agents(status)
+    if active:
+        collect = kerosene_collect_agent_result(root, {"agent_id": next(iter(active)), "lines": args.get("lines", 80)})
+        steps.append({"step": "kerosene_collect_agent_result", "result": collect})
+        return {"ok": True, "action": "wait", "steps": steps}
+
+    collect = kerosene_collect_agent_result(root, {"agent_id": current_or_requested_agent(root, args), "lines": args.get("lines", 80)})
+    steps.append({"step": "kerosene_collect_agent_result", "result": collect})
+    if collect.get("ready_to_commit") and as_bool(args.get("commit_agent_output"), True):
+        commit = kerosene_commit_agent_output(root, args)
+        steps.append({"step": "kerosene_commit_agent_output", "result": commit})
+        if not commit.get("ok"):
+            return {"ok": False, "action": "blocked", "blocked_reason": "commit_agent_output_failed", "steps": steps}
+
+    if as_bool(args.get("dispatch"), True):
+        dispatch_args = dict(args)
+        dispatch_args.setdefault("require_clean_worktree", True)
+        dispatch = kerosene_dispatch_next(root, dispatch_args)
+        steps.append({"step": "kerosene_dispatch_next", "result": dispatch})
+        return {"ok": bool(dispatch.get("ok")), "action": dispatch.get("action"), "steps": steps}
+
+    return {"ok": True, "action": "none", "steps": steps}
+
+
+def kerosene_call_tool(root: Path, name: str, args: dict[str, Any]) -> Any:
+    if name == "kerosene_cycle_once":
+        return kerosene_cycle_once(root, args)
+    if name == "kerosene_git_status":
+        return kerosene_git_status(root, args)
+    if name == "kerosene_clean_worktree":
+        return kerosene_clean_worktree(root, args)
+    if name == "kerosene_dispatch_next":
+        return kerosene_dispatch_next(root, args)
+    if name == "kerosene_collect_agent_result":
+        return kerosene_collect_agent_result(root, args)
+    if name == "kerosene_commit_agent_output":
+        return kerosene_commit_agent_output(root, args)
+    raise ReadOnlyMcpError(f"Unknown Kerosene orchestration tool: {name}")
 
 
 def path_type(path: Path) -> str:
@@ -1181,6 +1816,95 @@ def tool_schema() -> list[dict[str, Any]]:
             "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
         },
         {
+            "name": "kerosene_cycle_once",
+            "description": "Run one local Kerosene orchestration cycle. For ChatGPT Web, prefer this with {'mode':'nightly'} instead of sending git/fleet/shell payloads.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
+                    "commit_agent_output": {"type": "boolean", "default": True},
+                    "dispatch": {"type": "boolean", "default": True},
+                    "agent_id": {"type": "string"},
+                    "model": {"type": "string", "default": DEFAULT_NIGHTLY_MODEL},
+                    "create_worktree": {"type": "boolean", "default": True},
+                    "lines": {"type": "integer", "minimum": 1, "maximum": 500, "default": 80},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "kerosene_git_status",
+            "description": "Return compact git status for the Kerosene root or a managed agent worktree.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string", "description": "Optional repository path under the project root or codex fleet worktrees."},
+                    "agent_id": {"type": "string", "description": "Optional managed Codex agent id; uses that agent cwd."},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "kerosene_clean_worktree",
+            "description": "Inspect a dirty worktree and stop safely. It never discards or stashes unknown work; use commit_agent_output for validated agent changes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
+                    "path": {"type": "string"},
+                    "agent_id": {"type": "string"},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "kerosene_dispatch_next",
+            "description": "Dispatch the next nightly queue item through codex-fleet using a local prompt assembled from repository docs.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
+                    "task_id": {"type": "string"},
+                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
+                    "model": {"type": "string", "default": DEFAULT_NIGHTLY_MODEL},
+                    "sandbox": {"type": "string", "enum": ["read-only", "workspace-write", "danger-full-access"], "default": "workspace-write"},
+                    "approval_policy": {"type": "string", "enum": ["untrusted", "on-request", "never"], "default": "never"},
+                    "reasoning_effort": {"type": "string", "enum": ["low", "medium", "high", "xhigh"]},
+                    "create_worktree": {"type": "boolean", "default": True},
+                    "require_clean_worktree": {"type": "boolean", "default": True},
+                    "dry_run": {"type": "boolean", "default": False},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "kerosene_collect_agent_result",
+            "description": "Collect compact status, tail, and dirty-worktree information for a managed Codex agent.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
+                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
+                    "lines": {"type": "integer", "minimum": 1, "maximum": 500, "default": 80},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "kerosene_commit_agent_output",
+            "description": "Validate, stage enumerated files, commit a finished agent worktree, and cherry-pick it into the root branch when needed.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
+                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
+                    "message": {"type": "string", "description": "Optional commit message. Defaults to the current nightly task id from state."},
+                    "integrate_to_root": {"type": "boolean", "default": True},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
             "name": "shell_command",
             "description": "Run a shell command inside the project root and capture stdout/stderr. Supports large local validation/build commands such as Java/Gradle, Flutter, Dart, Go, git, rg, sed, and find.",
             "inputSchema": {
@@ -1456,6 +2180,8 @@ def call_tool(root: Path, name: str, args: dict[str, Any]) -> Any:
         return get_project_tree(root, args)
     if name == "project_summary":
         return project_summary(root, args)
+    if name.startswith("kerosene_"):
+        return kerosene_call_tool(root, name, args)
     if name.startswith("fleet_"):
         return call_mcp_proxy(CODEX_FLEET_SCRIPT, name, args, timeout_seconds=proxy_timeout_seconds(name, args))
     if name.startswith("agy_"):
