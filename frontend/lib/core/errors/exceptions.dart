@@ -5,23 +5,31 @@ class AppException implements Exception {
   final String message;
   final int? statusCode;
   final String? errorCode;
+  final String? traceId;
   final Object? data;
 
   const AppException({
     required this.message,
     this.statusCode,
     this.errorCode,
+    this.traceId,
     this.data,
   });
 
   @override
-  String toString() => jsonEncode({
-        'type': 'AppException',
-        'message': message,
-        'statusCode': statusCode,
-        'errorCode': errorCode,
-        'data': data,
-      });
+  String toString() {
+    final payload = {
+      'type': 'AppException',
+      'message': message,
+      'statusCode': statusCode,
+      'errorCode': errorCode,
+      'data': data,
+    };
+    if (traceId != null) {
+      payload['traceId'] = traceId;
+    }
+    return jsonEncode(payload);
+  }
 }
 
 /// Exceção de servidor
@@ -30,6 +38,7 @@ class ServerException extends AppException {
     required super.message,
     super.statusCode,
     super.errorCode,
+    super.traceId,
     super.data,
   });
 }
@@ -45,6 +54,7 @@ class AuthException extends AppException {
     required super.message,
     super.statusCode,
     super.errorCode,
+    super.traceId,
     super.data,
   });
 }
@@ -55,6 +65,7 @@ class ValidationException extends AppException {
     required super.message,
     super.statusCode = 400,
     super.errorCode,
+    super.traceId,
     super.data,
   });
 }

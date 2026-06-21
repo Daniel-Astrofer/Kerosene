@@ -416,6 +416,89 @@ class ApiClient {
 
   // Headers are now managed exclusively by TokenInterceptor
 
+  @visibleForTesting
+  static AppException exceptionFromBadResponse(DioException error) {
+    final statusCode = error.response?.statusCode;
+    var message = 'Não conseguimos concluir a solicitação agora.';
+    String? errorCode;
+    String? traceId = ApiResponseInterceptor.extractTraceId(
+      error.response,
+      error.error,
+    );
+    Object? errorData;
+
+    final data = error.response?.data;
+    if (data is Map) {
+      message = _optionalString(data['message']) ?? message;
+      errorCode = _optionalString(data['errorCode']);
+      traceId = _optionalString(data['traceId']) ?? traceId;
+      if (data.containsKey('data')) errorData = data['data'];
+    } else if (data is String) {
+      try {
+        final json = jsonDecode(data);
+        if (json is Map) {
+          message = _optionalString(json['message']) ?? message;
+          errorCode = _optionalString(json['errorCode']);
+          traceId = _optionalString(json['traceId']) ?? traceId;
+          if (json.containsKey('data')) {
+            errorData = json['data'];
+          }
+        } else {
+          message = data.length > 100 ? data.substring(0, 100) : data;
+        }
+      } catch (_) {
+        message = data.length > 100 ? data.substring(0, 100) : data;
+      }
+    } else if (error.error != null) {
+      if (error.error is String) {
+        message = error.error as String;
+      } else if (error.error is Map) {
+        final errMap = error.error as Map;
+        message = _optionalString(errMap['message']) ?? message;
+        errorCode = _optionalString(errMap['errorCode']) ?? errorCode;
+        traceId = _optionalString(errMap['traceId']) ?? traceId;
+        if (errMap.containsKey('data')) {
+          errorData = errMap['data'];
+        }
+      }
+    }
+
+    if (statusCode == 401 || statusCode == 403) {
+      return AuthException(
+        message: message,
+        statusCode: statusCode,
+        errorCode: errorCode,
+        traceId: traceId,
+        data: errorData,
+      );
+    }
+
+    if (statusCode != null && statusCode >= 500) {
+      return ServerException(
+        message: message,
+        statusCode: statusCode,
+        errorCode: errorCode,
+        traceId: traceId,
+        data: errorData,
+      );
+    }
+
+    return ValidationException(
+      message: message,
+      statusCode: statusCode,
+      errorCode: errorCode,
+      traceId: traceId,
+      data: errorData,
+    );
+  }
+
+  static String? _optionalString(Object? value) {
+    if (value is String && value.trim().isNotEmpty) {
+      return value;
+    }
+    return null;
+  }
+
   /// Tratamento de erros
   AppException _handleError(dynamic error) {
     if (error is AppException) {
@@ -439,74 +522,7 @@ class ApiClient {
           return const NetworkException();
 
         case DioExceptionType.badResponse:
-          final statusCode = error.response?.statusCode;
-          var message = 'Não conseguimos concluir a solicitação agora.';
-          String? errorCode;
-          Object? errorData;
-
-          final data = error.response?.data;
-          if (data is Map) {
-            if (data.containsKey('message')) message = data['message'];
-            if (data.containsKey('errorCode')) errorCode = data['errorCode'];
-            if (data.containsKey('data')) errorData = data['data'];
-          } else if (data is String) {
-            try {
-              final json = jsonDecode(data);
-              if (json is Map) {
-                if (json.containsKey('message')) message = json['message'];
-                if (json.containsKey('errorCode')) {
-                  errorCode = json['errorCode'];
-                }
-                if (json.containsKey('data')) {
-                  errorData = json['data'];
-                }
-              } else {
-                message = data.length > 100 ? data.substring(0, 100) : data;
-              }
-            } catch (_) {
-              message = data.length > 100 ? data.substring(0, 100) : data;
-            }
-          } else if (error.error != null) {
-            if (error.error is String) {
-              message = error.error as String;
-            } else if (error.error is Map) {
-              final errMap = error.error as Map;
-              if (errMap.containsKey('message')) {
-                message = errMap['message'];
-              }
-              if (errMap.containsKey('errorCode')) {
-                errorCode = errMap['errorCode'];
-              }
-              if (errMap.containsKey('data')) {
-                errorData = errMap['data'];
-              }
-            }
-          }
-
-          if (statusCode == 401 || statusCode == 403) {
-            return AuthException(
-              message: message,
-              statusCode: statusCode,
-              errorCode: errorCode,
-              data: errorData,
-            );
-          }
-
-          if (statusCode != null && statusCode >= 500) {
-            return ServerException(
-              message: message,
-              statusCode: statusCode,
-              errorCode: errorCode,
-              data: errorData,
-            );
-          }
-
-          return ValidationException(
-            message: message,
-            statusCode: statusCode,
-            errorCode: errorCode,
-            data: errorData,
-          );
+          return exceptionFromBadResponse(error);
 
         default:
           final statusCode = error.response?.statusCode;
@@ -516,6 +532,10 @@ class ApiClient {
                 errorStr ??
                 'Erro desconhecido (HTTP $statusCode)',
             statusCode: statusCode,
+            traceId: ApiResponseInterceptor.extractTraceId(
+              error.response,
+              error.error,
+            ),
           );
       }
     }
