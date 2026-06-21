@@ -10,8 +10,12 @@ The managed Antigravity slots are named `agy1`, `agy2`, `agy3`, and `agy4`, but 
 | `agy2` | `codex2` |
 | `agy3` | `codex3` |
 | `agy4` | `codex4` |
+| `agy5` | `codex5` |
+| `agy6` | `codex6` |
+| `agy7` | `codex7` |
+| `agy8` | `codex8` |
 
-Aliases `codex1`, `codex2`, `codex3`, and `codex4` are accepted and canonicalized to the matching `agyN` slot.
+Aliases `codex1` through `codex8` are accepted and canonicalized to the matching `agyN` slot.
 
 ## Tools
 
@@ -61,7 +65,7 @@ It also adds a managed memory block to `/home/omega/.gemini/GEMINI.md` telling `
 
 ## User Switching
 
-If a Codex session running as `codex2` should launch workers as `codex1`, `codex3`, or `codex4`, passwordless user switching must be configured.
+If a Codex session running as `codex2` should launch workers as `codex1`, `codex3`, or any of `codex4` through `codex8`, passwordless user switching must be configured.
 
 Install the sudoers rule once as root:
 
@@ -84,4 +88,8 @@ agy_start_worker {"agent_id":"agy1","task":"Audit security issues and report con
 agy_start_worker {"agent_id":"agy2","task":"Audit performance bottlenecks and report concrete fixes with file paths.","cwd":"/home/omega/Kerosene"}
 agy_start_worker {"agent_id":"agy3","task":"Audit code quality, naming, typing, and UI consistency.","cwd":"/home/omega/Kerosene"}
 agy_start_worker {"agent_id":"agy4","task":"Audit missing tests and flaky test risks.","cwd":"/home/omega/Kerosene"}
+agy_start_worker {"agent_id":"agy5","task":"Audit product flows for regressions and report concrete fixes with file paths.","cwd":"/home/omega/Kerosene"}
+agy_start_worker {"agent_id":"agy6","task":"Audit runtime startup and infrastructure edge cases with file paths.","cwd":"/home/omega/Kerosene"}
+agy_start_worker {"agent_id":"agy7","task":"Audit security-sensitive code paths and report concrete findings with file paths.","cwd":"/home/omega/Kerosene"}
+agy_start_worker {"agent_id":"agy8","task":"Audit documentation drift and missing operator guidance with file paths.","cwd":"/home/omega/Kerosene"}
 ```

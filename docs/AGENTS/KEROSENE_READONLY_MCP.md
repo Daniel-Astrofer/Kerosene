@@ -56,6 +56,8 @@ The server allows large edits throughout the repository, and the shell tool is a
 
 For large files, agents should call `read_file_lines` with `start_line` and `max_lines` instead of asking `read_file` for a very large byte payload. This keeps the MCP bridge responsive while still allowing full source inspection in chunks.
 
+Search tools have a connector-safe time and response budget. `search_text` and `search_code` accept `timeout_seconds` and `max_response_chars`; when the budget is reached they return partial results with `truncated: true` instead of letting the tunnel turn the call into a 502.
+
 This policy is enforced by `scripts/kerosene_readonly_mcp.py`.
 
 ## Local MCP Config
@@ -99,7 +101,7 @@ tunnel-client init \
   --mcp-command "/home/omega/Kerosene/scripts/kerosene-mcp"
 ```
 
-Then keep `tunnel-client run --profile kerosene-mcp` running and create a custom ChatGPT connector using the tunnel.
+Then keep `tunnel-client run --profile kerosene-mcp --mcp.connection-max-ttl 30m --mcp.max-concurrent-requests 4` running and create a custom ChatGPT connector using the tunnel.
 
 Official references:
 
@@ -118,18 +120,15 @@ printf '%s\n' \
 ```
 
 
-# Comando de Iniciualização 
+## Tunnel Startup
 
-```cd /home/omega/Kerosene
+Keep secrets in `scripts/.env.tunnel` or the shell environment. Do not write runtime API keys into this repository.
 
-export CONTROL_PLANE_API_KEY="<CONTROL_PLANE_API_KEY>"
+```bash
+cd /home/omega/Kerosene
+export CONTROL_PLANE_API_KEY="<runtime-api-key>"
 
-./tunnel-client init \
---sample sample_mcp_stdio_local \
---profile kerosene-readonly \
---tunnel-id tunnel_... \
---mcp-command "/home/omega/Kerosene/scripts/kerosene-mcp"
-
-./tunnel-client doctor --profile kerosene-readonly --explain
-./tunnel-client run --profile kerosene-readonly 
+./scripts/start-kerosene-tunnel.sh
 ```
+
+The startup script recreates the `kerosene-readonly` profile, validates it with `doctor`, and runs the tunnel with `MCP_CONNECTION_MAX_TTL=30m` and `MCP_MAX_CONCURRENT_REQUESTS=4` by default. Override with `KEROSENE_TUNNEL_MCP_CONNECTION_MAX_TTL` and `KEROSENE_TUNNEL_MCP_MAX_CONCURRENT_REQUESTS` only when needed.

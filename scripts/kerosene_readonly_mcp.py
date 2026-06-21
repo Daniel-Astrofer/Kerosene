@@ -8,6 +8,7 @@ import os
 import re
 import subprocess
 import sys
+import time
 from collections import Counter
 from pathlib import Path
 from typing import Any, Iterable
@@ -16,25 +17,33 @@ from typing import Any, Iterable
 SERVER_NAME = "kerosene-mcp"
 SERVER_VERSION = "0.3.0"
 DEFAULT_ROOT = Path(os.environ.get("KEROSENE_MCP_ROOT", "/home/omega/Kerosene"))
+CODEX_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_CODEX_FLEET_SCRIPT", "/home/omega/Kerosene/AGENTS/codex-fleet-mcp"))
+AGY_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_AGY_FLEET_SCRIPT", "/home/omega/Kerosene/AGENTS/agy-fleet-mcp"))
 
-MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "20000000"))
-DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "65536"))
-MAX_READ_LINES = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES", "5000"))
-DEFAULT_READ_LINES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_LINES", "250"))
-MAX_READ_LINE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINE_CHARS", "8000"))
-MAX_READ_LINES_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES_CHARS", "1000000"))
-MAX_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_RESULTS", "1000"))
-DEFAULT_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESULTS", "100"))
-MAX_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILES", "100000"))
-DEFAULT_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_FILES", "20000"))
-MAX_SEARCH_FILE_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILE_BYTES", "20000000"))
-MAX_TREE_ENTRIES = int(os.environ.get("KEROSENE_MCP_MAX_TREE_ENTRIES", "20000"))
-DEFAULT_TREE_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_TREE_ENTRIES", "2000"))
-MAX_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_MAX_LIST_ENTRIES", "10000"))
-DEFAULT_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_LIST_ENTRIES", "500"))
-MAX_CONTEXT_LINES = int(os.environ.get("KEROSENE_MCP_MAX_CONTEXT_LINES", "10"))
-DEFAULT_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_DEFAULT_COMMAND_TIMEOUT_SECONDS", "1800"))
-MAX_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_MAX_COMMAND_TIMEOUT_SECONDS", "7200"))
+MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "100000000"))
+DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "262144"))
+MAX_READ_LINES = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES", "20000"))
+DEFAULT_READ_LINES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_LINES", "1000"))
+MAX_READ_LINE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINE_CHARS", "20000"))
+MAX_READ_LINES_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_READ_LINES_CHARS", "4000000"))
+MAX_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_RESULTS", "5000"))
+DEFAULT_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESULTS", "250"))
+MAX_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILES", "200000"))
+DEFAULT_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_FILES", "50000"))
+MAX_SEARCH_FILE_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILE_BYTES", "100000000"))
+DEFAULT_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_TIMEOUT_SECONDS", "480"))
+MAX_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("KEROSENE_MCP_MAX_SEARCH_TIMEOUT_SECONDS", "1500"))
+DEFAULT_SEARCH_RESPONSE_CHARS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESPONSE_CHARS", "1000000"))
+MAX_SEARCH_RESPONSE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_RESPONSE_CHARS", "4000000"))
+MAX_TOOL_RESPONSE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_TOOL_RESPONSE_CHARS", "4000000"))
+MAX_TREE_ENTRIES = int(os.environ.get("KEROSENE_MCP_MAX_TREE_ENTRIES", "50000"))
+DEFAULT_TREE_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_TREE_ENTRIES", "5000"))
+MAX_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_MAX_LIST_ENTRIES", "50000"))
+DEFAULT_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_LIST_ENTRIES", "2000"))
+MAX_CONTEXT_LINES = int(os.environ.get("KEROSENE_MCP_MAX_CONTEXT_LINES", "25"))
+DEFAULT_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_DEFAULT_COMMAND_TIMEOUT_SECONDS", "7200"))
+MAX_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_MAX_COMMAND_TIMEOUT_SECONDS", "14400"))
+MAX_MCP_PROXY_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_MAX_PROXY_TIMEOUT_SECONDS", "172800"))
 
 EXCLUDED_DIR_NAMES = {
     ".dart_tool",
@@ -159,6 +168,16 @@ def clamp_int(value: Any, default: int, minimum: int, maximum: int) -> int:
     return max(minimum, min(maximum, parsed))
 
 
+def clamp_float(value: Any, default: float, minimum: float, maximum: float) -> float:
+    if value is None:
+        return default
+    try:
+        parsed = float(value)
+    except (TypeError, ValueError) as exc:
+        raise ReadOnlyMcpError(f"Expected numeric value, got {value!r}") from exc
+    return max(minimum, min(maximum, parsed))
+
+
 def as_bool(value: Any, default: bool = False) -> bool:
     if value is None:
         return default
@@ -252,6 +271,58 @@ def truncate_text(value: str, max_chars: int = 500) -> str:
     if len(value) <= max_chars:
         return value
     return value[: max_chars - 15] + "...<truncated>"
+
+
+def compact_tool_value(value: Any, *, max_chars: int = MAX_TOOL_RESPONSE_CHARS) -> str:
+    text = json.dumps(value, indent=2, sort_keys=True)
+    if len(text) <= max_chars:
+        return text
+
+    if not isinstance(value, dict):
+        return json.dumps(
+            {
+                "response_truncated": True,
+                "original_response_chars": len(text),
+                "error": "Tool response exceeded connector-safe size.",
+            },
+            indent=2,
+            sort_keys=True,
+        )
+
+    compacted = dict(value)
+    compacted["response_truncated"] = True
+    compacted["original_response_chars"] = len(text)
+    compacted["response_truncation_reason"] = "connector_safe_response_budget"
+
+    for key in ("content", "stdout", "stderr", "tree"):
+        current = compacted.get(key)
+        if isinstance(current, str):
+            compacted[key] = truncate_text(current, max(1000, max_chars // 2))
+
+    for key in ("results", "lines", "entries"):
+        current = compacted.get(key)
+        if isinstance(current, list):
+            compacted[f"original_{key}_count"] = len(current)
+            compacted[key] = current
+            while compacted[key]:
+                candidate = json.dumps(compacted, indent=2, sort_keys=True)
+                if len(candidate) <= max_chars:
+                    return candidate
+                keep = max(0, len(compacted[key]) // 2)
+                compacted[key] = compacted[key][:keep]
+
+    text = json.dumps(compacted, indent=2, sort_keys=True)
+    if len(text) <= max_chars:
+        return text
+
+    summary = {
+        "response_truncated": True,
+        "original_response_chars": compacted.get("original_response_chars"),
+        "response_truncation_reason": "connector_safe_response_budget",
+        "available_keys": sorted(str(key) for key in value.keys()),
+        "error": "Tool response exceeded connector-safe size. Retry with a narrower path, lower max_results, lower max_bytes, or read_file_lines.",
+    }
+    return json.dumps(summary, indent=2, sort_keys=True)
 
 
 def resolve_root(root: Path) -> Path:
@@ -416,6 +487,72 @@ def shell_command(root: Path, args: dict[str, Any]) -> dict[str, Any]:
         }
 
 
+def call_mcp_proxy(script: Path, tool_name: str, arguments: dict[str, Any], timeout_seconds: int = 1200) -> Any:
+    if not script.exists():
+        raise ReadOnlyMcpError(f"Proxy MCP script not found: {script}")
+    payload = "\n".join(
+        [
+            json.dumps({"jsonrpc": "2.0", "id": 1, "method": "initialize", "params": {"protocolVersion": "2024-11-05"}}),
+            json.dumps({"jsonrpc": "2.0", "id": 2, "method": "tools/call", "params": {"name": tool_name, "arguments": arguments}}),
+        ]
+    ) + "\n"
+    try:
+        completed = subprocess.run(
+            [str(script)],
+            input=payload,
+            text=True,
+            capture_output=True,
+            timeout=timeout_seconds,
+            check=False,
+            env=os.environ.copy(),
+        )
+    except subprocess.TimeoutExpired as exc:
+        raise ReadOnlyMcpError(f"Proxy MCP call timed out after {timeout_seconds} seconds") from exc
+    if completed.returncode != 0 and not completed.stdout.strip():
+        raise ReadOnlyMcpError(completed.stderr.strip() or f"Proxy MCP exited with {completed.returncode}")
+    last_result: Any = None
+    for line in completed.stdout.splitlines():
+        try:
+            message = json.loads(line)
+        except json.JSONDecodeError:
+            continue
+        if message.get("id") == 2:
+            if "error" in message:
+                error = message["error"]
+                raise ReadOnlyMcpError(error.get("message") or "Proxy MCP tool call failed")
+            result = message.get("result")
+            content = result.get("content") if isinstance(result, dict) else None
+            if (
+                isinstance(content, list)
+                and content
+                and isinstance(content[0], dict)
+                and isinstance(content[0].get("text"), str)
+            ):
+                try:
+                    last_result = json.loads(content[0]["text"])
+                except json.JSONDecodeError:
+                    last_result = content[0]["text"]
+            else:
+                last_result = result
+    if last_result is None:
+        raise ReadOnlyMcpError("Proxy MCP did not return a tool result")
+    return last_result
+
+
+def proxy_timeout_seconds(tool_name: str, arguments: dict[str, Any]) -> int:
+    timeout = 1200
+    raw_timeout = arguments.get("timeout_seconds")
+    try:
+        requested = int(float(raw_timeout)) if raw_timeout is not None else None
+    except (TypeError, ValueError):
+        requested = None
+    if requested:
+        timeout = max(timeout, requested + 120)
+        if tool_name.endswith("_quota_probe_all"):
+            timeout = max(timeout, requested * 8 + 240)
+    return min(timeout, MAX_MCP_PROXY_TIMEOUT_SECONDS)
+
+
 def path_type(path: Path) -> str:
     if path.is_symlink():
         return "symlink"
@@ -542,7 +679,7 @@ def read_file_lines(root: Path, args: dict[str, Any]) -> dict[str, Any]:
     size = path.stat().st_size
     start_line = clamp_int(args.get("start_line"), 1, 1, 2_000_000_000)
     max_lines = clamp_int(args.get("max_lines"), DEFAULT_READ_LINES, 1, MAX_READ_LINES)
-    max_chars = clamp_int(args.get("max_chars"), 200_000, 1_000, MAX_READ_LINES_CHARS)
+    max_chars = clamp_int(args.get("max_chars"), 1_000_000, 1_000, MAX_READ_LINES_CHARS)
     max_line_chars = clamp_int(args.get("max_line_chars"), MAX_READ_LINE_CHARS, 100, MAX_READ_LINE_CHARS)
 
     lines: list[dict[str, Any]] = []
@@ -654,6 +791,7 @@ def search_text(root: Path, args: dict[str, Any]) -> dict[str, Any]:
     if not query:
         raise ReadOnlyMcpError("search_text requires a non-empty query")
 
+    started_at = time.monotonic()
     start = resolve_existing_path(root, args.get("path"))
     if start.is_file():
         start = start.parent
@@ -663,10 +801,43 @@ def search_text(root: Path, args: dict[str, Any]) -> dict[str, Any]:
     max_files = clamp_int(args.get("max_files"), DEFAULT_SEARCH_FILES, 1, MAX_SEARCH_FILES)
     context_lines = clamp_int(args.get("context_lines"), 0, 0, MAX_CONTEXT_LINES)
     max_file_bytes = clamp_int(args.get("max_file_bytes"), MAX_SEARCH_FILE_BYTES, 1_000, MAX_SEARCH_FILE_BYTES)
+    timeout_seconds = clamp_float(
+        args.get("timeout_seconds"),
+        DEFAULT_SEARCH_TIMEOUT_SECONDS,
+        1.0,
+        MAX_SEARCH_TIMEOUT_SECONDS,
+    )
+    max_response_chars = clamp_int(
+        args.get("max_response_chars"),
+        DEFAULT_SEARCH_RESPONSE_CHARS,
+        10_000,
+        MAX_SEARCH_RESPONSE_CHARS,
+    )
+    deadline = started_at + timeout_seconds
 
     needle = query if case_sensitive else query.lower()
     stats: Counter[str] = Counter()
     results: list[dict[str, Any]] = []
+    emitted_result_chars = 0
+
+    def response(*, truncated: bool, timed_out: bool = False, truncation_reason: str | None = None) -> dict[str, Any]:
+        elapsed = time.monotonic() - started_at
+        payload: dict[str, Any] = {
+            "query": query,
+            "path": relative_path(root, start),
+            "case_sensitive": case_sensitive,
+            "results": results,
+            "result_count": len(results),
+            "truncated": truncated,
+            "timed_out": timed_out,
+            "timeout_seconds": timeout_seconds,
+            "elapsed_seconds": round(elapsed, 3),
+            "max_response_chars": max_response_chars,
+            "stats": dict(stats),
+        }
+        if truncation_reason:
+            payload["truncation_reason"] = truncation_reason
+        return payload
 
     for path in iter_text_files(
         root,
@@ -676,18 +847,28 @@ def search_text(root: Path, args: dict[str, Any]) -> dict[str, Any]:
         max_file_bytes=max_file_bytes,
         stats=stats,
     ):
+        if time.monotonic() >= deadline:
+            stats["search_timeout_reached"] += 1
+            return response(truncated=True, timed_out=True, truncation_reason="timeout")
+
         stats["scanned_files"] += 1
         try:
             data = path.read_bytes()
         except OSError:
             stats["read_errors"] += 1
             continue
+        if time.monotonic() >= deadline:
+            stats["search_timeout_reached"] += 1
+            return response(truncated=True, timed_out=True, truncation_reason="timeout")
         if is_probably_binary(data):
             stats["binary_content_files"] += 1
             continue
         text, _encoding = decode_text(data)
         lines = text.splitlines()
         for line_number, line in enumerate(lines, start=1):
+            if line_number % 256 == 0 and time.monotonic() >= deadline:
+                stats["search_timeout_reached"] += 1
+                return response(truncated=True, timed_out=True, truncation_reason="timeout")
             haystack = line if case_sensitive else line.lower()
             column = haystack.find(needle)
             if column < 0:
@@ -709,27 +890,16 @@ def search_text(root: Path, args: dict[str, Any]) -> dict[str, Any]:
                     {"line": index + 1, "text": truncate_text(lines[index])}
                     for index in range(line_number, after_end)
                 ]
+            item_chars = len(json.dumps(item, ensure_ascii=False, sort_keys=True))
+            if emitted_result_chars + item_chars > max_response_chars:
+                stats["response_char_budget_reached"] += 1
+                return response(truncated=True, truncation_reason="response_char_budget")
             results.append(item)
+            emitted_result_chars += item_chars
             if len(results) >= max_results:
-                return {
-                    "query": query,
-                    "path": relative_path(root, start),
-                    "case_sensitive": case_sensitive,
-                    "results": results,
-                    "result_count": len(results),
-                    "truncated": True,
-                    "stats": dict(stats),
-                }
+                return response(truncated=True, truncation_reason="max_results")
 
-    return {
-        "query": query,
-        "path": relative_path(root, start),
-        "case_sensitive": case_sensitive,
-        "results": results,
-        "result_count": len(results),
-        "truncated": False,
-        "stats": dict(stats),
-    }
+    return response(truncated=False)
 
 
 def visible_tree_children(root: Path, path: Path, include_hidden: bool, stats: Counter[str]) -> list[Path]:
@@ -907,7 +1077,7 @@ def tool_schema() -> list[dict[str, Any]]:
                     "path": {"type": "string", "description": "Path relative to the project root."},
                     "start_line": {"type": "integer", "minimum": 1, "default": 1},
                     "max_lines": {"type": "integer", "minimum": 1, "maximum": MAX_READ_LINES, "default": DEFAULT_READ_LINES},
-                    "max_chars": {"type": "integer", "minimum": 1000, "maximum": MAX_READ_LINES_CHARS, "default": 200000},
+                    "max_chars": {"type": "integer", "minimum": 1000, "maximum": MAX_READ_LINES_CHARS, "default": 1000000},
                     "max_line_chars": {"type": "integer", "minimum": 100, "maximum": MAX_READ_LINE_CHARS, "default": MAX_READ_LINE_CHARS},
                 },
                 "required": ["path"],
@@ -928,6 +1098,8 @@ def tool_schema() -> list[dict[str, Any]]:
                     "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_RESULTS, "default": DEFAULT_SEARCH_RESULTS},
                     "max_files": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_FILES, "default": DEFAULT_SEARCH_FILES},
                     "max_file_bytes": {"type": "integer", "minimum": 1000, "maximum": MAX_SEARCH_FILE_BYTES, "default": MAX_SEARCH_FILE_BYTES},
+                    "timeout_seconds": {"type": "number", "minimum": 1, "maximum": MAX_SEARCH_TIMEOUT_SECONDS, "default": DEFAULT_SEARCH_TIMEOUT_SECONDS},
+                    "max_response_chars": {"type": "integer", "minimum": 10000, "maximum": MAX_SEARCH_RESPONSE_CHARS, "default": DEFAULT_SEARCH_RESPONSE_CHARS},
                 },
                 "required": ["query"],
                 "additionalProperties": False,
@@ -977,6 +1149,8 @@ def tool_schema() -> list[dict[str, Any]]:
                     "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_RESULTS, "default": DEFAULT_SEARCH_RESULTS},
                     "max_files": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_FILES, "default": DEFAULT_SEARCH_FILES},
                     "max_file_bytes": {"type": "integer", "minimum": 1000, "maximum": MAX_SEARCH_FILE_BYTES, "default": MAX_SEARCH_FILE_BYTES},
+                    "timeout_seconds": {"type": "number", "minimum": 1, "maximum": MAX_SEARCH_TIMEOUT_SECONDS, "default": DEFAULT_SEARCH_TIMEOUT_SECONDS},
+                    "max_response_chars": {"type": "integer", "minimum": 10000, "maximum": MAX_SEARCH_RESPONSE_CHARS, "default": DEFAULT_SEARCH_RESPONSE_CHARS},
                 },
                 "required": ["query"],
                 "additionalProperties": False,
@@ -1016,6 +1190,246 @@ def tool_schema() -> list[dict[str, Any]]:
                 "additionalProperties": False,
             },
         },
+        {
+            "name": "fleet_start_worker",
+            "description": "Start a managed Codex worker. This is the Kerosene-native entrypoint for the Codex fleet.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "agent_id": {"type": "string"},
+                    "model": {"type": "string"},
+                    "cwd": {"type": "string"},
+                    "sandbox": {"type": "string"},
+                    "approval_policy": {"type": "string"},
+                    "reasoning_effort": {"type": "string"},
+                    "codex_home": {"type": "string"},
+                    "run_as_user": {"type": "string"},
+                    "create_worktree": {"type": "boolean"},
+                },
+                "required": ["task"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_resume_worker",
+            "description": "Resume a managed Codex worker thread.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string"},
+                    "prompt": {"type": "string"},
+                    "model": {"type": "string"},
+                    "sandbox": {"type": "string"},
+                    "approval_policy": {"type": "string"},
+                    "reasoning_effort": {"type": "string"},
+                },
+                "required": ["agent_id", "prompt"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_status",
+            "description": "Show status for managed Codex workers.",
+            "inputSchema": {"type": "object", "properties": {"agent_id": {"type": "string"}}, "additionalProperties": False},
+        },
+        {
+            "name": "fleet_stop_worker",
+            "description": "Stop a managed Codex worker by process group.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"agent_id": {"type": "string"}, "force": {"type": "boolean", "default": False}},
+                "required": ["agent_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_tail",
+            "description": "Read recent JSONL event lines or stderr lines for a managed worker.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string"},
+                    "stream": {"type": "string", "enum": ["events", "stderr"]},
+                    "lines": {"type": "integer", "minimum": 1, "maximum": 500},
+                },
+                "required": ["agent_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_usage_report",
+            "description": "Aggregate token usage emitted by completed codex exec turns.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "fleet_agent_users",
+            "description": "Show the Codex worker slot to session map.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "fleet_preflight",
+            "description": "Check session availability and Codex login health before dispatching workers.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "check_login": {"type": "boolean", "default": True},
+                    "timeout_seconds": {"type": "number", "minimum": 2, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 8},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_quota_probe",
+            "description": "Open a temporary Codex TUI through a PTY, send /status, capture account and quota text, then terminate it.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cwd": {"type": "string"},
+                    "model": {"type": "string"},
+                    "codex_home": {"type": "string"},
+                    "agent_id": {"type": "string"},
+                    "run_as_user": {"type": "string"},
+                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
+                    "include_raw_output": {"type": "boolean", "default": True},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "fleet_quota_probe_all",
+            "description": "Probe Codex quota for all default Codex sessions.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cwd": {"type": "string"},
+                    "model": {"type": "string"},
+                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
+                    "include_raw_output": {"type": "boolean", "default": False},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_start_worker",
+            "description": "Start a managed Antigravity worker. This is the Kerosene-native entrypoint for the agy fleet.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "task": {"type": "string"},
+                    "agent_id": {"type": "string"},
+                    "model": {"type": "string"},
+                    "cwd": {"type": "string"},
+                    "run_as_user": {"type": "string"},
+                    "print_timeout": {"type": "string"},
+                    "sandbox": {"type": "boolean"},
+                    "dangerously_skip_permissions": {"type": "boolean"},
+                    "add_dirs": {"type": "array", "items": {"type": "string"}},
+                },
+                "required": ["task"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_resume_worker",
+            "description": "Resume a managed agy worker.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string"},
+                    "prompt": {"type": "string"},
+                    "model": {"type": "string"},
+                    "conversation_id": {"type": "string"},
+                    "continue_recent": {"type": "boolean"},
+                    "print_timeout": {"type": "string"},
+                    "sandbox": {"type": "boolean"},
+                    "dangerously_skip_permissions": {"type": "boolean"},
+                },
+                "required": ["agent_id", "prompt"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_status",
+            "description": "Show status for managed agy workers.",
+            "inputSchema": {"type": "object", "properties": {"agent_id": {"type": "string"}}, "additionalProperties": False},
+        },
+        {
+            "name": "agy_stop_worker",
+            "description": "Stop a managed agy worker by process group.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {"agent_id": {"type": "string"}, "force": {"type": "boolean", "default": False}},
+                "required": ["agent_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_tail",
+            "description": "Read recent stdout or stderr lines for a managed agy worker.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "agent_id": {"type": "string"},
+                    "stream": {"type": "string", "enum": ["stdout", "stderr"]},
+                    "lines": {"type": "integer", "minimum": 1, "maximum": 500},
+                },
+                "required": ["agent_id"],
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_usage_report",
+            "description": "Report captured output sizes for managed agy runs.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "agy_agent_users",
+            "description": "Show agy worker slots and the codex session map.",
+            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
+        },
+        {
+            "name": "agy_preflight",
+            "description": "Check session availability and agy CLI health before dispatching workers.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "check_login": {"type": "boolean", "default": True},
+                    "timeout_seconds": {"type": "number", "minimum": 2, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_quota_probe",
+            "description": "Open a temporary agy TUI through a PTY, send /status, capture account/quota text, then terminate it.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cwd": {"type": "string"},
+                    "model": {"type": "string"},
+                    "agent_id": {"type": "string"},
+                    "run_as_user": {"type": "string"},
+                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 15},
+                    "include_raw_output": {"type": "boolean", "default": True},
+                },
+                "additionalProperties": False,
+            },
+        },
+        {
+            "name": "agy_quota_probe_all",
+            "description": "Probe agy status/quota for all default slots.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "cwd": {"type": "string"},
+                    "model": {"type": "string"},
+                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 15},
+                    "include_raw_output": {"type": "boolean", "default": False},
+                },
+                "additionalProperties": False,
+            },
+        },
     ]
 
 
@@ -1038,6 +1452,10 @@ def call_tool(root: Path, name: str, args: dict[str, Any]) -> Any:
         return get_project_tree(root, args)
     if name == "project_summary":
         return project_summary(root, args)
+    if name.startswith("fleet_"):
+        return call_mcp_proxy(CODEX_FLEET_SCRIPT, name, args, timeout_seconds=proxy_timeout_seconds(name, args))
+    if name.startswith("agy_"):
+        return call_mcp_proxy(AGY_FLEET_SCRIPT, name, args, timeout_seconds=proxy_timeout_seconds(name, args))
     raise ReadOnlyMcpError(f"Unknown tool: {name}")
 
 
@@ -1086,7 +1504,7 @@ class McpServer:
                         "content": [
                             {
                                 "type": "text",
-                                "text": json.dumps(value, indent=2, sort_keys=True),
+                                "text": compact_tool_value(value),
                             }
                         ]
                     },
