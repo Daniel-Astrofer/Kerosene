@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for KFE transaction submission cleanup task
+ID: fase-6/kfe-transaction: clean submit transaction use case
+Agent: codex5
+Status: running in isolated worktree
 
 ## Last completed work
 
