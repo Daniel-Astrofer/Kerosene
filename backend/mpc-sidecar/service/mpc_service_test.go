@@ -83,6 +83,36 @@ func TestMpcSignRejectsWrongPublicKey(t *testing.T) {
 	}
 }
 
+func TestMpcThresholdModeFailsClosed(t *testing.T) {
+	configureTestEnclave(t)
+	t.Setenv("MPC_RUNTIME_MODE", RuntimeModeThresholdMPC)
+	service := &MpcService{}
+
+	keygen, err := service.Keygen(context.Background(), &pb.KeygenRequest{
+		UserId:       "platform-user-threshold",
+		Threshold:    2,
+		TotalParties: 3,
+	})
+	if err != nil {
+		t.Fatalf("keygen returned transport error: %v", err)
+	}
+	if keygen.Success || !strings.Contains(keygen.ErrorMessage, "not implemented") {
+		t.Fatalf("keygen response = %+v, want fail-closed not implemented error", keygen)
+	}
+
+	messageHash := sha256.Sum256([]byte("authorize transaction"))
+	sign, err := service.Sign(context.Background(), &pb.SignRequest{
+		UserId:      "platform-user-threshold",
+		MessageHash: messageHash[:],
+	})
+	if err != nil {
+		t.Fatalf("sign returned transport error: %v", err)
+	}
+	if sign.Success || !strings.Contains(sign.ErrorMessage, "not implemented") {
+		t.Fatalf("sign response = %+v, want fail-closed not implemented error", sign)
+	}
+}
+
 func TestMpcRequestsRejectNilWithoutPanic(t *testing.T) {
 	service := &MpcService{}
 
@@ -129,6 +159,7 @@ func configureTestEnclave(t *testing.T) {
 	t.Setenv("MPC_RAM_DISK_DIR", t.TempDir())
 	t.Setenv("MPC_REQUIRE_MASTER_KEY", "true")
 	t.Setenv("MPC_MASTER_KEY_B64", base64.StdEncoding.EncodeToString(bytesOf(32, 7)))
+	t.Setenv("MPC_RUNTIME_MODE", RuntimeModeLocalDevSigner)
 
 	if err := InitSecureEnclave(); err != nil {
 		t.Fatalf("InitSecureEnclave failed: %v", err)

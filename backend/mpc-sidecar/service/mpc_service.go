@@ -10,6 +10,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"log"
+	"os"
 	"regexp"
 	"strings"
 	"time"
@@ -21,15 +22,24 @@ type MpcService struct {
 	pb.UnimplementedMpcServiceServer
 }
 
-const maxUserIDLength = 256
+const (
+	RuntimeModeLocalDevSigner = "LOCAL_DEV_SIGNER"
+	RuntimeModeThresholdMPC   = "THRESHOLD_MPC"
+	RuntimeModeProductionMPC  = "PRODUCTION_MPC"
+
+	maxUserIDLength = 256
+)
 
 func (s *MpcService) Keygen(_ context.Context, req *pb.KeygenRequest) (*pb.KeygenResponse, error) {
 	if err := validateKeygenRequest(req); err != nil {
 		return &pb.KeygenResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
+	if err := requireLocalDevSigner(); err != nil {
+		return &pb.KeygenResponse{Success: false, ErrorMessage: err.Error()}, nil
+	}
 
 	userID := normalizedUserID(req.UserId)
-	log.Printf("[MPC] Starting Keygen for user fingerprint %s (%d/%d)", userFingerprint(userID), req.Threshold, req.TotalParties)
+	log.Printf("[MPC] Starting local dev signer Keygen for user fingerprint %s (%d/%d)", userFingerprint(userID), req.Threshold, req.TotalParties)
 
 	shardName := shardNameForUserID(userID)
 	if existing, existingShardName, err := loadStoredKeyForUser(userID); err == nil {
@@ -77,9 +87,12 @@ func (s *MpcService) Sign(_ context.Context, req *pb.SignRequest) (*pb.SignRespo
 	if err := validateSignRequest(req); err != nil {
 		return &pb.SignResponse{Success: false, ErrorMessage: err.Error()}, nil
 	}
+	if err := requireLocalDevSigner(); err != nil {
+		return &pb.SignResponse{Success: false, ErrorMessage: err.Error()}, nil
+	}
 
 	userID := normalizedUserID(req.UserId)
-	log.Printf("[MPC] Starting Signing for hash length %d requested by user fingerprint %s", len(req.MessageHash), userFingerprint(userID))
+	log.Printf("[MPC] Starting local dev signer Signing for hash length %d requested by user fingerprint %s", len(req.MessageHash), userFingerprint(userID))
 
 	_, shardData, stored, err := loadStoredKeyDataForUser(userID)
 	if err != nil {
@@ -190,6 +203,25 @@ func validateSignRequest(req *pb.SignRequest) error {
 		return fmt.Errorf("message_hash must be exactly 32 bytes")
 	}
 	return nil
+}
+
+func RuntimeMode() string {
+	mode := strings.ToUpper(strings.TrimSpace(os.Getenv("MPC_RUNTIME_MODE")))
+	if mode == "" {
+		return RuntimeModeLocalDevSigner
+	}
+	return mode
+}
+
+func requireLocalDevSigner() error {
+	switch RuntimeMode() {
+	case RuntimeModeLocalDevSigner:
+		return nil
+	case RuntimeModeThresholdMPC, RuntimeModeProductionMPC:
+		return fmt.Errorf("MPC_RUNTIME_MODE=%s is not implemented; refusing to use local Ed25519 signer", RuntimeMode())
+	default:
+		return fmt.Errorf("unsupported MPC_RUNTIME_MODE=%s; supported mode is %s", RuntimeMode(), RuntimeModeLocalDevSigner)
+	}
 }
 
 var unsafeShardNameChars = regexp.MustCompile(`[^a-zA-Z0-9_.-]`)

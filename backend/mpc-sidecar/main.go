@@ -59,6 +59,7 @@ func serveVersionEndpoint() {
 			"imageDigest":    valueOrUnknown("IMAGE_DIGEST"),
 			"releaseDigest":  valueOrUnknown("RELEASE_MANIFEST_DIGEST"),
 			"releaseChecked": time.Now().UTC().Format(time.RFC3339),
+			"runtimeMode":    service.RuntimeMode(),
 		})
 	})
 	server := &http.Server{
