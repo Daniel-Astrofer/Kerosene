@@ -12,13 +12,13 @@ Runtime constraint: do not run `scripts/start-local.sh` until Nycollas explicitl
 - Use at most 1 implementation agent at a time.
 - Use at most 2 simultaneous agents only for read-only audits with non-overlapping scopes.
 - Check `git status --short` before every task.
-- Do not start a new implementation task while the working tree is dirty.
+- If the working tree is dirty, clean it before starting a new implementation task: inspect the diff, preserve user-authored or unknown changes, commit validated task-owned changes when safe, revert only clearly disposable/generated changes, and stash only with an explicit state-file note.
 - Do not use `git add .`.
 - Each implementation must run `git diff --check` and focused validation.
 - Each completed task must create one isolated commit with format `<fase>/<area>: <summary>`.
 - Backend work must follow `docs/backend/KEROSENE_BACKEND_ENGINEERING_DESIGN_SYSTEM.md`.
 - Financial code and docs are KFE-only: active financial APIs must use `/kfe/**` or `/api/admin/kfe/**`.
-- Stop and register a blocker on Docker, Gradle, network, permission, tool-filter, dirty-worktree, or scope risk.
+- Stop and register a blocker on Docker, Gradle, network, permission, tool-filter, unsafe/unknown dirty-worktree changes, or scope risk. Routine dirty worktree cleanup is part of the cycle and must not block execution by itself.
 
 ## Code documentation rule
 

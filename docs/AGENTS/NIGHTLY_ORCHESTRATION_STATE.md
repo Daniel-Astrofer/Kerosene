@@ -34,7 +34,7 @@ Status: ready for next cycle
 1. Check `git status --short`.
 2. Check active agents.
 3. If an agent is active, inspect status and do not start another implementation task.
-4. If working tree is dirty, validate/commit/revert/register blocker before continuing.
+4. If working tree is dirty, clean it before continuing: inspect the diff, preserve unknown/user changes, commit validated task-owned changes when safe, revert only disposable/generated changes, stash only with a state-file note, and block only when changes are unsafe or ambiguous.
 5. Pick the next queue item only when safe.
 6. Dispatch at most one implementation agent.
 7. Require scoped files, `git diff --check`, focused validation, and isolated commit.
