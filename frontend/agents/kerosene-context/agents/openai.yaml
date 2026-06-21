@@ -1,0 +1,4 @@
+interface:
+  display_name: "Kerosene Context"
+  short_description: "Project-wide context and operating map"
+  default_prompt: "Use $kerosene-context to orient on the Kerosene project structure, conventions, and agent workflow before making changes."
