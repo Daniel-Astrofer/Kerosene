@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for developer troubleshooting guide task
+ID: fase-6/docs: update developer troubleshooting guide
+Agent: codex6
+Status: running in isolated worktree
 
 ## Last completed work
 
