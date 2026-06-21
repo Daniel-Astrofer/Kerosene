@@ -16,9 +16,13 @@ from typing import Any, Iterable
 
 SERVER_NAME = "kerosene-mcp"
 SERVER_VERSION = "0.3.0"
-DEFAULT_ROOT = Path(os.environ.get("KEROSENE_MCP_ROOT", "/home/omega/Kerosene"))
-CODEX_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_CODEX_FLEET_SCRIPT", "/home/omega/Kerosene/AGENTS/codex-fleet-mcp"))
-AGY_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_AGY_FLEET_SCRIPT", "/home/omega/Kerosene/AGENTS/agy-fleet-mcp"))
+SCRIPT_DIR = Path(__file__).resolve().parent
+PROJECT_ROOT = SCRIPT_DIR.parent
+DEFAULT_ROOT = Path(os.environ.get("KEROSENE_MCP_ROOT") or str(PROJECT_ROOT))
+CODEX_FLEET_SCRIPT = Path(
+    os.environ.get("KEROSENE_MCP_CODEX_FLEET_SCRIPT") or str(PROJECT_ROOT / "AGENTS" / "codex-fleet-mcp")
+)
+AGY_FLEET_SCRIPT = Path(os.environ.get("KEROSENE_MCP_AGY_FLEET_SCRIPT") or str(PROJECT_ROOT / "AGENTS" / "agy-fleet-mcp"))
 
 MAX_READ_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_READ_BYTES", "100000000"))
 DEFAULT_READ_BYTES = int(os.environ.get("KEROSENE_MCP_DEFAULT_READ_BYTES", "262144"))
