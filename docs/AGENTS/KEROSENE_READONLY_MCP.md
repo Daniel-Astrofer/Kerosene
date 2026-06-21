@@ -14,6 +14,12 @@
 - `write_file`: writes text to a project file and creates parent directories as needed.
 - `replace_text_in_file`: replaces text inside an existing project file.
 - `shell_command`: runs a shell command inside the project root and captures stdout/stderr.
+- `kerosene_cycle_once`: runs one local nightly orchestration cycle from a short payload.
+- `kerosene_git_status`: returns compact git status for the root or an agent worktree.
+- `kerosene_clean_worktree`: inspects dirty worktrees without discarding unknown work.
+- `kerosene_dispatch_next`: dispatches the next nightly queue item through `codex-fleet`.
+- `kerosene_collect_agent_result`: collects compact agent status, tail, and dirty-output state.
+- `kerosene_commit_agent_output`: validates, stages enumerated files, commits agent output, and integrates detached worktree commits into the root branch when safe.
 
 ## Safety Boundary
 
@@ -59,6 +65,39 @@ For large files, agents should call `read_file_lines` with `start_line` and `max
 Search tools have a connector-safe time and response budget. `search_text` and `search_code` accept `timeout_seconds` and `max_response_chars`; when the budget is reached they return partial results with `truncated: true` instead of letting the tunnel turn the call into a 502.
 
 This policy is enforced by `scripts/kerosene_readonly_mcp.py`.
+
+## Nightly Orchestration Commands
+
+For ChatGPT Web and tunneled MCP sessions, use the high-level Kerosene commands instead of sending large shell or fleet payloads through the connector. The preferred call is:
+
+```json
+{
+  "mode": "nightly"
+}
+```
+
+with tool `kerosene_cycle_once`.
+
+That single call performs the local cycle:
+
+- checks compact git status;
+- waits when a fleet agent is still active;
+- collects a finished agent result;
+- commits validated agent output with enumerated paths only;
+- cherry-picks detached worktree output into the root branch when the root is clean;
+- dispatches the next queue item by building the long prompt locally from `docs/AGENTS/NIGHTLY_ORCHESTRATION_QUEUE.md`.
+
+Use the narrower tools only when a cycle needs a specific step:
+
+- `kerosene_git_status`
+- `kerosene_clean_worktree`
+- `kerosene_dispatch_next`
+- `kerosene_collect_agent_result`
+- `kerosene_commit_agent_output`
+
+The cleanup command is intentionally conservative: it does not discard, revert, or stash unknown work. It reports a blocker unless the next safe action is an explicit local commit through `kerosene_commit_agent_output`.
+
+This keeps ChatGPT-side calls small and moves git, commit, prompt assembly, fleet dispatch, state updates, and detached-worktree integration into the local MCP process.
 
 ## Local MCP Config
 
