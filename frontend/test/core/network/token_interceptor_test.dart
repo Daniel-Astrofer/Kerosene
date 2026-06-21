@@ -36,4 +36,32 @@ void main() {
       );
     });
   });
+
+  group('TokenInterceptor.isKfeTransactionStepUpPath', () {
+    test('matches active KFE transaction paths', () {
+      expect(
+        TokenInterceptor.isKfeTransactionStepUpPath('/kfe/transactions'),
+        isTrue,
+      );
+      expect(
+        TokenInterceptor.isKfeTransactionStepUpPath(
+          '/api/admin/kfe/transactions/review',
+        ),
+        isTrue,
+      );
+    });
+
+    test('does not match legacy generic transaction paths', () {
+      expect(
+        TokenInterceptor.isKfeTransactionStepUpPath('/transactions/123'),
+        isFalse,
+      );
+      expect(
+        TokenInterceptor.isKfeTransactionStepUpPath(
+          '/transactions/visualization/blockchain',
+        ),
+        isFalse,
+      );
+    });
+  });
 }

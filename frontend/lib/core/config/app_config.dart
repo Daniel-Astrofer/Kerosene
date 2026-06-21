@@ -171,22 +171,24 @@ class AppConfig {
   static const String sovereigntyPing = '/sovereignty/ping';
   static const String sovereigntyTelemetry = '/sovereignty/telemetry';
   static const String sovereigntyReattest = '/sovereignty/reattest';
-  static const String auditStats = '/v1/audit/stats';
-  static const String auditSiphon = '/v1/audit/siphon';
-  static const String auditMerkleLatestRoot = '/audit/latest-root';
-  static const String auditMerkleHistory = '/audit/history';
-  static const String auditMerkleTrigger = '/audit/trigger';
+  static String get auditStats => throw UnsupportedError(
+        'Legacy financial audit stats are unavailable in the KFE-only client.',
+      );
+  static const String auditMerkleLatestRoot = '/api/admin/kfe/audit/latest';
+  static const String auditMerkleHistory = '/api/admin/kfe/audit/events';
+  static const String auditMerkleTrigger = '/api/admin/kfe/audit/root';
 
   // ==================== Admin ====================
   static const String adminOperationsOverview =
       '/api/admin/operations/overview';
   static const String adminOperationsHealth = '/api/admin/operations/health';
   static const String adminOperationsBlockchain =
-      '/transactions/visualization/blockchain';
-  static const String adminOperationsBlockchainSync =
-      '/transactions/visualization/blockchain/sync';
+      '/api/admin/operations/blockchain';
+  static String get adminOperationsBlockchainSync => throw UnsupportedError(
+        'Legacy blockchain sync visualization is unavailable in the KFE-only client.',
+      );
   static const String adminOperationsLightning =
-      '/transactions/visualization/lightning';
+      '/api/admin/operations/lightning';
   static const String adminOperationsVaultRaft =
       '/api/admin/operations/vault-raft';
   static const String adminOperationsRelease = '/api/admin/operations/release';

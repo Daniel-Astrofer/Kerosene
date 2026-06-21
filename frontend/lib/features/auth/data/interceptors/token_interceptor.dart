@@ -44,6 +44,17 @@ class TokenInterceptor extends QueuedInterceptor {
     return isLocalRelay && !onionHostIsLocal;
   }
 
+  @visibleForTesting
+  static bool isKfeTransactionStepUpPath(String path) {
+    final requestPath = Uri.tryParse(path)?.path ?? path;
+    return _matchesPathPrefix(requestPath, '/kfe/transactions') ||
+        _matchesPathPrefix(requestPath, '/api/admin/kfe/transactions');
+  }
+
+  static bool _matchesPathPrefix(String path, String prefix) {
+    return path == prefix || path.startsWith('$prefix/');
+  }
+
   @override
   Future<void> onRequest(
     RequestOptions options,
@@ -136,8 +147,7 @@ class TokenInterceptor extends QueuedInterceptor {
     final isAuthRoute = path.contains('/auth/login') ||
         path.contains('/auth/signup') ||
         path.contains('/auth/passkey/');
-    final isTransactionRoute =
-        path.contains('/kfe/transactions') || path.contains('/transactions/');
+    final isTransactionRoute = isKfeTransactionStepUpPath(path);
     final isTransactionFactorError = isTransactionRoute &&
         (errorCode == 'ERR_AUTH_INCORRECT_TOTP' ||
             errorCode == 'ERR_AUTH_GENERIC' ||

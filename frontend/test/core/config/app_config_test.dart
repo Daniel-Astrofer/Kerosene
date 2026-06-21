@@ -69,7 +69,25 @@ void main() {
     expect(AppConfig.kfeReserveOverview, '/api/admin/kfe/reserves/overview');
 
     expect(AppConfig.notificationsList, '/notifications');
-    expect(AppConfig.auditStats, '/v1/audit/stats');
+    expect(() => AppConfig.auditStats, throwsUnsupportedError);
+    expect(
+      AppConfig.auditMerkleLatestRoot,
+      '/api/admin/kfe/audit/latest',
+    );
+    expect(AppConfig.auditMerkleHistory, '/api/admin/kfe/audit/events');
+    expect(AppConfig.auditMerkleTrigger, '/api/admin/kfe/audit/root');
+    expect(
+      AppConfig.adminOperationsBlockchain,
+      '/api/admin/operations/blockchain',
+    );
+    expect(
+      () => AppConfig.adminOperationsBlockchainSync,
+      throwsUnsupportedError,
+    );
+    expect(
+      AppConfig.adminOperationsLightning,
+      '/api/admin/operations/lightning',
+    );
     expect(
       AppConfig.adminOperationsOverview,
       '/api/admin/operations/overview',

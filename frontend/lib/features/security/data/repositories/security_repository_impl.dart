@@ -12,8 +12,18 @@ import '../../domain/repositories/security_repository.dart';
 
 class SecurityRepositoryImpl implements SecurityRepository {
   final SecurityRemoteDataSource remoteDataSource;
+  static const _legacyAuditUnavailableMessage =
+      'Auditoria financeira legada indisponível no cliente KFE.';
 
   SecurityRepositoryImpl({required this.remoteDataSource});
+
+  Left<Failure, T> _legacyAuditUnavailable<T>() {
+    return const Left(ServerFailure(
+      message: _legacyAuditUnavailableMessage,
+      statusCode: 410,
+      errorCode: 'ERR_LEGACY_AUDIT_UNAVAILABLE',
+    ));
+  }
 
   @override
   Future<Either<Failure, SecurityStatus>> getSovereigntyStatus() async {
@@ -95,19 +105,7 @@ class SecurityRepositoryImpl implements SecurityRepository {
 
   @override
   Future<Either<Failure, Map<String, dynamic>>> getAuditStats() async {
-    try {
-      final result = await remoteDataSource.getAuditStats();
-      return Right(result);
-    } on ServerException catch (e) {
-      return Left(ServerFailure(
-        message: e.message,
-        statusCode: e.statusCode,
-        errorCode: e.errorCode,
-        data: e.data,
-      ));
-    } catch (e) {
-      return Left(ServerFailure(message: e.toString()));
-    }
+    return _legacyAuditUnavailable();
   }
 
   @override

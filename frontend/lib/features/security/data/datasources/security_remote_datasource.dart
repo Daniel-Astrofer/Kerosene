@@ -12,10 +12,6 @@ abstract class SecurityRemoteDataSource {
   Future<bool> pingSovereignty();
   Future<void> sendTelemetry(Map<String, dynamic> data);
   Future<Map<String, dynamic>> reattest();
-
-  // Audit Endpoints
-  Future<Map<String, dynamic>> getAuditStats();
-  Future<Map<String, dynamic>> getAuditSiphon();
   Future<Map<String, dynamic>> getLatestMerkleRoot();
   Future<List<dynamic>> getMerkleHistory();
   Future<Map<String, dynamic>> triggerAudit();
@@ -119,29 +115,6 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
   }
 
   @override
-  Future<Map<String, dynamic>> getAuditStats() async {
-    try {
-      final response = await apiClient.get(AppConfig.auditStats);
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(
-          message: 'Erro ao buscar estatísticas de auditoria: $e');
-    }
-  }
-
-  @override
-  Future<Map<String, dynamic>> getAuditSiphon() async {
-    try {
-      final response = await apiClient.get(AppConfig.auditSiphon);
-      return response.data as Map<String, dynamic>;
-    } catch (e) {
-      if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar dados do siphon: $e');
-    }
-  }
-
-  @override
   Future<Map<String, dynamic>> getLatestMerkleRoot() async {
     try {
       final response = await apiClient.get(AppConfig.auditMerkleLatestRoot);
@@ -159,7 +132,7 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
       return response.data is List ? response.data : [];
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao buscar histórico Merkle: $e');
+      throw ServerException(message: 'Erro ao buscar eventos de auditoria: $e');
     }
   }
 
@@ -170,7 +143,7 @@ class SecurityRemoteDataSourceImpl implements SecurityRemoteDataSource {
       return response.data as Map<String, dynamic>;
     } catch (e) {
       if (e is AppException) rethrow;
-      throw ServerException(message: 'Erro ao disparar auditoria: $e');
+      throw ServerException(message: 'Erro ao gerar raiz de auditoria: $e');
     }
   }
 

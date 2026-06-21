@@ -2,13 +2,6 @@ import 'dart:convert';
 import 'package:dio/dio.dart';
 
 class ApiResponseInterceptor extends Interceptor {
-  /// Endpoints that return raw objects without the ApiResponse&lt;T&gt; wrapper.
-  static const _rawResponsePaths = ['/audit'];
-
-  bool _isRawPath(String path) {
-    return _rawResponsePaths.any((p) => path.contains(p));
-  }
-
   @override
   void onResponse(Response response, ResponseInterceptorHandler handler) {
     dynamic data = response.data;
@@ -23,9 +16,7 @@ class ApiResponseInterceptor extends Interceptor {
       }
     }
 
-    // Skip envelope unwrapping for endpoints that return raw objects (e.g. /audit/**)
-    if (!_isRawPath(response.requestOptions.path) &&
-        data is Map<String, dynamic>) {
+    if (data is Map<String, dynamic>) {
       // Check for standardized ApiResponse payload
       if (data.containsKey('success')) {
         final success = data['success'] == true;
