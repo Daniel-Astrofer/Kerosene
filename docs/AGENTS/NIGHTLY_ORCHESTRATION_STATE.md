@@ -9,9 +9,9 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: none currently running
-Agent: none
-Status: ready for observability trace propagation task
+ID: fase-6/observability: propagate trace ids between app and backend
+Agent: codex3
+Status: running in isolated worktree
 
 ## Last completed work
 
