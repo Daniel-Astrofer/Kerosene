@@ -9,19 +9,21 @@ Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
 ## Current task
 
-ID: fase-6/architecture: add backend cleanup audit
-Agent: codex2
-Status: dispatching read-only audit agent; codex1 stale running state verified as dead process and worktree cleaned
+ID: fase-6/docs: define backend code documentation standard
+Agent: codex8
+Status: running implementation agent in isolated worktree
 
 ## Last completed work
 
+- `e3135c0 fase-6/architecture: add backend cleanup audit`
+- `659efd10 fase-6/mcp: stabilize tunnel script paths`
 - `b4d17435 fase-4/docs: align api docs to kfe only`
 - `f029287b fase-4/kfe-cleanup: remove legacy financial naming`
 - `e698edd8 fase-4/kfe-cleanup: remove legacy financial route policies`
 
 ## Next task
 
-`fase-6/docs: define backend code documentation standard`
+`fase-6/logging: add structured runtime logging foundation`
 
 ## Blockers
 
