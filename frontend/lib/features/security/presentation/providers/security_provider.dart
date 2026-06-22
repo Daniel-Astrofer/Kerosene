@@ -30,7 +30,8 @@ final sovereigntyStatusProvider = FutureProvider<SecurityStatus>((ref) async {
   );
 });
 
-final kfeReserveOverviewProvider = FutureProvider<KfeReserveOverview>((ref) async {
+final kfeReserveOverviewProvider =
+    FutureProvider<KfeReserveOverview>((ref) async {
   final repository = ref.watch(securityRepositoryProvider);
   final result = await repository.getKfeReserveOverview();
   return result.fold(
@@ -58,14 +59,17 @@ final accountSecurityProfileProvider =
   );
 });
 
-final appPinStatusProvider = FutureProvider<AppPinStatus>((ref) async {
-  final repository = ref.watch(securityRepositoryProvider);
-  final result = await repository.getAppPinStatus();
-  return result.fold(
-    (failure) => throw Exception(failure.message),
-    (status) => status,
-  );
-});
+final appPinStatusProvider = FutureProvider<AppPinStatus>(
+  (ref) async {
+    final repository = ref.watch(securityRepositoryProvider);
+    final result = await repository.getAppPinStatus();
+    return result.fold(
+      (failure) => throw Exception(failure.message),
+      (status) => status,
+    );
+  },
+  retry: (_, __) => null,
+);
 
 final adminKeyStatusProvider =
     FutureProvider.autoDispose<AdminKeyStatus>((ref) async {

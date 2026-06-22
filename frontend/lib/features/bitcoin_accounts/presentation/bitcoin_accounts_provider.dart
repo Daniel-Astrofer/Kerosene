@@ -22,27 +22,34 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
     state = await AsyncValue.guard(_service.listAccounts);
   }
 
-  Future<void> createInternalCard({
+  Future<BitcoinAccount> createInternalCard({
     required String label,
   }) async {
-    await createWallet(
+    return createWallet(
       label: label,
       custody: BitcoinAccountCustody.internal,
     );
   }
 
-  Future<void> createWallet({
+  Future<BitcoinAccount> createWallet({
     required String label,
     required BitcoinAccountCustody custody,
   }) async {
-    state = await AsyncValue.guard(() async {
+    final previousAccounts = state.asData?.value ?? const <BitcoinAccount>[];
+    try {
       _ensureCustodyAvailable(custody);
-      await _service.createWallet(
+      final created = await _service.createWallet(
         label: label,
         custody: custody,
       );
-      return _service.listAccounts();
-    });
+      await _refreshAfterMutation(
+        fallbackAccounts: _mergeAccount(previousAccounts, created),
+      );
+      return created;
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   Future<void> importColdWallet({
@@ -52,17 +59,23 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
     required String derivationPath,
     required String scriptPolicy,
   }) async {
-    state = await AsyncValue.guard(() async {
+    final previousAccounts = state.asData?.value ?? const <BitcoinAccount>[];
+    try {
       _ensureCustodyAvailable(BitcoinAccountCustody.watchOnly);
-      await _service.importColdWallet(
+      final imported = await _service.importColdWallet(
         label: label,
         xpub: xpub,
         fingerprint: fingerprint,
         derivationPath: derivationPath,
         scriptPolicy: scriptPolicy,
       );
-      return _service.listAccounts();
-    });
+      await _refreshAfterMutation(
+        fallbackAccounts: _mergeAccount(previousAccounts, imported),
+      );
+    } catch (error, stackTrace) {
+      state = AsyncValue.error(error, stackTrace);
+      Error.throwWithStackTrace(error, stackTrace);
+    }
   }
 
   Future<ReceivingRequestView> rotateReceiveAddress({
@@ -119,6 +132,40 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
       BitcoinAccountCustody.custodialOnchain => account.isCustodialOnchain,
       BitcoinAccountCustody.watchOnly => account.isWatchOnly,
     };
+  }
+
+  Future<void> _refreshAfterMutation({
+    required List<BitcoinAccount> fallbackAccounts,
+  }) async {
+    try {
+      final refreshed = await _service.listAccounts();
+      state = AsyncValue.data(_mergeAccounts(refreshed, fallbackAccounts));
+    } catch (_) {
+      state = AsyncValue.data(fallbackAccounts);
+    }
+  }
+
+  List<BitcoinAccount> _mergeAccount(
+    List<BitcoinAccount> accounts,
+    BitcoinAccount account,
+  ) {
+    return _mergeAccounts(accounts, [account]);
+  }
+
+  List<BitcoinAccount> _mergeAccounts(
+    List<BitcoinAccount> primary,
+    List<BitcoinAccount> fallback,
+  ) {
+    final byId = <String, BitcoinAccount>{
+      for (final account in primary) account.id: account,
+    };
+    for (final account in fallback) {
+      if (account.id.trim().isEmpty) {
+        continue;
+      }
+      byId.putIfAbsent(account.id, () => account);
+    }
+    return byId.values.toList(growable: false);
   }
 }
 

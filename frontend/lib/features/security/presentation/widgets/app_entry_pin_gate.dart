@@ -4,8 +4,6 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_screen_background.dart';
-import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
-import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
@@ -40,9 +38,7 @@ class AppEntryPinGate extends ConsumerWidget {
         return _AppEntryPinLockScreen(status: status);
       },
       loading: () => const _PinGateLoadingState(),
-      error: (_, __) => _PinGateErrorState(
-        onRetry: () => ref.invalidate(appPinStatusProvider),
-      ),
+      error: (_, __) => child,
     );
   }
 }
@@ -56,77 +52,6 @@ class _PinGateLoadingState extends StatelessWidget {
       useScroll: false,
       child: Center(
         child: TorLoadingDots(),
-      ),
-    );
-  }
-}
-
-class _PinGateErrorState extends StatelessWidget {
-  final VoidCallback onRetry;
-
-  const _PinGateErrorState({required this.onRetry});
-
-  @override
-  Widget build(BuildContext context) {
-    return KeroseneScreenBackground(
-      useScroll: false,
-      child: Center(
-        child: Padding(
-          padding: const EdgeInsets.all(AppSpacing.lg),
-          child: ConstrainedBox(
-            constraints: const BoxConstraints(maxWidth: 420),
-            child: Container(
-              padding: const EdgeInsets.all(AppSpacing.lg),
-              decoration: monochromePanelDecoration(
-                color: monoSurfaceColor,
-                borderColor: monoBorderStrongColor,
-              ),
-              child: Column(
-                mainAxisSize: MainAxisSize.min,
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Container(
-                    width: 44,
-                    height: 44,
-                    decoration: monochromePanelDecoration(
-                      color: monoSurfaceAltColor,
-                      borderColor: monoBorderStrongColor,
-                      showShadow: false,
-                    ),
-                    alignment: Alignment.center,
-                    child: const Icon(
-                      KeroseneIcons.lock,
-                      color: KeroseneBrandTokens.textPrimary,
-                      size: 18,
-                    ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  Text(
-                    context.tr.appEntryPinUnavailableTitle,
-                    style: Theme.of(context).textTheme.titleMedium?.copyWith(
-                          color: monoTextColor,
-                          fontWeight: FontWeight.w700,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.sm),
-                  Text(
-                    context.tr.appEntryPinUnavailableMessage,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: monoMutedTextColor,
-                          height: 1.45,
-                        ),
-                  ),
-                  const SizedBox(height: AppSpacing.lg),
-                  FilledButton(
-                    onPressed: onRetry,
-                    style: monochromeFilledButtonStyle(),
-                    child: Text(context.tr.appEntryRefresh),
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
       ),
     );
   }

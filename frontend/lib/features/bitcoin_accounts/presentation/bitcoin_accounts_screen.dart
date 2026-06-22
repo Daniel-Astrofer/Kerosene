@@ -402,6 +402,7 @@ class BitcoinAccountsScreen extends ConsumerStatefulWidget {
 
 class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
   int _selectedAccountIndex = 0;
+  final Map<String, ReceivingRequestView> _receiveAddressOverrides = {};
 
   @override
   Widget build(BuildContext context) {
@@ -465,9 +466,17 @@ class _BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
                                   data: (items) => _AccountsContent(
                                     accounts: items,
                                     selectedAccountIndex: _selectedAccountIndex,
+                                    receiveAddressOverrides:
+                                        _receiveAddressOverrides,
                                     onAccountChanged: (index) => setState(() {
                                       _selectedAccountIndex = index;
                                     }),
+                                    onReceiveAddressRotated: (request) {
+                                      setState(() {
+                                        _receiveAddressOverrides[
+                                            request.accountId] = request;
+                                      });
+                                    },
                                     onCreateInternalAccount:
                                         _openInternalAccountFlow,
                                   ),
@@ -777,13 +786,17 @@ class _RoundHeaderButton extends StatelessWidget {
 class _AccountsContent extends ConsumerWidget {
   final List<BitcoinAccount> accounts;
   final int selectedAccountIndex;
+  final Map<String, ReceivingRequestView> receiveAddressOverrides;
   final ValueChanged<int> onAccountChanged;
+  final ValueChanged<ReceivingRequestView> onReceiveAddressRotated;
   final VoidCallback onCreateInternalAccount;
 
   const _AccountsContent({
     required this.accounts,
     required this.selectedAccountIndex,
+    required this.receiveAddressOverrides,
     required this.onAccountChanged,
+    required this.onReceiveAddressRotated,
     required this.onCreateInternalAccount,
   });
 
@@ -815,7 +828,8 @@ class _AccountsContent extends ConsumerWidget {
           accounts: accounts,
           selectedIndex: selectedIndex,
           onChanged: onAccountChanged,
-          selectedReceiveRequest: _firstReceiveRequest(requestsAsync),
+          selectedReceiveRequest: receiveAddressOverrides[selectedAccount.id] ??
+              _firstReceiveRequest(requestsAsync),
         ),
         const SizedBox(height: 18),
         _CreateWalletShortcut(onTap: onCreateInternalAccount),
@@ -823,6 +837,8 @@ class _AccountsContent extends ConsumerWidget {
         _FocusedAccountOptions(
           account: selectedAccount,
           requestsAsync: requestsAsync,
+          receiveAddressOverride: receiveAddressOverrides[selectedAccount.id],
+          onReceiveAddressRotated: onReceiveAddressRotated,
         ),
         const SizedBox(height: 28),
         _FocusedAccountHistory(
@@ -950,7 +966,7 @@ class _FocusedAccountCard extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Text(
-              '( ${context.tr.bitcoinAccountsTitle.toUpperCase()} )',
+              context.tr.bitcoinAccountsTitle.toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.technicalMono(
@@ -964,7 +980,7 @@ class _FocusedAccountCard extends StatelessWidget {
             ),
             const Spacer(),
             Text(
-              '( $label )',
+              label,
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.newsreader(
@@ -977,7 +993,7 @@ class _FocusedAccountCard extends StatelessWidget {
             ),
             const SizedBox(height: 8),
             Text(
-              '( ${_screenAccountCustodyLabel(context, account).toUpperCase()} )',
+              _screenAccountCustodyLabel(context, account).toUpperCase(),
               maxLines: 1,
               overflow: TextOverflow.ellipsis,
               style: AppTypography.technicalMono(
@@ -994,7 +1010,7 @@ class _FocusedAccountCard extends StatelessWidget {
               children: [
                 Expanded(
                   child: Text(
-                    '( ${_shortText(displayIdentifier)} )',
+                    _shortText(displayIdentifier),
                     maxLines: 1,
                     overflow: TextOverflow.ellipsis,
                     style: AppTypography.technicalMono(
@@ -1105,10 +1121,14 @@ class _CreateWalletShortcut extends StatelessWidget {
 class _FocusedAccountOptions extends ConsumerStatefulWidget {
   final BitcoinAccount account;
   final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+  final ReceivingRequestView? receiveAddressOverride;
+  final ValueChanged<ReceivingRequestView> onReceiveAddressRotated;
 
   const _FocusedAccountOptions({
     required this.account,
     required this.requestsAsync,
+    required this.receiveAddressOverride,
+    required this.onReceiveAddressRotated,
   });
 
   @override
@@ -1184,6 +1204,7 @@ class _FocusedAccountOptionsState
           child: _ReceiveMaterialDetails(
             account: account,
             requestsAsync: widget.requestsAsync,
+            receiveAddressOverride: widget.receiveAddressOverride,
             rotating: _busyAction == 'rotate',
             onRotate: account.isWatchOnly
                 ? null
@@ -1278,6 +1299,7 @@ class _FocusedAccountOptionsState
       final rotated = await ref
           .read(bitcoinAccountsProvider.notifier)
           .rotateReceiveAddress(accountId: account.id);
+      widget.onReceiveAddressRotated(rotated);
       ref.invalidate(bitcoinAccountReceiveRequestsProvider(account.id));
       if (!mounted) return;
       AppNotice.showSuccess(
@@ -1531,12 +1553,14 @@ class _ReadOnlyPsbtWorkflowRow extends StatelessWidget {
 class _ReceiveMaterialDetails extends StatelessWidget {
   final BitcoinAccount account;
   final AsyncValue<List<ReceivingRequestView>> requestsAsync;
+  final ReceivingRequestView? receiveAddressOverride;
   final VoidCallback? onRotate;
   final bool rotating;
 
   const _ReceiveMaterialDetails({
     required this.account,
     required this.requestsAsync,
+    required this.receiveAddressOverride,
     this.onRotate,
     this.rotating = false,
   });
@@ -1577,7 +1601,8 @@ class _ReceiveMaterialDetails extends StatelessWidget {
         text: context.tr.bitcoinReceiveRequestsLoadErrorMessage,
       ),
       data: (requests) {
-        final request = requests.isEmpty ? null : requests.first;
+        final request = receiveAddressOverride ??
+            (requests.isEmpty ? null : requests.first);
         return Column(
           crossAxisAlignment: CrossAxisAlignment.stretch,
           children: [

@@ -14,6 +14,16 @@ class _InternalAccountCreationFlowState
   final TextEditingController _walletNameController = TextEditingController();
   bool _busy = false;
   int? _selectedCustodyIndex;
+  late final Set<BitcoinAccountCustody> _initialUnavailableCustodies;
+
+  @override
+  void initState() {
+    super.initState();
+    _initialUnavailableCustodies = _activeCustodies(
+      ref.read(bitcoinAccountsProvider).asData?.value ??
+          const <BitcoinAccount>[],
+    );
+  }
 
   @override
   void dispose() {
@@ -81,10 +91,6 @@ class _InternalAccountCreationFlowState
             label: _walletNameController.text.trim(),
             custody: _selectedCustody,
           );
-      final state = ref.read(bitcoinAccountsProvider);
-      if (state.hasError) {
-        throw state.error ?? Exception('Create internal account failed');
-      }
       HapticFeedback.mediumImpact();
       if (!mounted) return;
       AppNotice.showSuccess(
@@ -223,23 +229,24 @@ class _InternalAccountCreationFlowState
   }
 
   List<_CustodyCreationOption> get _availableCustodyOptions {
-    final accounts = ref.watch(bitcoinAccountsProvider).asData?.value ??
-        const <BitcoinAccount>[];
-    final hasInternal = accounts.any((account) =>
-        account.isActive &&
-        (account.isInternal && !account.isCustodialOnchain));
-    final hasCustodialOnchain = accounts
-        .any((account) => account.isActive && account.isCustodialOnchain);
+    final currentAccounts = ref.watch(bitcoinAccountsProvider).asData?.value;
+    final unavailableCustodies = currentAccounts == null
+        ? _initialUnavailableCustodies
+        : {
+            ..._initialUnavailableCustodies,
+            ..._activeCustodies(currentAccounts),
+          };
 
     return [
-      if (!hasInternal)
+      if (!unavailableCustodies.contains(BitcoinAccountCustody.internal))
         _CustodyCreationOption(
           index: 0,
           icon: KeroseneIcons.wallet,
           title: context.tr.bitcoinAccountsCustodyInternalTitle,
           subtitle: context.tr.bitcoinAccountsCustodyInternalSubtitle,
         ),
-      if (!hasCustodialOnchain)
+      if (!unavailableCustodies
+          .contains(BitcoinAccountCustody.custodialOnchain))
         _CustodyCreationOption(
           index: 1,
           icon: KeroseneIcons.shield,
@@ -254,6 +261,23 @@ class _InternalAccountCreationFlowState
       1 => context.tr.bitcoinAccountsCustodyOnchainTitle,
       _ => context.tr.bitcoinAccountsCustodyInternalTitle,
     };
+  }
+
+  Set<BitcoinAccountCustody> _activeCustodies(List<BitcoinAccount> accounts) {
+    final custodies = <BitcoinAccountCustody>{};
+    for (final account in accounts) {
+      if (!account.isActive) {
+        continue;
+      }
+      if (account.isInternal && !account.isCustodialOnchain) {
+        custodies.add(BitcoinAccountCustody.internal);
+      } else if (account.isCustodialOnchain) {
+        custodies.add(BitcoinAccountCustody.custodialOnchain);
+      } else if (account.isWatchOnly) {
+        custodies.add(BitcoinAccountCustody.watchOnly);
+      }
+    }
+    return custodies;
   }
 
   Widget _buildDetailsStep() {

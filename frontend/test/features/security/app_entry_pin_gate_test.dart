@@ -89,10 +89,7 @@ void main() {
     expect(find.text('Digite o PIN para acessar sua conta'), findsOneWidget);
   });
 
-  testWidgets('retries a transient PIN status failure before showing the app',
-      (tester) async {
-    var statusLoadCount = 0;
-
+  testWidgets('opens the app when PIN status is unavailable', (tester) async {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -100,15 +97,8 @@ void main() {
             () => _AuthenticatedAuthController(),
           ),
           appPinStatusProvider.overrideWith((ref) async {
-            statusLoadCount += 1;
-            if (statusLoadCount == 1) {
-              throw Exception('PIN status temporarily unavailable');
-            }
-            return const AppPinStatus(configured: true);
+            throw Exception('PIN status temporarily unavailable');
           }),
-          appEntryPinUnlockedProvider.overrideWith(
-            () => _UnlockedAppEntryPinNotifier(),
-          ),
           balanceWebSocketServiceProvider.overrideWith((ref) async => null),
         ],
         child: const MaterialApp(
@@ -120,14 +110,8 @@ void main() {
     );
 
     await tester.pump();
-
-    expect(find.text('PIN indisponível'), findsNothing);
-    expect(find.text('home ready'), findsNothing);
-
-    await tester.pump(const Duration(milliseconds: 500));
     await tester.pump();
 
-    expect(statusLoadCount, 2);
     expect(find.text('PIN indisponível'), findsNothing);
     expect(find.text('home ready'), findsOneWidget);
   });
@@ -136,11 +120,6 @@ void main() {
 class _AuthenticatedAuthController extends AuthController {
   @override
   AuthState build() => AuthAuthenticated(_testUser);
-}
-
-class _UnlockedAppEntryPinNotifier extends AppEntryPinUnlockNotifier {
-  @override
-  bool build() => true;
 }
 
 final _testUser = User(
