@@ -38,7 +38,7 @@ class AppEntryPinGate extends ConsumerWidget {
         return _AppEntryPinLockScreen(status: status);
       },
       loading: () => const _PinGateLoadingState(),
-      error: (_, __) => child,
+      error: (_, __) => const _PinGateLoadingState(),
     );
   }
 }

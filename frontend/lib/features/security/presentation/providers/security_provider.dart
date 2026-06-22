@@ -68,8 +68,16 @@ final appPinStatusProvider = FutureProvider<AppPinStatus>(
       (status) => status,
     );
   },
-  retry: (_, __) => null,
+  retry: _retryAppPinStatus,
 );
+
+Duration? _retryAppPinStatus(int retryCount, Object error) {
+  if (error is Error) {
+    return null;
+  }
+  final cappedRetryCount = retryCount.clamp(0, 5).toInt();
+  return Duration(milliseconds: 200 * (1 << cappedRetryCount));
+}
 
 final adminKeyStatusProvider =
     FutureProvider.autoDispose<AdminKeyStatus>((ref) async {
