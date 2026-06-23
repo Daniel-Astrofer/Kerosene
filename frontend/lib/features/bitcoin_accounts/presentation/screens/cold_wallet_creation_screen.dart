@@ -238,7 +238,7 @@ class _ColdWalletCreationScreenState
     }
 
     final responsive = context.responsive;
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Scaffold(
       backgroundColor: colors.background,
@@ -312,7 +312,7 @@ class _ColdWalletCreationScreenState
   }
 
   Widget _buildPurposeScaffold() {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final accounts = ref.watch(bitcoinAccountsProvider).asData?.value ??
         const <BitcoinAccount>[];
     final coldWalletLimitReached =
@@ -435,7 +435,7 @@ class _ColdWalletCreationScreenState
   }
 
   Widget _buildPrepare() {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -495,7 +495,7 @@ class _ColdWalletCreationScreenState
   }
 
   Widget _buildBackup() {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final visibleWords = _words.asMap().entries.map(
           (entry) => _SeedWordBadge(
             index: entry.key + 1,
@@ -591,7 +591,7 @@ class _ColdWalletCreationScreenState
   }
 
   Widget _buildVerify() {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return ListenableBuilder(
       listenable: Listenable.merge(_verificationControllers),
@@ -652,7 +652,7 @@ class _ColdWalletLevelTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -724,7 +724,7 @@ class _ChecklistTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return InkWell(
       onTap: () => onChanged(!value),
@@ -769,7 +769,7 @@ class _SeedWordBadge extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(

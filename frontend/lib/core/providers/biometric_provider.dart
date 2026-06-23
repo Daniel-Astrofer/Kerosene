@@ -1,6 +1,6 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kerosene/features/auth/controller/auth_local_provider.dart';
 import '../security/biometric_service.dart';
+import 'shared_preferences_provider.dart';
 
 class BiometricState {
   final bool isEnabled;
@@ -37,13 +37,14 @@ class BiometricNotifier extends Notifier<BiometricState> {
   }
 
   Future<void> _init() async {
-    final localDataSource = ref.read(authLocalDataSourceProvider);
+    final sharedPreferences = ref.read(sharedPreferencesProvider);
 
     // Check support
     final isSupported = await _biometricService.canAuthenticate();
 
     // Check preference
-    final isEnabled = await localDataSource.getBiometricEnabled();
+    final isEnabled =
+        sharedPreferences.getBool('auth_biometric_enabled') ?? false;
 
     state = state.copyWith(
       isSupported: isSupported,
@@ -53,11 +54,9 @@ class BiometricNotifier extends Notifier<BiometricState> {
   }
 
   Future<void> toggleBiometric(bool value) async {
-    final localDataSource = ref.read(authLocalDataSourceProvider);
+    final sharedPreferences = ref.read(sharedPreferencesProvider);
 
-    // If enabling, we might want to verify biometrics first?
-    // For now just toggle preference.
-    await localDataSource.setBiometricEnabled(value);
+    await sharedPreferences.setBool('auth_biometric_enabled', value);
 
     state = state.copyWith(isEnabled: value);
   }

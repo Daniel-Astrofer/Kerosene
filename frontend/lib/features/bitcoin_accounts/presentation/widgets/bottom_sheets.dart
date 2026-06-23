@@ -44,7 +44,7 @@ class _SubmitPsbtSheetState extends ConsumerState<_SubmitPsbtSheet> {
   }
 
   Widget _buildForm(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -116,7 +116,7 @@ class _SubmitPsbtSheetState extends ConsumerState<_SubmitPsbtSheet> {
   }
 
   Widget _buildResult(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final workflow = _result!;
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -196,7 +196,7 @@ class _SheetScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return SafeArea(
       child: SingleChildScrollView(
@@ -245,7 +245,7 @@ class _SectionTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Padding(
       padding: const EdgeInsets.only(bottom: AppSpacing.sm),
@@ -267,7 +267,7 @@ class _Pill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -297,7 +297,7 @@ class _MutedPanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Container(
       width: double.infinity,
@@ -333,7 +333,7 @@ class _StatePanel extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Container(
       padding: const EdgeInsets.all(18),
@@ -378,7 +378,7 @@ class _IconFrame extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Container(
       width: 42,
@@ -398,7 +398,7 @@ class _AccountsSkeleton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Column(
       children: [

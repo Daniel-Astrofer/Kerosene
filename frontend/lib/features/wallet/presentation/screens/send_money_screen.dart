@@ -26,7 +26,7 @@ import 'package:kerosene/features/wallet/data/kfe_receiving_capabilities_service
 import 'package:kerosene/features/wallet/presentation/send/send_money_copy.dart';
 
 import '../../../../core/utils/qr_payment_parser.dart';
-import '../../../../core/widgets/transaction_auth_gate.dart';
+import 'package:kerosene/features/security/presentation/widgets/transaction_auth_gate.dart';
 
 import '../providers/wallet_provider.dart' hide transactionRepositoryProvider;
 import '../state/wallet_state.dart';
@@ -136,6 +136,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   String? _lockedRecipientLabel;
   Wallet? _selectedWallet;
   bool _destinationResolutionBusy = false;
+  int _destinationEditVersion = 0;
 
   final _receiverController = TextEditingController();
 
@@ -375,6 +376,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     destination = resolvedDestination;
 
     if (amountBtc <= 0) {
+      setState(() => _destinationResolutionBusy = false);
       SnackbarHelper.showError(context.tr.errorAmountRequired);
       return;
     }
@@ -954,16 +956,20 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         _buildDestinationBottomAction(
           context,
           hasContacts: hasContacts,
+          enabled: isValidDestination,
+          isLoading: _destinationResolutionBusy,
           onTap: () {
-            if (!isValidDestination) {
+            final currentDestination = _receiverController.text.trim();
+            final currentAnalysis = _currentDestinationAnalysis();
+            if (!currentAnalysis.isValid) {
               SnackbarHelper.showError(
-                destination.isEmpty
+                currentDestination.isEmpty
                     ? context.tr.sendMoneyMissingDestination
                     : SendMoneyCopy.unrecognizedDestination(context),
               );
               return;
             }
-            unawaited(_continueFromDestinationStep(analysis));
+            unawaited(_continueFromDestinationStep(currentAnalysis));
           },
         ),
       ],
@@ -1011,10 +1017,21 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Widget _buildDestinationBottomAction(
     BuildContext context, {
     required bool hasContacts,
+    required bool enabled,
     required VoidCallback onTap,
+    bool isLoading = false,
   }) {
-    final backgroundColor = hasContacts ? _internalSurfaceHigh : _internalText;
-    final foregroundColor = hasContacts ? _internalText : _internalBlack;
+    final actionEnabled = enabled && !isLoading;
+    final backgroundColor = !actionEnabled
+        ? _internalSurfaceHigh.withValues(alpha: 0.64)
+        : hasContacts
+            ? _internalSurfaceHigh
+            : _internalText;
+    final foregroundColor = !actionEnabled
+        ? _internalMutedText
+        : hasContacts
+            ? _internalText
+            : _internalBlack;
 
     return SafeArea(
       top: false,
@@ -1025,7 +1042,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           height: 56,
           width: double.infinity,
           child: FilledButton(
-            onPressed: onTap,
+            onPressed: actionEnabled ? onTap : null,
             style: FilledButton.styleFrom(
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
@@ -1039,7 +1056,15 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 letterSpacing: hasContacts ? 1.4 : 1.1,
               ),
             ),
-            child: Text(context.tr.continueButton),
+            child: isLoading
+                ? const SizedBox(
+                    width: 18,
+                    height: 18,
+                    child: CircularProgressIndicator(
+                      strokeWidth: 2,
+                    ),
+                  )
+                : Text(context.tr.continueButton),
           ),
         ),
       ),
@@ -1098,44 +1123,78 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   Future<void> _continueFromDestinationStep(
     _SendDestinationAnalysis analysis,
   ) async {
+    if (_destinationResolutionBusy) {
+      return;
+    }
+
     FocusScope.of(context).unfocus();
+    final editVersion = _destinationEditVersion;
     var destination = analysis;
 
-    if (destination.isPaymentLink) {
-      final linkId = destination.paymentLinkId;
-      if (linkId == null || linkId.isEmpty) {
-        SnackbarHelper.showError(context.tr.sendMoneyInvalidPaymentRequest);
+    setState(() => _destinationResolutionBusy = true);
+    try {
+      if (!destination.isValid) {
+        SnackbarHelper.showError(
+          destination.isEmpty
+              ? context.tr.sendMoneyMissingDestination
+              : SendMoneyCopy.unrecognizedDestination(context),
+        );
         return;
       }
-      final loaded = await _fetchPaymentLinkDetails(linkId);
-      if (!loaded || !mounted) return;
-    } else {
-      final resolvedDestination = await _resolveDestinationForKfe(destination);
-      if (resolvedDestination == null || !mounted) return;
-      destination = resolvedDestination;
-    }
 
-    if (destination.hasLockedAmount) {
-      _amount.value = destination.amountBtc!
-          .toStringAsFixed(8)
-          .replaceAll(RegExp(r'0+$'), '')
-          .replaceAll(RegExp(r'\.$'), '');
-      setState(() {
-        _lockedRecipientLabel = destination.label;
-        _lockedRecipientAddress = destination.normalizedValue;
-      });
-    } else if (destination.label != null &&
-        destination.label!.trim().isNotEmpty) {
-      setState(() {
-        _lockedRecipientLabel = destination.label;
-      });
-    }
+      if (destination.isPaymentLink) {
+        final linkId = destination.paymentLinkId;
+        if (linkId == null || linkId.isEmpty) {
+          SnackbarHelper.showError(context.tr.sendMoneyInvalidPaymentRequest);
+          return;
+        }
+        final loaded = await _fetchPaymentLinkDetails(
+          linkId,
+          destinationEditVersion: editVersion,
+        );
+        if (!loaded || !mounted || editVersion != _destinationEditVersion) {
+          return;
+        }
+        destination = _currentDestinationAnalysis();
+      } else {
+        final resolvedDestination =
+            await _resolveDestinationForKfe(destination);
+        if (resolvedDestination == null ||
+            !mounted ||
+            editVersion != _destinationEditVersion) {
+          return;
+        }
+        destination = resolvedDestination;
+      }
 
-    _pageController.nextPage(
-      duration: KeroseneMotion.medium,
-      curve: KeroseneMotion.standard,
-    );
-    setState(() => _currentStep = 2);
+      if (destination.hasLockedAmount) {
+        _amount.value = destination.amountBtc!
+            .toStringAsFixed(8)
+            .replaceAll(RegExp(r'0+$'), '')
+            .replaceAll(RegExp(r'\.$'), '');
+      }
+
+      if (!mounted) return;
+      setState(() {
+        if (destination.isInternal || destination.hasLockedAmount) {
+          _lockedRecipientAddress = destination.normalizedValue;
+        }
+        if (destination.label != null && destination.label!.trim().isNotEmpty) {
+          _lockedRecipientLabel = destination.label;
+        }
+      });
+
+      await _pageController.nextPage(
+        duration: KeroseneMotion.medium,
+        curve: KeroseneMotion.standard,
+      );
+      if (!mounted) return;
+      setState(() => _currentStep = 2);
+    } finally {
+      if (mounted && _destinationResolutionBusy) {
+        setState(() => _destinationResolutionBusy = false);
+      }
+    }
   }
 
   _SendDestinationAnalysis _currentDestinationAnalysis() {
@@ -1213,10 +1272,11 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       );
     }
 
-    if (_isValidInternalDestination(normalized)) {
+    final internalCandidate = _normalizeInternalDestination(normalized);
+    if (_isValidInternalDestination(internalCandidate)) {
       return _SendDestinationAnalysis(
         type: _SendDestinationType.internal,
-        normalizedValue: normalized,
+        normalizedValue: internalCandidate,
         amountBtc: parsed?.amountBtc,
         label: parsed?.label,
         message: parsed?.message,
@@ -1259,10 +1319,6 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         message: analysis.message,
       );
 
-      setState(() {
-        _lockedRecipientAddress = walletId;
-        _lockedRecipientLabel = resolved.label;
-      });
       return resolved;
     } catch (error) {
       if (!mounted) return null;
@@ -1370,12 +1426,16 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               child: TextField(
                 controller: _receiverController,
                 onChanged: (_) {
-                  _pendingPaymentLinkId = null;
-                  _lockedRecipientAddress = '';
-                  _lockedRecipientLabel = null;
-                  if (widget.initialAmountBtc == null) {
-                    _lockedAmountBtc = 0;
-                  }
+                  setState(() {
+                    _destinationEditVersion += 1;
+                    _destinationResolutionBusy = false;
+                    _pendingPaymentLinkId = null;
+                    _lockedRecipientAddress = '';
+                    _lockedRecipientLabel = null;
+                    if (widget.initialAmountBtc == null) {
+                      _lockedAmountBtc = 0;
+                    }
+                  });
                 },
                 keyboardType: TextInputType.text,
                 textInputAction: TextInputAction.done,
@@ -1931,6 +1991,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
             totpCode: authResult.totpCode,
             confirmationPassphrase: authResult.confirmationPassphrase,
             passkeyAssertionJson: authResult.passkeyAssertionJson,
+            appPin: authResult.appPin,
           );
 
       if (result != null) {
@@ -1976,6 +2037,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
                 : SendMoneyCopy.onchainSendDescription(context),
             confirmationPassphrase: authResult.confirmationPassphrase,
             passkeyAssertionJson: authResult.passkeyAssertionJson,
+            appPin: authResult.appPin,
           );
 
       if (result != null) {
@@ -2029,6 +2091,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           totpCode: authResult.totpCode,
           idempotencyKey: idempotencyKey,
           requestTimestamp: DateTime.now().millisecondsSinceEpoch,
+          appPin: authResult.appPin,
         );
 
     if (result != null) {
@@ -2071,6 +2134,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     if (linkId != null) {
       if (mounted) {
         setState(() {
+          _destinationEditVersion += 1;
           _receiverController.text = data.trim();
           _receiverController.selection = TextSelection.fromPosition(
             TextPosition(offset: _receiverController.text.length),
@@ -2088,6 +2152,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
           ? analysis.normalizedValue
           : parsed.address;
       setState(() {
+        _destinationEditVersion += 1;
         _receiverController.text = normalized;
         _receiverController.selection = TextSelection.fromPosition(
           TextPosition(offset: normalized.length),
@@ -2111,6 +2176,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       final candidate = data.trim();
       if (_isValidInternalDestination(candidate)) {
         setState(() {
+          _destinationEditVersion += 1;
           _receiverController.text = candidate;
           _receiverController.selection = TextSelection.fromPosition(
             TextPosition(offset: candidate.length),
@@ -2123,7 +2189,10 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     }
   }
 
-  Future<bool> _fetchPaymentLinkDetails(String linkId) async {
+  Future<bool> _fetchPaymentLinkDetails(
+    String linkId, {
+    int? destinationEditVersion,
+  }) async {
     try {
       final payload =
           await ref.read(transactionRepositoryProvider).getPaymentLink(linkId);
@@ -2131,7 +2200,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       final status = payload.status.toUpperCase();
       final destinationHash = payload.destinationHash ?? '';
 
-      if (!mounted) {
+      if (!mounted ||
+          (destinationEditVersion != null &&
+              destinationEditVersion != _destinationEditVersion)) {
         return false;
       }
 
@@ -2145,6 +2216,9 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
       }
 
       setState(() {
+        if (destinationEditVersion == null) {
+          _destinationEditVersion += 1;
+        }
         _pendingPaymentLinkId = linkId;
         _lockedRecipientLabel = destinationHash.isNotEmpty
             ? _shortHash(destinationHash)
@@ -2185,6 +2259,7 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     HapticFeedback.selectionClick();
     setState(() {
+      _destinationEditVersion += 1;
       _receiverController.text = value;
       _receiverController.selection = TextSelection.fromPosition(
         TextPosition(offset: value.length),
@@ -2224,17 +2299,23 @@ class _SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
   }
 
   bool _isValidInternalDestination(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty ||
-        trimmed.startsWith('@') ||
-        trimmed.toLowerCase().startsWith('bitcoin:')) {
+    final trimmed = _normalizeInternalDestination(value);
+    if (trimmed.isEmpty || trimmed.toLowerCase().startsWith('bitcoin:')) {
       return false;
     }
-    if (RegExp(r'^[A-Za-z0-9_]{3,50}$').hasMatch(trimmed)) {
+    if (RegExp(r'^[a-z0-9_]{3,15}$').hasMatch(trimmed)) {
       return true;
     }
     return _looksLikeUuid(trimmed) ||
         RegExp(r'^[a-fA-F0-9]{32,128}$').hasMatch(trimmed);
+  }
+
+  String _normalizeInternalDestination(String value) {
+    var trimmed = value.trim();
+    while (trimmed.startsWith('@')) {
+      trimmed = trimmed.substring(1).trim();
+    }
+    return trimmed.toLowerCase();
   }
 
   String _compactInternalValue(String value) {

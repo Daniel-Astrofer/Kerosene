@@ -196,6 +196,7 @@ class _ReceiveAmountRepository implements TransactionRepository {
     String? totpCode,
     String? idempotencyKey,
     int? requestTimestamp,
+    String? appPin,
   }) =>
       throw UnimplementedError();
 
@@ -254,6 +255,7 @@ class _ReceiveAmountRepository implements TransactionRepository {
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
     String? idempotencyKey,
+    String? appPin,
   }) =>
       throw UnimplementedError();
 }

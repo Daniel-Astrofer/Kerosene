@@ -3,6 +3,7 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart' show sessionStorageScopeProvider;
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/core/security/secure_storage_service.dart';
 
@@ -67,18 +68,37 @@ final class RecentTransactionDestination {
 
 class RecentTransactionDestinationsNotifier
     extends Notifier<List<RecentTransactionDestination>> {
-  static const String _storageKey = 'recent_transaction_destinations_v1';
+  static const String _baseStorageKey = 'recent_transaction_destinations_v1';
   static const int _maxItems = 12;
 
   final SecureStorageService _secureStorage = SecureStorageService();
-  late final SharedPreferences _prefs;
+  late SharedPreferences _prefs;
+  String? _storageKey;
   int _mutationRevision = 0;
 
   @override
   List<RecentTransactionDestination> build() {
     _prefs = ref.watch(sharedPreferencesProvider);
-    final legacyEntries = _readFromPrefs();
-    unawaited(_loadFromSecureStorage(legacyEntries, _mutationRevision));
+    final sessionScope = ref.watch(sessionStorageScopeProvider);
+    _storageKey =
+        sessionScope == null ? null : '${_baseStorageKey}_$sessionScope';
+    _mutationRevision++;
+
+    unawaited(_deleteLegacyGlobalStorage());
+
+    final storageKey = _storageKey;
+    if (storageKey == null) {
+      return const <RecentTransactionDestination>[];
+    }
+
+    final legacyEntries = _readFromPrefs(storageKey);
+    unawaited(
+      _loadFromSecureStorage(
+        storageKey: storageKey,
+        legacyEntries: legacyEntries,
+        loadRevision: _mutationRevision,
+      ),
+    );
     return legacyEntries;
   }
 
@@ -87,6 +107,11 @@ class RecentTransactionDestinationsNotifier
     required RecentTransactionDestinationKind kind,
     String? label,
   }) async {
+    final storageKey = _storageKey;
+    if (storageKey == null) {
+      return;
+    }
+
     final normalizedAddress = address.trim();
     if (normalizedAddress.isEmpty) {
       return;
@@ -119,13 +144,18 @@ class RecentTransactionDestinationsNotifier
     }
 
     state = next;
-    await _persist(next);
+    await _persist(storageKey: storageKey, entries: next);
   }
 
   Future<void> removeDestination({
     required String address,
     required RecentTransactionDestinationKind kind,
   }) async {
+    final storageKey = _storageKey;
+    if (storageKey == null) {
+      return;
+    }
+
     final normalizedAddress = address.trim();
     if (normalizedAddress.isEmpty) {
       return;
@@ -144,12 +174,17 @@ class RecentTransactionDestinationsNotifier
 
     _mutationRevision++;
     state = next;
-    await _persist(next);
+    await _persist(storageKey: storageKey, entries: next);
   }
 
   Future<void> clearDestinations({
     RecentTransactionDestinationKind? kind,
   }) async {
+    final storageKey = _storageKey;
+    if (storageKey == null) {
+      return;
+    }
+
     final next = kind == null
         ? const <RecentTransactionDestination>[]
         : [
@@ -162,7 +197,7 @@ class RecentTransactionDestinationsNotifier
     }
 
     state = next;
-    await _persist(next);
+    await _persist(storageKey: storageKey, entries: next);
   }
 
   RecentTransactionDestination? _findExisting({
@@ -178,12 +213,13 @@ class RecentTransactionDestinationsNotifier
     return null;
   }
 
-  Future<void> _loadFromSecureStorage(
-    List<RecentTransactionDestination> legacyEntries,
-    int loadRevision,
-  ) async {
-    final raw = await _secureStorage.read(key: _storageKey);
-    if (loadRevision != _mutationRevision) {
+  Future<void> _loadFromSecureStorage({
+    required String storageKey,
+    required List<RecentTransactionDestination> legacyEntries,
+    required int loadRevision,
+  }) async {
+    final raw = await _secureStorage.read(key: storageKey);
+    if (loadRevision != _mutationRevision || storageKey != _storageKey) {
       return;
     }
 
@@ -192,18 +228,18 @@ class RecentTransactionDestinationsNotifier
     if (secureEntries.isNotEmpty) {
       state = secureEntries;
       if (legacyEntries.isNotEmpty) {
-        await _prefs.remove(_storageKey);
+        await _prefs.remove(storageKey);
       }
       return;
     }
 
     if (legacyEntries.isNotEmpty) {
-      await _persist(legacyEntries);
+      await _persist(storageKey: storageKey, entries: legacyEntries);
     }
   }
 
-  List<RecentTransactionDestination> _readFromPrefs() {
-    final rawList = _prefs.getStringList(_storageKey) ?? const <String>[];
+  List<RecentTransactionDestination> _readFromPrefs(String storageKey) {
+    final rawList = _prefs.getStringList(storageKey) ?? const <String>[];
     return _normalizeEntries(_decodeRawEntries(rawList));
   }
 
@@ -258,10 +294,21 @@ class RecentTransactionDestinationsNotifier
     return normalized.values.take(_maxItems).toList(growable: false);
   }
 
-  Future<void> _persist(List<RecentTransactionDestination> entries) async {
+  Future<void> _persist({
+    required String storageKey,
+    required List<RecentTransactionDestination> entries,
+  }) async {
     final jsonList = entries.map((entry) => entry.toJson()).toList();
-    await _secureStorage.write(key: _storageKey, value: jsonEncode(jsonList));
-    await _prefs.remove(_storageKey);
+    await _secureStorage.write(key: storageKey, value: jsonEncode(jsonList));
+    await _prefs.remove(storageKey);
+    await _deleteLegacyGlobalStorage();
+  }
+
+  Future<void> _deleteLegacyGlobalStorage() async {
+    try {
+      await _secureStorage.delete(key: _baseStorageKey);
+    } catch (_) {}
+    await _prefs.remove(_baseStorageKey);
   }
 
   String _entryKey(

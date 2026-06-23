@@ -33,7 +33,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
   }
 
   Widget _buildForm(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Column(
       children: [
@@ -90,7 +90,7 @@ class _ReceiveSheetState extends ConsumerState<_ReceiveSheet> {
   }
 
   Widget _buildLiveRequest(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final result = _result!;
     final qrSize =
         context.responsive.clampWidth(210).clamp(168.0, 210.0).toDouble();

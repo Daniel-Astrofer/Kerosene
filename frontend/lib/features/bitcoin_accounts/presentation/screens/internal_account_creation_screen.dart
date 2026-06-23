@@ -113,7 +113,7 @@ class _InternalAccountCreationFlowState
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     if (_step == _InternalAccountStep.custody) {
       return _buildCustodySelectionScaffold(colors);
@@ -160,7 +160,7 @@ class _InternalAccountCreationFlowState
     );
   }
 
-  Widget _buildCustodySelectionScaffold(_BitcoinAccountsColors colors) {
+  Widget _buildCustodySelectionScaffold(BitcoinAccountsColors colors) {
     final options = _availableCustodyOptions;
 
     return Scaffold(
@@ -274,7 +274,7 @@ class _InternalAccountCreationFlowState
   }
 
   Widget _buildDetailsStep() {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final title = 'Como essa carteira deve se chamar?';
     final confirmationMessage =
         'Você escolheu $_selectedCustodyLabel. A carteira só será criada depois de confirmar este nome.';
@@ -400,7 +400,7 @@ class _CreationTitle extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
 
     return Text(
       text,
@@ -426,7 +426,7 @@ class _CreationPrimaryButton extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final style = colors.isLight
         ? colors.filledButtonStyle(minHeight: 56)
         : FilledButton.styleFrom(
@@ -460,7 +460,7 @@ class _CreationPrimaryButton extends StatelessWidget {
 
 class _CustodySelectionTopBar extends StatelessWidget {
   final String title;
-  final _BitcoinAccountsColors colors;
+  final BitcoinAccountsColors colors;
   final VoidCallback onBack;
 
   const _CustodySelectionTopBar({
@@ -539,7 +539,7 @@ class _CustodySelectionTile extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final colors = _BitcoinAccountsColors.of(context);
+    final colors = BitcoinAccountsColors.of(context);
     final background = selected ? Colors.white : colors.surfaceAlt;
     final foreground = selected ? Colors.black : colors.text;
     final secondary =

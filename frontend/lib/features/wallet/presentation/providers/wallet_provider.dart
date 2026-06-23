@@ -1,6 +1,7 @@
 import 'package:flutter/foundation.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../../core/providers/price_provider.dart';
+import '../../../auth/controller/auth_controller.dart' show sessionStorageScopeProvider;
 import 'package:kerosene/features/auth/controller/auth_providers.dart';
 import 'package:kerosene/core/network/api_client_provider.dart';
 import '../../../../core/services/wallet_security_service.dart';
@@ -93,6 +94,7 @@ class WalletNotifier extends Notifier<WalletState> {
 
   @override
   WalletState build() {
+    ref.watch(sessionStorageScopeProvider);
     getWalletsUseCase = ref.watch(getWalletsUseCaseProvider);
     walletRepository = ref.watch(walletRepositoryProvider);
     return const WalletInitial();
@@ -195,6 +197,7 @@ class TransactionNotifier extends Notifier<TransactionState> {
 
   @override
   TransactionState build() {
+    ref.watch(sessionStorageScopeProvider);
     getTransactionsUseCase = ref.watch(getTransactionsUseCaseProvider);
     return const TransactionInitial();
   }

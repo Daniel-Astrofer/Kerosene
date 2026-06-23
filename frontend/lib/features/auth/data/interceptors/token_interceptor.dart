@@ -166,7 +166,9 @@ class TokenInterceptor extends QueuedInterceptor {
         options.headers['Host'] = Uri.parse(AppConfig.onionBaseUrl).host;
       }
 
-      if (!kIsWeb && options.headers['X-Device-Hash'] == null) {
+      // Inject X-Device-Hash on ALL platforms (including web) so the backend
+      // can scope app-PIN settings per device.
+      if (options.headers['X-Device-Hash'] == null) {
         final deviceHash = await DeviceHelper.getDeviceHash();
         if (deviceHash.isNotEmpty) {
           options.headers['X-Device-Hash'] = deviceHash;

@@ -90,7 +90,16 @@ class LedgerRepositoryImpl implements LedgerRepository {
     final currentUsername = currentUser?.username.trim();
     try {
       final rawList = await remoteDataSource.getHistory(page: page, size: size);
-      final transactions = rawList.whereType<Map>().map((item) {
+      final transactions = rawList
+          .whereType<Map>()
+          .where(
+            (item) => _historyItemBelongsToCurrentUser(
+              item,
+              currentUserId: currentUserId,
+              currentUsername: currentUsername,
+            ),
+          )
+          .map((item) {
         final data = Map<String, dynamic>.from(item);
         if (currentUserId != null) {
           data['currentUserId'] = currentUserId;
@@ -107,6 +116,75 @@ class LedgerRepositoryImpl implements LedgerRepository {
     } catch (e) {
       return Left(ServerFailure(message: e.toString()));
     }
+  }
+
+  bool _historyItemBelongsToCurrentUser(
+    Map<dynamic, dynamic> item, {
+    required int? currentUserId,
+    required String? currentUsername,
+  }) {
+    final explicitOwnerIds = [
+      item['userId'],
+      item['authenticatedUserId'],
+      item['accountUserId'],
+      item['ownerUserId'],
+      item['walletOwnerUserId'],
+    ].map(_parseInt).whereType<int>().toSet();
+
+    if (explicitOwnerIds.isNotEmpty) {
+      return currentUserId != null && explicitOwnerIds.contains(currentUserId);
+    }
+
+    final participantIds = [
+      item['senderUserId'],
+      item['senderUserID'],
+      item['payerUserId'],
+      item['fromUserId'],
+      item['receiverUserId'],
+      item['receiverUserID'],
+      item['payeeUserId'],
+      item['toUserId'],
+    ].map(_parseInt).whereType<int>().toSet();
+
+    if (participantIds.isNotEmpty) {
+      return currentUserId != null && participantIds.contains(currentUserId);
+    }
+
+    final ownerNames = [
+      item['username'],
+      item['userName'],
+      item['accountUsername'],
+      item['ownerUsername'],
+      item['walletOwnerUsername'],
+    ]
+        .map((value) => _normalizeIdentity(value?.toString()))
+        .where((value) => value.isNotEmpty)
+        .toSet();
+
+    if (ownerNames.isNotEmpty) {
+      final normalizedCurrentUsername = _normalizeIdentity(currentUsername);
+      return normalizedCurrentUsername.isNotEmpty &&
+          ownerNames.contains(normalizedCurrentUsername);
+    }
+
+    return true;
+  }
+
+  int? _parseInt(Object? value) {
+    if (value == null) {
+      return null;
+    }
+    if (value is int) {
+      return value;
+    }
+    if (value is num) {
+      return value.toInt();
+    }
+    return int.tryParse(value.toString().trim());
+  }
+
+  String _normalizeIdentity(String? value) {
+    return (value ?? '').trim().toLowerCase().replaceAll(RegExp(r'^@+'), '');
   }
 
   Future<UserModel?> _currentUser() async {
@@ -140,5 +218,4 @@ class LedgerRepositoryImpl implements LedgerRepository {
       return Left(ServerFailure(message: e.toString()));
     }
   }
-
 }

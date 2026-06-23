@@ -351,6 +351,7 @@ services:
     volumes:
       - vault_raft_bootstrap:/vault/bootstrap
       - ./vault/raft/bootstrap-raft.sh:/bootstrap-raft.sh:ro,z
+      - ./vault/raft/certs:/vault/certs:ro,z
     entrypoint: ["/bin/sh", "/bootstrap-raft.sh"]
     networks: [net_vault]
     depends_on:
@@ -485,7 +486,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_is_local:5432/kerosene?ssl=false
       - REGION=IS
       - MPC_SIDECAR_HOST=mpc-sidecar-is
@@ -704,7 +705,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_ch_local:5432/kerosene?ssl=false
       - REGION=CH
       - MPC_SIDECAR_HOST=mpc-sidecar-ch
@@ -923,7 +924,7 @@ services:
           memory: 1024M
     environment:
       - SPRING_PROFILES_ACTIVE=docker
-      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-false}
+      - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
       - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_sg_local:5432/kerosene?ssl=false
       - REGION=SG
       - MPC_SIDECAR_HOST=mpc-sidecar-sg

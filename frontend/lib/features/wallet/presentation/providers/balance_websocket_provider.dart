@@ -325,6 +325,10 @@ bool _shouldKeepNotification(
     return preferences.transactionAlertsEnabled;
   }
 
+  if (notification.kind == SessionNotificationItem.kindMarketAlert) {
+    return preferences.marketAlertsEnabled;
+  }
+
   return true;
 }
 

@@ -2,6 +2,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 
 import '../../../core/errors/exceptions.dart';
 import '../../../core/network/api_client_provider.dart';
+import '../../auth/controller/auth_controller.dart' show sessionStorageScopeProvider;
 import '../data/bitcoin_accounts_service.dart';
 
 const int maxActiveColdWallets = 2;
@@ -15,7 +16,11 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
 
   @override
   Future<List<BitcoinAccount>> build() async {
+    final sessionScope = ref.watch(sessionStorageScopeProvider);
     _service = ref.watch(bitcoinAccountsServiceProvider);
+    if (sessionScope == null) {
+      return const <BitcoinAccount>[];
+    }
     return _service.listAccounts();
   }
 
@@ -181,6 +186,11 @@ final bitcoinAccountsProvider =
 final bitcoinAccountReceiveRequestsProvider =
     FutureProvider.family<List<ReceivingRequestView>, String>(
         (ref, accountId) async {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
+    return const <ReceivingRequestView>[];
+  }
+
   final service = ref.watch(bitcoinAccountsServiceProvider);
   return service.listReceiveRequestsForAccount(accountId);
 });
@@ -188,6 +198,11 @@ final bitcoinAccountReceiveRequestsProvider =
 final bitcoinColdWalletUtxosProvider =
     FutureProvider.family<List<ColdWalletUtxoView>, String>(
         (ref, coldWalletId) async {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
+    return const <ColdWalletUtxoView>[];
+  }
+
   final service = ref.watch(bitcoinAccountsServiceProvider);
   return service.listColdWalletUtxos(coldWalletId);
 });
@@ -195,11 +210,21 @@ final bitcoinColdWalletUtxosProvider =
 final bitcoinColdWalletPsbtsProvider =
     FutureProvider.family<List<PsbtWorkflowView>, String>(
         (ref, coldWalletId) async {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
+    return const <PsbtWorkflowView>[];
+  }
+
   final service = ref.watch(bitcoinAccountsServiceProvider);
   return service.listColdWalletPsbt(coldWalletId);
 });
 
 final kfeTaxEventsProvider = FutureProvider<List<TaxEventView>>((ref) {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
+    return const <TaxEventView>[];
+  }
+
   final service = ref.watch(bitcoinAccountsServiceProvider);
   return service.listTaxEvents();
 });

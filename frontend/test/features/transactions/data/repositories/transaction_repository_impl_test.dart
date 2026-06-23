@@ -37,6 +37,7 @@ class _SpyTransactionRemoteDataSource implements TransactionRemoteDataSource {
     String? totpCode,
     String? idempotencyKey,
     int? requestTimestamp,
+    String? appPin,
   }) async {
     sendCalls++;
     lastFromAddress = fromAddress;

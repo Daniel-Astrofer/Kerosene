@@ -47,6 +47,7 @@ import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
 import '../core/utils/snackbar_helper.dart';
 import '../features/wallet/presentation/providers/balance_websocket_provider.dart';
+import '../core/providers/price_alert_provider.dart';
 
 Future<void> bootstrapMobile() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -326,6 +327,8 @@ class _AppRealtimeBootstrap extends ConsumerWidget {
     );
     if (authState is AuthAuthenticated && appPinSatisfied) {
       ref.watch(balanceWebSocketServiceProvider);
+      // Trigger market-price alert notifications (BTC up/down X%).
+      ref.watch(priceAlertProvider);
     }
     return child;
   }

@@ -827,3 +827,38 @@ class AuthController extends Notifier<AuthState> {
 /// Provider to expose the controller to the UI.
 final authControllerProvider =
     NotifierProvider<AuthController, AuthState>(AuthController.new);
+
+final sessionStorageScopeProvider = Provider<String?>((ref) {
+  final authState = ref.watch(authControllerProvider);
+  if (authState is! AuthAuthenticated) {
+    return null;
+  }
+
+  return sessionStorageScopeFromUser(
+    userId: authState.user.id,
+    username: authState.user.username,
+  );
+});
+
+String? sessionStorageScopeFromUser({
+  required String? userId,
+  required String? username,
+}) {
+  final normalizedUserId = userId?.trim();
+  if (normalizedUserId != null &&
+      normalizedUserId.isNotEmpty &&
+      normalizedUserId != '0') {
+    return _sanitizeSessionStorageScope('user_$normalizedUserId');
+  }
+
+  final normalizedUsername = username?.trim().toLowerCase();
+  if (normalizedUsername != null && normalizedUsername.isNotEmpty) {
+    return _sanitizeSessionStorageScope('username_$normalizedUsername');
+  }
+
+  return null;
+}
+
+String _sanitizeSessionStorageScope(String value) {
+  return value.replaceAll(RegExp(r'[^a-zA-Z0-9._-]'), '_');
+}

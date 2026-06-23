@@ -71,7 +71,7 @@ export VAULT_TOKEN="$(cat "$BOOTSTRAP_DIR/root-token")"
 
 join_node() {
   node="$1"
-  timeout 15s vault operator raft join -address="$node" "https://vault-raft-1:8200" >/dev/null || true
+  timeout 15s vault operator raft join -address="$node" -leader-ca-cert=@/vault/certs/ca.pem "https://vault-raft-1:8200" >/dev/null || true
 }
 
 join_node "https://vault-raft-2:8200"

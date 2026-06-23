@@ -13,3 +13,6 @@ export 'theme.dart';
 export 'buttons/app_button.dart';
 export 'cards/app_card.dart';
 export 'inputs/app_text_field.dart';
+export 'components/animated_loading_button.dart';
+export 'components/animated_number_display.dart';
+export 'components/bouncing_button.dart';

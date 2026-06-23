@@ -5,9 +5,10 @@ import 'package:uuid/uuid.dart';
 
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../../core/utils/transaction_address_display.dart';
 import '../../../../core/services/passkey_service.dart';
 import '../../../auth/controller/auth_local_provider.dart';
+import '../../../auth/controller/auth_controller.dart'
+    show sessionStorageScopeProvider;
 import '../../../../core/network/api_client_provider.dart';
 import '../../../wallet/domain/entities/transaction.dart';
 import '../../data/datasources/transaction_remote_datasource.dart';
@@ -144,12 +145,35 @@ int _historyCompletenessScore(Transaction transaction) {
     score += 1;
   }
 
-  score += transactionAddressInformationScore(transaction);
+  score += transactionAddressCompletenessBonus(transaction);
+
+  return score;
+}
+
+int transactionAddressCompletenessBonus(Transaction transaction) {
+  var score = 0;
+
+  if (transaction.fromAddress.trim().isNotEmpty) {
+    score += 2;
+  }
+  if (transaction.toAddress.trim().isNotEmpty) {
+    score += 2;
+  }
+  if ((transaction.lightningInvoice ?? '').trim().isNotEmpty) {
+    score += 2;
+  }
+  if ((transaction.externalTransferId ?? '').trim().isNotEmpty) {
+    score += 2;
+  }
 
   return score;
 }
 
 Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <ExternalTransfer>[];
+  }
+
   try {
     return await ref
         .watch(transactionRepositoryProvider)
@@ -165,6 +189,10 @@ Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
 final transactionHistoryProvider = FutureProvider<List<Transaction>>((
   ref,
 ) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <Transaction>[];
+  }
+
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(page: 0, size: 50);
   final externalTransfers = await _loadExternalTransfersSafely(ref);
@@ -185,6 +213,10 @@ final pagedTransactionHistoryProvider =
   ref,
   request,
 ) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <Transaction>[];
+  }
+
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(
     page: request.page,
@@ -262,6 +294,10 @@ final txStatusProvider = FutureProvider.family<TxStatus, String>((
   ref,
   txid,
 ) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    throw Exception('Nao autenticado');
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getTransactionStatus(txid);
 });
@@ -269,6 +305,10 @@ final txStatusProvider = FutureProvider.family<TxStatus, String>((
 // ==================== Deposit Address ====================
 
 final depositAddressProvider = FutureProvider<String>((ref) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    throw Exception('Nao autenticado');
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   final walletState = ref.watch(walletProvider);
 
@@ -318,6 +358,10 @@ final depositsProvider = FutureProvider<List<Deposit>>((ref) async {
 });
 
 final depositBalanceProvider = FutureProvider<double>((ref) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return 0.0;
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getDepositBalance();
 });
@@ -326,6 +370,10 @@ final depositDetailProvider = FutureProvider.family<Deposit, String>((
   ref,
   txid,
 ) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    throw Exception('Nao autenticado');
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getDeposit(txid);
 });
@@ -333,6 +381,10 @@ final depositDetailProvider = FutureProvider.family<Deposit, String>((
 // ==================== Payment Links ====================
 
 final paymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <PaymentLink>[];
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getPaymentLinks();
 });
@@ -340,6 +392,10 @@ final paymentLinksProvider = FutureProvider<List<PaymentLink>>((ref) async {
 final externalTransfersProvider = FutureProvider<List<ExternalTransfer>>((
   ref,
 ) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <ExternalTransfer>[];
+  }
+
   final repo = ref.watch(transactionRepositoryProvider);
   final transfers = await repo.getExternalTransfers();
   final sorted = List<ExternalTransfer>.from(transfers)
@@ -398,6 +454,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
     String? totpCode,
     String? idempotencyKey,
     int? requestTimestamp,
+    String? appPin,
   }) async {
     state = const AsyncActionState(isLoading: true);
     try {
@@ -413,6 +470,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
         totpCode: totpCode,
         idempotencyKey: idempotencyKey,
         requestTimestamp: requestTimestamp,
+        appPin: appPin,
       );
 
       // Refresh history from API after successful transaction
@@ -438,6 +496,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
           totpCode: totpCode,
           idempotencyKey: idempotencyKey,
           requestTimestamp: requestTimestamp,
+          appPin: appPin,
         );
       }
 
@@ -458,6 +517,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
     String? totpCode,
     String? idempotencyKey,
     int? requestTimestamp,
+    String? appPin,
   }) async {
     var challenge = initialChallenge;
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -475,6 +535,7 @@ class SendTransactionNotifier extends Notifier<AsyncActionState> {
           totpCode: totpCode,
           idempotencyKey: idempotencyKey,
           requestTimestamp: requestTimestamp,
+          appPin: appPin,
         );
 
         ref.invalidate(transactionHistoryProvider);
@@ -554,6 +615,7 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
     String? idempotencyKey,
+    String? appPin,
   }) async {
     state = const AsyncActionState(isLoading: true);
     final operationIdempotencyKey = idempotencyKey?.trim().isNotEmpty == true
@@ -572,6 +634,7 @@ class PaymentLinkNotifier extends Notifier<AsyncActionState> {
         passkeyAssertionJson: passkeyAssertionJson,
         totpCode: totpCode,
         idempotencyKey: operationIdempotencyKey,
+        appPin: appPin,
       );
       ref.invalidate(transactionHistoryProvider);
       ref.invalidate(depositsProvider);
@@ -615,6 +678,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
     String? idempotencyKey,
+    String? appPin,
   }) async {
     state = const AsyncActionState(isLoading: true);
     final operationIdempotencyKey = idempotencyKey?.trim().isNotEmpty == true
@@ -634,6 +698,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
         confirmationPassphrase: confirmationPassphrase,
         passkeyAssertionJson: passkeyAssertionJson,
         idempotencyKey: operationIdempotencyKey,
+        appPin: appPin,
       );
 
       // Refresh history from API after withdrawal
@@ -661,6 +726,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           description: description,
           confirmationPassphrase: confirmationPassphrase,
           idempotencyKey: operationIdempotencyKey,
+          appPin: appPin,
         );
       }
 
@@ -682,6 +748,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
     String? description,
     String? confirmationPassphrase,
     required String idempotencyKey,
+    String? appPin,
   }) async {
     var challenge = initialChallenge;
     for (var attempt = 0; attempt < 2; attempt++) {
@@ -700,6 +767,7 @@ class WithdrawNotifier extends Notifier<AsyncActionState> {
           confirmationPassphrase: confirmationPassphrase,
           passkeyAssertionJson: assertionJson,
           idempotencyKey: idempotencyKey,
+          appPin: appPin,
         );
 
         ref.invalidate(transactionHistoryProvider);

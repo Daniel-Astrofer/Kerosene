@@ -3,6 +3,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 import 'package:kerosene/features/bitcoin_accounts/data/bitcoin_accounts_service.dart';
 import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
@@ -47,6 +48,7 @@ void main() {
               ],
             ),
           ),
+          sessionStorageScopeProvider.overrideWithValue('test-user'),
           transactionHistoryProvider.overrideWith((ref) async => const []),
         ],
         child: MaterialApp(
@@ -392,6 +394,7 @@ Future<void> _pumpBitcoinAccounts(
     ProviderScope(
       overrides: [
         bitcoinAccountsServiceProvider.overrideWithValue(service),
+        sessionStorageScopeProvider.overrideWithValue('test-user'),
         transactionHistoryProvider.overrideWith((ref) async => const []),
       ],
       child: MaterialApp(

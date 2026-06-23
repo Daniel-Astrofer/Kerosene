@@ -4,6 +4,7 @@ import 'package:uuid/uuid.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
 import '../../../../core/services/wallet_security_service.dart';
+import '../../../../features/auth/controller/auth_controller.dart' show sessionStorageScopeFromUser;
 import '../../../../core/utils/bitcoin_network.dart';
 import '../../../../features/auth/data/datasources/auth_local_datasource.dart';
 import '../../../transactions/data/datasources/transaction_remote_datasource.dart';
@@ -60,6 +61,24 @@ class WalletRepositoryImpl implements WalletRepository {
     return UnknownFailure(message: exception.message);
   }
 
+  Future<String?> _currentSessionStorageScope() async {
+    try {
+      final user = await authLocalDataSource.getUser();
+      return sessionStorageScopeFromUser(
+        userId: user?.id,
+        username: user?.username,
+      );
+    } catch (_) {
+      return null;
+    }
+  }
+
+  AuthFailure _missingLocalSessionFailure() {
+    return AuthFailure(
+      message: 'Sessão local inválida para salvar cold wallet',
+    );
+  }
+
   @override
   Future<Either<Failure, Wallet>> createWallet({
     required String name,
@@ -79,10 +98,18 @@ class WalletRepositoryImpl implements WalletRepository {
 
       if (normalizedMode == 'SELF_CUSTODY' &&
           (normalizedXpub == null || normalizedXpub.isEmpty)) {
-        await walletSecurityService.saveMnemonic(passphrase);
+        final storageScope = await _currentSessionStorageScope();
+        if (storageScope == null) {
+          return Left(_missingLocalSessionFailure());
+        }
+        await walletSecurityService.saveMnemonic(
+          passphrase,
+          storageScope: storageScope,
+        );
         String? address;
         try {
-          address = await walletSecurityService.getAddressFromMnemonic(passphrase);
+          address =
+              await walletSecurityService.getAddressFromMnemonic(passphrase);
         } catch (_) {}
         final now = DateTime.now();
         return Right(
@@ -221,10 +248,14 @@ class WalletRepositoryImpl implements WalletRepository {
     required WalletType type,
   }) async {
     try {
-      await walletSecurityService.saveMnemonic(mnemonic);
-
-      // Imported self-custody wallets remain local because KFE wallet creation
-      // expects public material or custodial/internal wallet kinds, not a seed.
+      final storageScope = await _currentSessionStorageScope();
+      if (storageScope == null) {
+        return Left(_missingLocalSessionFailure());
+      }
+      await walletSecurityService.saveMnemonic(
+        mnemonic,
+        storageScope: storageScope,
+      );
 
       String? address;
       try {
@@ -235,6 +266,7 @@ class WalletRepositoryImpl implements WalletRepository {
         Wallet(
           id: name,
           name: name,
+          walletMode: 'SELF_CUSTODY',
           type: type,
           balance: 0.0,
           address: address ?? '',
@@ -377,7 +409,14 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Either<Failure, bool>> saveMnemonic(String mnemonic) async {
     try {
-      final success = await walletSecurityService.saveMnemonic(mnemonic);
+      final storageScope = await _currentSessionStorageScope();
+      if (storageScope == null) {
+        return Left(_missingLocalSessionFailure());
+      }
+      final success = await walletSecurityService.saveMnemonic(
+        mnemonic,
+        storageScope: storageScope,
+      );
       return Right(success);
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao salvar mnemônico: $e'));
@@ -387,7 +426,13 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Either<Failure, String?>> getMnemonic() async {
     try {
-      final mnemonic = await walletSecurityService.authenticateAndGetMnemonic();
+      final storageScope = await _currentSessionStorageScope();
+      if (storageScope == null) {
+        return const Right(null);
+      }
+      final mnemonic = await walletSecurityService.authenticateAndGetMnemonic(
+        storageScope: storageScope,
+      );
       return Right(mnemonic);
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao recuperar mnemônico: $e'));
@@ -397,7 +442,8 @@ class WalletRepositoryImpl implements WalletRepository {
   @override
   Future<Either<Failure, void>> deleteMnemonic() async {
     try {
-      await walletSecurityService.clearMnemonic();
+      final storageScope = await _currentSessionStorageScope();
+      await walletSecurityService.clearMnemonic(storageScope: storageScope);
       return const Right(null);
     } catch (e) {
       return Left(UnknownFailure(message: 'Erro ao deletar mnemônico: $e'));

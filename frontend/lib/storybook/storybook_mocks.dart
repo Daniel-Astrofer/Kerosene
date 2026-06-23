@@ -1250,6 +1250,7 @@ class MockTransactionRepository implements TransactionRepository {
     String? totpCode,
     String? idempotencyKey,
     int? requestTimestamp,
+    String? appPin,
   }) async {
     return TxStatus(
       txid: 'storybook-send-txid',
@@ -1383,6 +1384,7 @@ class MockTransactionRepository implements TransactionRepository {
     String? confirmationPassphrase,
     String? passkeyAssertionJson,
     String? idempotencyKey,
+    String? appPin,
   }) async {
     return TxStatus(
       txid: isLightning

@@ -230,37 +230,29 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Row(
-                children: [
-                  _HomeAvatar(name: widget.userName),
-                  SizedBox(width: _homeSize(12)),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _localizedGreeting(context, widget.userName),
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                        style: AppTypography.newsreader(
-                          textStyle: theme.textTheme.titleLarge,
-                          color: Colors.white,
-                          fontSize: _greetingFontSize(
-                            userName: widget.userName,
-                            baseFontSize: responsive.compactFontSize(
-                              tiny: _homeFontSize(22),
-                              compact: _homeFontSize(24),
-                              regular: _homeFontSize(25),
-                            ),
-                          ),
-                          fontWeight: FontWeight.w300,
-                          height: 1.1,
-                          letterSpacing: 0,
-                        ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _localizedGreeting(context, widget.userName),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: AppTypography.newsreader(
+                    textStyle: theme.textTheme.titleLarge,
+                    color: Colors.white,
+                    fontSize: _greetingFontSize(
+                      userName: widget.userName,
+                      baseFontSize: responsive.compactFontSize(
+                        tiny: _homeFontSize(22),
+                        compact: _homeFontSize(24),
+                        regular: _homeFontSize(25),
                       ),
                     ),
+                    fontWeight: FontWeight.w300,
+                    height: 1.1,
+                    letterSpacing: 0,
                   ),
-                ],
+                ),
               ),
             ),
             SizedBox(width: _homeSize(12)),
@@ -712,33 +704,6 @@ class _HomeBalanceCard extends ConsumerWidget {
           ],
         ),
         const Spacer(),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton(
-            onPressed: onViewStatement,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white.withValues(alpha: 0.82),
-              side: BorderSide(
-                color: Colors.white.withValues(alpha: isTotal ? 0.36 : 1),
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: _homeSize(12),
-                vertical: _homeSize(7),
-              ),
-              minimumSize: Size(0, _homeSize(34)),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(_homeSize(8)),
-              ),
-              textStyle: theme.textTheme.labelSmall?.copyWith(
-                fontSize: _homeFontSize(12),
-                fontWeight: FontWeight.w300,
-                letterSpacing: 0,
-              ),
-            ),
-            child: Text(_homeStatementActionLabel(context)),
-          ),
-        ),
       ],
     );
 
