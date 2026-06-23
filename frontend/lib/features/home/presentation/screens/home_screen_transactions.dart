@@ -1,6 +1,10 @@
-part of 'home_screen.dart';
+// ignore_for_file: use_key_in_widget_constructors, unused_import, unused_element
 
-class HomeTransactionsList extends ConsumerWidget {
+import 'home_screen_dependencies.dart';
+import 'home_screen.dart';
+import 'home_screen_surface.dart';
+
+class HomeTransactionsList extends ConsumerStatefulWidget {
   final VoidCallback onCreateWallet;
   final ValueChanged<Wallet> onDepositWallet;
 
@@ -11,12 +15,16 @@ class HomeTransactionsList extends ConsumerWidget {
   });
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final selectedFilter = ref.watch(_homeActivityFilterProvider);
-    if (selectedFilter == _HomeActivityFilter.notices) {
-      return const _HomeNotificationsList();
-    }
+  ConsumerState<HomeTransactionsList> createState() =>
+      _HomeTransactionsListState();
+}
 
+class _HomeTransactionsListState extends ConsumerState<HomeTransactionsList> {
+  String? _expandedTransactionId;
+
+  @override
+  Widget build(BuildContext context) {
+    final selectedFilter = ref.watch(homeActivityFilterProvider);
     final transactionsAsync = ref.watch(transactionHistoryProvider);
     final walletState = ref.watch(walletProvider);
     final activeWallet = walletState is WalletLoaded
@@ -33,7 +41,7 @@ class HomeTransactionsList extends ConsumerWidget {
 
           return Padding(
             padding: EdgeInsets.zero,
-            child: _HomeEmptyTransactionsPanel(
+            child: HomeEmptyTransactionsPanel(
               icon: !hasWallet
                   ? KeroseneIcons.wallet
                   : !hasBalance
@@ -61,12 +69,12 @@ class HomeTransactionsList extends ConsumerWidget {
                       : KeroseneIcons.refresh,
               onAction: () {
                 if (!hasWallet) {
-                  onCreateWallet();
+                  widget.onCreateWallet();
                   return;
                 }
 
                 if (!hasBalance) {
-                  onDepositWallet(activeWallet);
+                  widget.onDepositWallet(activeWallet);
                   return;
                 }
 
@@ -75,16 +83,27 @@ class HomeTransactionsList extends ConsumerWidget {
             ),
           );
         }
+
         final visibleTxs = filteredTxs.take(6).toList(growable: false);
+        final expandedIndex = _expandedTransactionId == null
+            ? -1
+            : visibleTxs.indexWhere(
+                (tx) => tx.id == _expandedTransactionId,
+              );
 
         return StatementTransactionScrollStack(
           itemCount: visibleTxs.length,
-          itemExtent: _homeSize(174),
-          itemGap: _homeSize(12),
-          stackGap: _homeSize(114),
-          topAnchorOffset: _homeSize(10),
+          itemExtent: homeSize(174),
+          expandedItemExtent: homeSize(376),
+          expandedIndex: expandedIndex >= 0 ? expandedIndex : null,
+          itemGap: homeSize(12),
+          stackGap: homeSize(114),
+          topAnchorOffset: homeSize(10),
           itemBuilder: (context, index) {
-            return _buildTransactionTile(context, visibleTxs[index]);
+            return _buildTransactionTile(
+              visibleTxs[index],
+              expanded: visibleTxs[index].id == _expandedTransactionId,
+            );
           },
         );
       },
@@ -106,67 +125,49 @@ class HomeTransactionsList extends ConsumerWidget {
     );
   }
 
-  static List<Transaction> _filterHomeTransactions(
+  List<Transaction> _filterHomeTransactions(
     List<Transaction> txs,
-    _HomeActivityFilter filter,
+    HomeActivityFilter filter,
   ) {
     return switch (filter) {
-      _HomeActivityFilter.platform => txs
-          .where((tx) => tx.isInternal || tx.isLightning)
+      HomeActivityFilter.all => txs,
+      HomeActivityFilter.incoming =>
+        txs.where((tx) => tx.isCredit).toList(growable: false),
+      HomeActivityFilter.outgoing =>
+        txs.where((tx) => tx.isDebit).toList(growable: false),
+      HomeActivityFilter.pending => txs
+          .where(
+            (tx) =>
+                tx.status == TransactionStatus.pending ||
+                tx.status == TransactionStatus.confirming,
+          )
           .toList(growable: false),
-      _HomeActivityFilter.onChain => txs
-          .where((tx) => !tx.isInternal && !tx.isLightning)
+      HomeActivityFilter.failed => txs
+          .where((tx) => tx.status == TransactionStatus.failed)
           .toList(growable: false),
-      _HomeActivityFilter.notices => const <Transaction>[],
     };
   }
 
-  static Widget _buildTransactionTile(BuildContext context, Transaction tx) {
-    return _HomeStatementTransactionLauncher(transaction: tx);
-  }
-}
-
-class _HomeStatementTransactionLauncher extends StatefulWidget {
-  final Transaction transaction;
-
-  const _HomeStatementTransactionLauncher({required this.transaction});
-
-  @override
-  State<_HomeStatementTransactionLauncher> createState() =>
-      _HomeStatementTransactionLauncherState();
-}
-
-class _HomeStatementTransactionLauncherState
-    extends State<_HomeStatementTransactionLauncher> {
-  final GlobalKey _originKey = GlobalKey();
-
-  @override
-  Widget build(BuildContext context) {
-    return RepaintBoundary(
-      key: _originKey,
-      child: StatementTransactionCard(
-        transaction: widget.transaction,
-        onTap: () {
-          HapticFeedback.selectionClick();
-          unawaited(
-            deposits.loadLibrary().then((_) {
-              if (context.mounted) {
-                deposits.openTransactionStatement(
-                  context,
-                  originKey: _originKey,
-                  initialTransactionId: widget.transaction.id,
-                );
-              }
-            }),
-          );
-        },
-      ),
+  Widget _buildTransactionTile(
+    Transaction tx, {
+    required bool expanded,
+  }) {
+    return StatementTransactionCard(
+      transaction: tx,
+      expanded: expanded,
+      mode: StatementTransactionCardMode.stacked,
+      onTap: () {
+        HapticFeedback.selectionClick();
+        setState(() {
+          _expandedTransactionId = expanded ? null : tx.id;
+        });
+      },
     );
   }
 }
 
-class _HomeNotificationsList extends ConsumerWidget {
-  const _HomeNotificationsList();
+class HomeNotificationsList extends ConsumerWidget {
+  const HomeNotificationsList();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -174,11 +175,11 @@ class _HomeNotificationsList extends ConsumerWidget {
     final visibleNotifications = notifications.take(6).toList(growable: false);
 
     if (visibleNotifications.isEmpty) {
-      return _HomeEmptyTransactionsPanel(
+      return HomeEmptyTransactionsPanel(
         icon: KeroseneIcons.notificationsOff,
-        title: _homeNoticeEmptyTitle(context),
-        description: _homeNoticeEmptyDescription(context),
-        actionLabel: _homeNoticeEmptyAction(context),
+        title: homeNoticeEmptyTitle(context),
+        description: homeNoticeEmptyDescription(context),
+        actionLabel: homeNoticeEmptyAction(context),
         actionIcon: KeroseneIcons.notifications,
         onAction: () {
           unawaited(openNotificationCenter(context, originKey: GlobalKey()));
@@ -189,23 +190,23 @@ class _HomeNotificationsList extends ConsumerWidget {
     return Column(
       children: [
         for (var index = 0; index < visibleNotifications.length; index++) ...[
-          if (index > 0) SizedBox(height: _homeSize(10)),
-          _HomeNotificationCard(item: visibleNotifications[index]),
+          if (index > 0) SizedBox(height: homeSize(10)),
+          HomeNotificationCard(item: visibleNotifications[index]),
         ],
       ],
     );
   }
 }
 
-class _HomeNotificationCard extends ConsumerWidget {
+class HomeNotificationCard extends ConsumerWidget {
   final SessionNotificationItem item;
 
-  const _HomeNotificationCard({required this.item});
+  const HomeNotificationCard({required this.item});
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final visuals = resolveNotificationVisuals(context, item);
-    final accent = _homeNotificationAccent(visuals.tone);
+    final accent = homeNotificationAccent(visuals.tone);
     final title = item.title.trim().isNotEmpty
         ? item.title.trim()
         : visuals.categoryLabel;
@@ -223,18 +224,18 @@ class _HomeNotificationCard extends ConsumerWidget {
             await NotificationNavigation.openFromContext(context, item);
           }
         },
-        borderRadius: BorderRadius.circular(_homeSize(18)),
+        borderRadius: BorderRadius.circular(homeSize(18)),
         child: Ink(
-          padding: EdgeInsets.all(_homeSize(14)),
+          padding: EdgeInsets.all(homeSize(14)),
           decoration: BoxDecoration(
-            color: _homeCardColor,
-            borderRadius: BorderRadius.circular(_homeSize(18)),
-            border: Border.all(color: _homePanelBorderColor),
+            color: homeCardColor,
+            borderRadius: BorderRadius.circular(homeSize(18)),
+            border: Border.all(color: homePanelBorderColor),
             boxShadow: [
               BoxShadow(
                 color: Colors.black.withValues(alpha: 0.24),
-                blurRadius: _homeSize(18),
-                offset: Offset(0, _homeSize(8)),
+                blurRadius: homeSize(18),
+                offset: Offset(0, homeSize(8)),
               ),
             ],
           ),
@@ -242,15 +243,15 @@ class _HomeNotificationCard extends ConsumerWidget {
             crossAxisAlignment: CrossAxisAlignment.center,
             children: [
               Container(
-                width: _homeSize(42),
-                height: _homeSize(42),
+                width: homeSize(42),
+                height: homeSize(42),
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: accent.withValues(alpha: 0.14),
                 ),
-                child: Icon(visuals.icon, color: accent, size: _homeSize(20)),
+                child: Icon(visuals.icon, color: accent, size: homeSize(20)),
               ),
-              SizedBox(width: _homeSize(12)),
+              SizedBox(width: homeSize(12)),
               Expanded(
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
@@ -268,19 +269,19 @@ class _HomeNotificationCard extends ConsumerWidget {
                                 .titleSmall
                                 ?.copyWith(
                                   color: Colors.white,
-                                  fontSize: _homeFontSize(13),
+                                  fontSize: homeFontSize(13),
                                   fontWeight: FontWeight.w400,
                                   letterSpacing: 0,
                                 ),
                           ),
                         ),
-                        SizedBox(width: _homeSize(8)),
+                        SizedBox(width: homeSize(8)),
                         Text(
-                          _homeNotificationTimeLabel(context, item.timestamp),
+                          homeNotificationTimeLabel(context, item.timestamp),
                           style:
                               Theme.of(context).textTheme.labelSmall?.copyWith(
                                     color: Colors.white.withValues(alpha: 0.42),
-                                    fontSize: _homeFontSize(10),
+                                    fontSize: homeFontSize(10),
                                     fontWeight: FontWeight.w300,
                                     letterSpacing: 0,
                                   ),
@@ -288,14 +289,14 @@ class _HomeNotificationCard extends ConsumerWidget {
                       ],
                     ),
                     if (body.isNotEmpty) ...[
-                      SizedBox(height: _homeSize(6)),
+                      SizedBox(height: homeSize(6)),
                       Text(
                         body,
                         maxLines: 2,
                         overflow: TextOverflow.ellipsis,
                         style: Theme.of(context).textTheme.bodySmall?.copyWith(
                               color: Colors.white.withValues(alpha: 0.62),
-                              fontSize: _homeFontSize(12),
+                              fontSize: homeFontSize(12),
                               height: 1.35,
                               letterSpacing: 0,
                             ),
@@ -305,10 +306,10 @@ class _HomeNotificationCard extends ConsumerWidget {
                 ),
               ),
               if (!item.read) ...[
-                SizedBox(width: _homeSize(10)),
+                SizedBox(width: homeSize(10)),
                 Container(
-                  width: _homeSize(7),
-                  height: _homeSize(7),
+                  width: homeSize(7),
+                  height: homeSize(7),
                   decoration: BoxDecoration(
                     color: accent,
                     shape: BoxShape.circle,
@@ -323,9 +324,9 @@ class _HomeNotificationCard extends ConsumerWidget {
   }
 }
 
-Color _homeNotificationAccent(AppNotificationTone tone) {
+Color homeNotificationAccent(AppNotificationTone tone) {
   return switch (tone) {
-    AppNotificationTone.success => _homePositiveColor,
+    AppNotificationTone.success => homePositiveColor,
     AppNotificationTone.warning => AppColors.hexFFF59E0B,
     AppNotificationTone.error => AppColors.hexFFFF5A67,
     AppNotificationTone.info => AppColors.hexFFA7B0BA,
@@ -333,7 +334,7 @@ Color _homeNotificationAccent(AppNotificationTone tone) {
   };
 }
 
-String _homeNotificationTimeLabel(BuildContext context, DateTime timestamp) {
+String homeNotificationTimeLabel(BuildContext context, DateTime timestamp) {
   return MaterialLocalizations.of(context).formatTimeOfDay(
     TimeOfDay.fromDateTime(timestamp.toLocal()),
     alwaysUse24HourFormat:
@@ -341,8 +342,8 @@ String _homeNotificationTimeLabel(BuildContext context, DateTime timestamp) {
   );
 }
 
-String _homeNoticeEmptyTitle(BuildContext context) {
-  return _homeLocalizedCopy(
+String homeNoticeEmptyTitle(BuildContext context) {
+  return homeLocalizedCopy(
     context,
     pt: 'Sem avisos',
     en: 'No alerts',
@@ -350,8 +351,8 @@ String _homeNoticeEmptyTitle(BuildContext context) {
   );
 }
 
-String _homeNoticeEmptyDescription(BuildContext context) {
-  return _homeLocalizedCopy(
+String homeNoticeEmptyDescription(BuildContext context) {
+  return homeLocalizedCopy(
     context,
     pt: 'Quando houver notificações importantes do aplicativo, elas aparecerão aqui.',
     en: 'Important app notifications will appear here.',
@@ -359,8 +360,8 @@ String _homeNoticeEmptyDescription(BuildContext context) {
   );
 }
 
-String _homeNoticeEmptyAction(BuildContext context) {
-  return _homeLocalizedCopy(
+String homeNoticeEmptyAction(BuildContext context) {
+  return homeLocalizedCopy(
     context,
     pt: 'Ver central',
     en: 'Open center',
@@ -368,7 +369,7 @@ String _homeNoticeEmptyAction(BuildContext context) {
   );
 }
 
-String _homeLocalizedCopy(
+String homeLocalizedCopy(
   BuildContext context, {
   required String pt,
   required String en,
@@ -384,7 +385,7 @@ String _homeLocalizedCopy(
   }
 }
 
-class _HomeEmptyTransactionsPanel extends StatelessWidget {
+class HomeEmptyTransactionsPanel extends StatelessWidget {
   final IconData icon;
   final String title;
   final String description;
@@ -392,7 +393,7 @@ class _HomeEmptyTransactionsPanel extends StatelessWidget {
   final IconData actionIcon;
   final VoidCallback onAction;
 
-  const _HomeEmptyTransactionsPanel({
+  const HomeEmptyTransactionsPanel({
     required this.icon,
     required this.title,
     required this.description,
@@ -405,61 +406,61 @@ class _HomeEmptyTransactionsPanel extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return _HomeGlassPanel(
-      borderRadius: BorderRadius.circular(_homeSize(18)),
-      padding: EdgeInsets.all(_homeSize(AppSpacing.lg)),
+    return HomeGlassPanel(
+      borderRadius: BorderRadius.circular(homeSize(18)),
+      padding: EdgeInsets.all(homeSize(AppSpacing.lg)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Container(
-            width: _homeSize(40),
-            height: _homeSize(40),
+            width: homeSize(40),
+            height: homeSize(40),
             decoration: BoxDecoration(
               color: Colors.white.withValues(alpha: 0.055),
-              borderRadius: BorderRadius.circular(_homeSize(12)),
+              borderRadius: BorderRadius.circular(homeSize(12)),
               border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
             ),
-            child: Icon(icon, color: Colors.white, size: _homeSize(18)),
+            child: Icon(icon, color: Colors.white, size: homeSize(18)),
           ),
-          SizedBox(height: _homeSize(AppSpacing.lg)),
+          SizedBox(height: homeSize(AppSpacing.lg)),
           Text(
             title,
             style: theme.textTheme.titleMedium?.copyWith(
               color: Colors.white,
-              fontSize: _homeFontSize(16),
+              fontSize: homeFontSize(16),
               fontWeight: FontWeight.w300,
               letterSpacing: 0,
             ),
           ),
-          SizedBox(height: _homeSize(6)),
+          SizedBox(height: homeSize(6)),
           Text(
             description,
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.66),
-              fontSize: _homeFontSize(12),
+              fontSize: homeFontSize(12),
               height: 1.4,
               letterSpacing: 0,
             ),
           ),
-          SizedBox(height: _homeSize(AppSpacing.lg)),
+          SizedBox(height: homeSize(AppSpacing.lg)),
           SizedBox(
             width: double.infinity,
             child: FilledButton.icon(
               onPressed: onAction,
               style: FilledButton.styleFrom(
-                minimumSize: Size.fromHeight(_homeSize(50)),
+                minimumSize: Size.fromHeight(homeSize(50)),
                 backgroundColor: Colors.white,
-                foregroundColor: _homeBackgroundColor,
+                foregroundColor: homeBackgroundColor,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(_homeSize(14)),
+                  borderRadius: BorderRadius.circular(homeSize(14)),
                 ),
                 textStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontSize: _homeFontSize(14),
+                  fontSize: homeFontSize(14),
                   fontWeight: FontWeight.w300,
                   letterSpacing: 0,
                 ),
               ),
-              icon: Icon(actionIcon, size: _homeSize(16)),
+              icon: Icon(actionIcon, size: homeSize(16)),
               label: Text(actionLabel.toUpperCase()),
             ),
           ),

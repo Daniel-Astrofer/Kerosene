@@ -109,8 +109,11 @@ submit_approval() {
 
 VAULT_BASE_URL="${VAULT_URL%/v1/vault/arm}"
 
-until curl --silent --show-error --output /dev/null \
-  --connect-timeout 2 "$VAULT_BASE_URL"
+echo "[vault-arm] waiting for vault endpoint..."
+until curl --silent --output /dev/null \
+  --connect-timeout 2 \
+  --max-time 4 \
+  "$VAULT_BASE_URL" 2>/dev/null
 do
   if [ "$(date +%s)" -ge "$wait_deadline" ]; then
     echo "[vault-arm][error] Vault did not become reachable within ${MAX_WAIT_SECONDS}s." >&2
@@ -119,6 +122,7 @@ do
 
   sleep 2
 done
+echo "[vault-arm] vault endpoint is reachable."
 
 old_ifs="$IFS"
 IFS=","

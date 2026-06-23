@@ -27,17 +27,17 @@ RUN go mod tidy
 RUN CGO_ENABLED=0 GOOS=linux go build -o mpc_enclave main.go
 
 # Production Run Stage
-FROM docker.io/library/alpine:latest
+FROM docker.io/library/alpine:3.20
 
 # ca-certificates for TLS, netcat for diagnostics, and wget for Docker healthchecks.
 RUN apk --no-cache add ca-certificates tzdata netcat-openbsd wget && \
-    addgroup -S kerosene && \
-    adduser -S -D -H -G kerosene kerosene && \
+    addgroup -S -g 65532 kerosene && \
+    adduser -S -D -H -u 65532 -G kerosene kerosene && \
     mkdir -p /app/encrypted-shards /mnt/mpc-shards && \
-    chown -R kerosene:kerosene /app /mnt/mpc-shards
+    chown -R 65532:65532 /app /mnt/mpc-shards
 
 WORKDIR /app
-COPY --from=builder --chown=kerosene:kerosene /app/mpc_enclave .
+COPY --from=builder --chown=65532:65532 /app/mpc_enclave .
 
 EXPOSE 50051 8081
 

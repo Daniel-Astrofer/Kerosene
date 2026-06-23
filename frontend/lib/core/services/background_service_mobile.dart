@@ -160,6 +160,8 @@ void onStart(ServiceInstance service) async {
           summary: update.walletName,
           payload: '/home',
           incoming: true,
+          dedupeKey:
+              'received:${update.walletId}:${delta.toStringAsFixed(8)}:${update.walletName}',
         );
       }
 

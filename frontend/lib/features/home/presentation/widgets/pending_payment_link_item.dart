@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 
-import '../../../transactions/domain/entities/payment_link.dart';
+import '../../../financial_activity/domain/entities/payment_link.dart';
 
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/design_system/icons.dart';

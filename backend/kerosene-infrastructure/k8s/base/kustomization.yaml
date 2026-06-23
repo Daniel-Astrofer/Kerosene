@@ -1,0 +1,27 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+resources:
+  - policies/default-deny.yaml
+  - policies/allow-dns-egress.yaml
+  - policies/allow-observability-scrape.yaml
+  - dependency-services/services.yaml
+  - kerosene-app/service-account.yaml
+  - kerosene-app/configmap.yaml
+  - kerosene-app/deployment.yaml
+  - kerosene-app/service.yaml
+  - kerosene-app/pdb.yaml
+  - kerosene-app/hpa.yaml
+  - kerosene-app/network-policy.yaml
+  - mpc-sidecar/service-account.yaml
+  - mpc-sidecar/statefulset.yaml
+  - mpc-sidecar/service.yaml
+  - mpc-sidecar/pdb.yaml
+  - mpc-sidecar/network-policy.yaml
+  - web-admin/service-account.yaml
+  - web-admin/deployment.yaml
+  - web-admin/service.yaml
+  - web-admin/pdb.yaml
+  - web-admin/network-policy.yaml
+labels:
+  - pairs:
+      app.kubernetes.io/part-of: kerosene

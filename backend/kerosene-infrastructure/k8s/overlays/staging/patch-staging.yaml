@@ -1,0 +1,44 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: kerosene-app
+spec:
+  replicas: 2
+  template:
+    spec:
+      containers:
+        - name: kerosene-app
+          resources:
+            requests:
+              cpu: 500m
+              memory: 1Gi
+            limits:
+              cpu: 1500m
+              memory: 2Gi
+---
+apiVersion: autoscaling/v2
+kind: HorizontalPodAutoscaler
+metadata:
+  name: kerosene-app
+spec:
+  minReplicas: 2
+  maxReplicas: 6
+---
+apiVersion: policy/v1
+kind: PodDisruptionBudget
+metadata:
+  name: kerosene-app
+spec:
+  minAvailable: 1
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kerosene-app-config
+data:
+  SPRING_PROFILES_ACTIVE: "staging"
+  BITCOIN_NETWORK: "signet"
+  REGION: "STAGING"
+  AUDIT_SOLVENCY_ENFORCED: "true"
+  RELEASE_ATTESTATION_REQUIRED: "false"
+  RELEASE_REMOTE_ATTESTATION_ENABLED: "false"

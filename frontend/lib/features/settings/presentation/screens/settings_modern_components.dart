@@ -19,16 +19,9 @@ class SettingsGlassPanel extends StatelessWidget {
     return Container(
       padding: padding,
       decoration: BoxDecoration(
-        color: KeroseneBrandTokens.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(32),
-        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.28),
-            blurRadius: 32,
-            offset: const Offset(0, 18),
-          ),
-        ],
+        color: KeroseneBrandTokens.surfaceMuted,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hexFF1A1A1A),
       ),
       child: child,
     );
@@ -64,18 +57,18 @@ class SettingsAnimatedIcon extends StatelessWidget {
             height: size,
             decoration: BoxDecoration(
               color: Color.lerp(
-                KeroseneBrandTokens.surfaceHigh,
-                KeroseneBrandTokens.brand.withValues(alpha: 0.22),
+                KeroseneBrandTokens.surface,
+                AppColors.hexFF1C1C1E,
                 value,
               ),
-              borderRadius: BorderRadius.circular(size * 0.38),
+              borderRadius: BorderRadius.circular(size * 0.50),
               border: Border.all(
                 color: Color.lerp(
-                      KeroseneBrandTokens.border,
-                      KeroseneBrandTokens.brand.withValues(alpha: 0.62),
+                      AppColors.hexFF1A1A1A,
+                      Colors.white.withValues(alpha: 0.12),
                       value,
                     ) ??
-                    KeroseneBrandTokens.border,
+                    AppColors.hexFF1A1A1A,
               ),
             ),
             child: KeroseneAnimationHost(
@@ -89,7 +82,7 @@ class SettingsAnimatedIcon extends StatelessWidget {
                   fallbackIcon,
                   color: Color.lerp(
                     KeroseneBrandTokens.textSecondary,
-                    KeroseneBrandTokens.brand,
+                    KeroseneBrandTokens.textPrimary,
                     value,
                   ),
                   size: size * 0.45,
@@ -130,8 +123,8 @@ class SettingsIconButtonFrame extends StatelessWidget {
             height: 44,
             decoration: BoxDecoration(
               shape: BoxShape.circle,
-              color: KeroseneBrandTokens.surfaceHigh,
-              border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+              color: KeroseneBrandTokens.surface,
+              border: Border.all(color: AppColors.hexFF1A1A1A),
             ),
             child: Icon(icon, color: KeroseneBrandTokens.textPrimary, size: 20),
           ),
@@ -160,18 +153,26 @@ class SettingsPaneScaffold extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return SettingsGlassPanel(
-      padding: const EdgeInsets.all(AppSpacing.xl),
+      padding: const EdgeInsets.all(AppSpacing.lg),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Row(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              SettingsAnimatedIcon(
-                asset: animation,
-                fallbackIcon: animation.fallbackIcon,
-                selected: true,
-                size: 56,
+              Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: KeroseneBrandTokens.surface,
+                  border: Border.all(color: AppColors.hexFF1A1A1A),
+                ),
+                child: Icon(
+                  animation.fallbackIcon,
+                  color: KeroseneBrandTokens.textPrimary,
+                  size: 22,
+                ),
               ),
               const SizedBox(width: AppSpacing.lg),
               Expanded(
@@ -180,24 +181,32 @@ class SettingsPaneScaffold extends StatelessWidget {
                   children: [
                     Text(
                       eyebrow.toUpperCase(),
-                      style: AppTypography.caption.copyWith(
-                        color: KeroseneBrandTokens.brand,
+                      style: AppTypography.inter(
+                        color: KeroseneBrandTokens.textMuted,
+                        fontSize: 11,
                         fontWeight: FontWeight.w800,
-                        letterSpacing: 1.2,
+                        letterSpacing: 1.65,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.xs),
                     Text(
                       title,
-                      style: AppTypography.h2.copyWith(
+                      style: AppTypography.newsreader(
                         color: KeroseneBrandTokens.textPrimary,
+                        fontSize: 30,
+                        fontWeight: FontWeight.w500,
+                        height: 1.15,
+                        letterSpacing: 0,
                       ),
                     ),
                     const SizedBox(height: AppSpacing.sm),
                     Text(
                       subtitle,
-                      style: AppTypography.description.copyWith(
+                      style: AppTypography.inter(
                         color: KeroseneBrandTokens.textSecondary,
+                        fontSize: 14,
+                        height: 1.45,
+                        letterSpacing: 0,
                       ),
                     ),
                   ],
@@ -258,9 +267,9 @@ class _InfoCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+        color: KeroseneBrandTokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hexFF1A1A1A),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -319,10 +328,10 @@ class SettingsActionTile extends StatelessWidget {
           onTap();
         },
         child: Container(
-          padding: const EdgeInsets.all(AppSpacing.lg),
+          padding: const EdgeInsets.all(AppSpacing.base),
           decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.035),
-            borderRadius: BorderRadius.circular(24),
+            color: KeroseneBrandTokens.surface,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(color: accent.withValues(alpha: 0.24)),
           ),
           child: Row(
@@ -384,9 +393,9 @@ class SettingsPreferenceSwitch extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+        color: KeroseneBrandTokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hexFF1A1A1A),
       ),
       child: Row(
         children: [
@@ -456,9 +465,9 @@ class SettingsStatusRow extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: AppSpacing.md),
       padding: const EdgeInsets.all(AppSpacing.md),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+        color: KeroseneBrandTokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hexFF1A1A1A),
       ),
       child: Row(
         children: [
@@ -594,14 +603,13 @@ class _ChoiceTile extends StatelessWidget {
           duration: KeroseneMotion.short,
           padding: const EdgeInsets.all(AppSpacing.md),
           decoration: BoxDecoration(
-            color: selected
-                ? KeroseneBrandTokens.brand.withValues(alpha: 0.12)
-                : Colors.white.withValues(alpha: 0.035),
-            borderRadius: BorderRadius.circular(22),
+            color:
+                selected ? AppColors.hexFF2C2C2E : KeroseneBrandTokens.surface,
+            borderRadius: BorderRadius.circular(12),
             border: Border.all(
               color: selected
-                  ? KeroseneBrandTokens.brand.withValues(alpha: 0.42)
-                  : KeroseneBrandTokens.borderSubtle,
+                  ? Colors.white.withValues(alpha: 0.10)
+                  : AppColors.hexFF1A1A1A,
             ),
           ),
           child: Row(
@@ -689,9 +697,9 @@ class SettingsEmptyPanel extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(AppSpacing.lg),
       decoration: BoxDecoration(
-        color: Colors.white.withValues(alpha: 0.035),
-        borderRadius: BorderRadius.circular(24),
-        border: Border.all(color: KeroseneBrandTokens.borderSubtle),
+        color: KeroseneBrandTokens.surface,
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: AppColors.hexFF1A1A1A),
       ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,

@@ -17,6 +17,12 @@ class KeroseneMotion {
   static const Duration calm = Duration(milliseconds: 1000);
   static const Duration status = Duration(milliseconds: 1500);
   static const Duration loop = Duration(milliseconds: 1800);
+  static const Duration offlineRetryPulse = Duration(milliseconds: 520);
+  static const Duration offlineRetryInterval = Duration(seconds: 4);
+  static const Duration startupConnectionProgressTick =
+      Duration(milliseconds: 420);
+  static const Duration startupConnectionTimeout = Duration(seconds: 55);
+  static const Curve expressiveBack = Curves.easeOutBack;
   static const Duration route = pageIn;
   static const Duration ceremonial = Duration(milliseconds: 2600);
   static const Duration ambient = Duration(seconds: 20);
@@ -53,6 +59,17 @@ class KeroseneMotion {
   }) {
     final safeIndex = index.clamp(0, maxIndex);
     return Duration(microseconds: step.inMicroseconds * safeIndex);
+  }
+
+  static Duration exponentialBackoff(
+    int retryCount, {
+    Duration base = short,
+    int maxRetryCount = 5,
+  }) {
+    final safeRetryCount = retryCount.clamp(0, maxRetryCount).toInt();
+    return Duration(
+      microseconds: base.inMicroseconds * (1 << safeRetryCount),
+    );
   }
 
   static const Curve standard = Curves.easeOutCubic;

@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/design_system/icons.dart';
 
@@ -35,13 +36,53 @@ class _DeferredPageState extends State<DeferredPage> {
     return FutureBuilder<void>(
       future: _libraryFuture,
       builder: (context, snapshot) {
+        final Widget child;
         if (snapshot.connectionState != ConnectionState.done) {
-          return widget.loading ?? const _DeferredPageLoadingView();
+          child = widget.loading ?? const _DeferredPageLoadingView();
+        } else if (snapshot.hasError) {
+          child = _DeferredPageErrorView(error: snapshot.error);
+        } else {
+          child = widget.builder(context);
         }
-        if (snapshot.hasError) {
-          return _DeferredPageErrorView(error: snapshot.error);
+
+        if (KeroseneMotion.reduceMotion(context)) {
+          return child;
         }
-        return widget.builder(context);
+
+        return AnimatedSwitcher(
+          duration: KeroseneMotion.short,
+          reverseDuration: KeroseneMotion.fast,
+          switchInCurve: KeroseneMotion.entrance,
+          switchOutCurve: KeroseneMotion.exit,
+          transitionBuilder: (child, animation) {
+            final curved = CurvedAnimation(
+              parent: animation,
+              curve: KeroseneMotion.entrance,
+              reverseCurve: KeroseneMotion.exit,
+            );
+            return FadeTransition(
+              opacity: curved,
+              child: SlideTransition(
+                position: Tween<Offset>(
+                  begin: const Offset(0, 0.012),
+                  end: Offset.zero,
+                ).animate(curved),
+                transformHitTests: false,
+                child: child,
+              ),
+            );
+          },
+          child: KeyedSubtree(
+            key: ValueKey<Object?>(
+              snapshot.connectionState == ConnectionState.done
+                  ? snapshot.hasError
+                      ? snapshot.error ?? 'deferred-error'
+                      : 'deferred-ready'
+                  : 'deferred-loading',
+            ),
+            child: child,
+          ),
+        );
       },
     );
   }

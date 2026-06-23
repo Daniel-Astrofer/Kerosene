@@ -13,6 +13,10 @@ class NotificationService {
   final FlutterLocalNotificationsPlugin flutterLocalNotificationsPlugin =
       FlutterLocalNotificationsPlugin();
 
+  static const Duration _nativeDedupeWindow = Duration(seconds: 45);
+  final Map<String, DateTime> _lastNativeNotificationShownAt =
+      <String, DateTime>{};
+
   Future<void> init() async {
     const AndroidInitializationSettings initializationSettingsAndroid =
         AndroidInitializationSettings('@mipmap/launcher_icon');
@@ -61,7 +65,14 @@ class NotificationService {
     String? summary,
     String? payload,
     bool incoming = true,
+    String? dedupeKey,
   }) async {
+    final nativeDedupeKey =
+        dedupeKey ?? _nativeDedupeKey(title: title, body: body);
+    if (_shouldSuppressNativeNotification(nativeDedupeKey)) {
+      return;
+    }
+
     final androidNotificationDetails = AndroidNotificationDetails(
       'kerosene_transactions',
       'Kerosene transactions',
@@ -101,6 +112,38 @@ class NotificationService {
       ),
       payload: payload,
     );
+  }
+
+  String _nativeDedupeKey({required String title, required String body}) {
+    final normalizedBody = _normalizeNotificationText(body);
+    if (normalizedBody.isNotEmpty) {
+      return normalizedBody;
+    }
+    return _normalizeNotificationText(title);
+  }
+
+  String _normalizeNotificationText(String value) {
+    return value.trim().toLowerCase().replaceAll(RegExp(r'\s+'), ' ');
+  }
+
+  bool _shouldSuppressNativeNotification(String key) {
+    if (key.isEmpty) {
+      return false;
+    }
+
+    final now = DateTime.now();
+    _lastNativeNotificationShownAt.removeWhere(
+      (_, shownAt) => now.difference(shownAt) > _nativeDedupeWindow,
+    );
+
+    final lastShownAt = _lastNativeNotificationShownAt[key];
+    if (lastShownAt != null &&
+        now.difference(lastShownAt) <= _nativeDedupeWindow) {
+      return true;
+    }
+
+    _lastNativeNotificationShownAt[key] = now;
+    return false;
   }
 
   Future<void> showSubtleNotification({

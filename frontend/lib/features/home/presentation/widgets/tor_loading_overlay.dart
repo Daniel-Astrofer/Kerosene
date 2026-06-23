@@ -5,8 +5,8 @@ import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
 
-import '../../../wallet/presentation/providers/wallet_provider.dart';
-import '../../../wallet/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 
 class TorLoadingOverlay extends ConsumerStatefulWidget {
   final Future<void> Function() onComplete;

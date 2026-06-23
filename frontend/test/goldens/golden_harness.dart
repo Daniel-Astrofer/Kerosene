@@ -3,19 +3,27 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:flutter_test/flutter_test.dart';
+import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 
 import 'package:kerosene/core/l10n/app_localizations.dart';
+import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_provider.dart';
+import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:kerosene/core/providers/appearance_provider.dart';
+import 'package:kerosene/core/providers/biometric_provider.dart';
 import 'package:kerosene/core/providers/locale_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/auth/data/datasources/auth_remote_datasource.dart'
+    show AccountSecurityStatusResult, BackupCodesStatusResult;
+import 'package:kerosene/features/auth/controller/auth_providers.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:kerosene/features/wallet/presentation/providers/balance_settings_provider.dart';
-import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
+import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_settings_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/storybook/storybook_mocks.dart';
 
 late SharedPreferences goldenSharedPreferences;
@@ -23,6 +31,7 @@ late SharedPreferences goldenSharedPreferences;
 Future<void> initializeGoldenHarness() async {
   GoogleFonts.config.allowRuntimeFetching = false;
   SharedPreferences.setMockInitialValues(const {});
+  FlutterSecureStorage.setMockInitialValues({});
   goldenSharedPreferences = await SharedPreferences.getInstance();
 }
 
@@ -47,13 +56,48 @@ Widget wrapGolden(Widget child) {
   return ProviderScope(
     overrides: [
       sharedPreferencesProvider.overrideWithValue(goldenSharedPreferences),
+      sessionStorageScopeProvider.overrideWithValue('golden-session'),
+      networkStatusProvider.overrideWith(() => NetworkStatusNotifier()),
+      bitcoinAccountsServiceProvider
+          .overrideWithValue(MockBitcoinAccountsService()),
+      bitcoinAccountsProvider.overrideWith(BitcoinAccountsNotifier.new),
+      sovereigntyStatusProvider.overrideWith((ref) async => mockSecurityStatus),
+      kfeReserveOverviewProvider
+          .overrideWith((ref) async => mockKfeReserveOverview),
+      auditStatsProvider.overrideWith((ref) async => mockSecurityAuditStats),
+      accountSecurityProfileProvider
+          .overrideWith((ref) async => mockAccountSecurityProfile),
+      appPinStatusProvider.overrideWith((ref) async => mockAppPinStatus),
+      adminKeyStatusProvider.overrideWith((ref) async => mockAdminKeyStatus),
+      pendingAdminAccessAttemptsProvider
+          .overrideWith((ref) async => mockAdminAccessAttempts),
+      adminAuthenticatedDevicesProvider
+          .overrideWith((ref) async => mockAdminDevices),
       appearanceProvider.overrideWith(() => _GoldenAppearanceNotifier()),
       localeProvider.overrideWith(() => _GoldenLocaleNotifier()),
       authControllerProvider.overrideWith(
         () => MockAuthController(initialOverride: mockAuthenticatedState),
       ),
+      securityStatusProvider.overrideWith(
+        (ref) async => const AccountSecurityStatusResult(
+          passwordConfigured: true,
+          passkeyRegistered: true,
+          totpEnabled: true,
+          backupCodesRemaining: 8,
+          unprotected: false,
+          accountActivated: true,
+          inboundEnabled: true,
+        ),
+      ),
+      backupCodesStatusProvider.overrideWith(
+        (ref) async => const BackupCodesStatusResult(
+          enabled: true,
+          remainingCodes: 8,
+        ),
+      ),
       balanceSettingsProvider
           .overrideWith(() => _GoldenBalanceSettingsNotifier()),
+      biometricProvider.overrideWith(() => _GoldenBiometricNotifier()),
       walletProvider.overrideWith(() => MockWalletNotifier()),
       sessionNotificationFeedProvider.overrideWith(
         () => _EmptyNotificationFeedNotifier(),
@@ -91,7 +135,6 @@ class _GoldenAppearanceNotifier extends AppearanceNotifier {
   AppearanceState build() {
     return const AppearanceState(
       themeVariant: AppThemeVariant.dark,
-      fontScale: AppFontScale.normal,
     );
   }
 }
@@ -116,4 +159,15 @@ class _GoldenBalanceSettingsNotifier extends BalanceSettingsNotifier {
 class _EmptyNotificationFeedNotifier extends SessionNotificationFeedNotifier {
   @override
   List<SessionNotificationItem> build() => const [];
+}
+
+class _GoldenBiometricNotifier extends BiometricNotifier {
+  @override
+  BiometricState build() {
+    return const BiometricState(
+      isEnabled: false,
+      isSupported: false,
+      isLoading: false,
+    );
+  }
 }

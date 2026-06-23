@@ -19,6 +19,8 @@ class SessionNotificationItem extends Equatable {
   static const kindDepositDetected = 'deposit_detected';
   static const kindDepositConfirmed = 'deposit_confirmed';
   static const kindPaymentSent = 'payment_sent';
+  static const kindMarketAlert = 'market_alert';
+  static const kindBackgroundAlertsSetup = 'background_alerts_setup';
 
   final String id;
   final String title;

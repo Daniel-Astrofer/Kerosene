@@ -1,3 +1,5 @@
+// ignore_for_file: unused_import, unused_element
+
 import 'dart:async';
 import 'dart:math' as math;
 
@@ -24,29 +26,29 @@ import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/core/utils/qr_payment_parser.dart';
-import 'package:kerosene/core/widgets/state_feedback_view.dart';
+import 'package:kerosene/shared/widgets/state_feedback_view.dart';
 import 'package:kerosene/shared/widgets/bitcoin_refresh_indicator.dart';
 import 'package:kerosene/shared/widgets/bouncing_button_wrapper.dart';
 
-import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
-import 'package:kerosene/features/wallet/domain/entities/transaction.dart';
-import 'package:kerosene/features/transactions/domain/entities/payment_link.dart';
-import 'package:kerosene/features/transactions/domain/entities/tx_status.dart';
-import '../../../transactions/presentation/screens/deposits_screen.dart'
+import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
+import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/financial_activity/domain/entities/payment_link.dart';
+import 'package:kerosene/features/financial_activity/domain/entities/tx_status.dart';
+import '../../../financial_activity/presentation/screens/deposits_screen.dart'
     deferred as deposits;
-import '../../../transactions/presentation/providers/transaction_provider.dart';
-import '../../../transactions/presentation/widgets/statement_transaction_card.dart';
-import '../../../wallet/presentation/providers/wallet_provider.dart'
+import '../../../financial_activity/presentation/providers/transaction_provider.dart';
+import '../../../financial_activity/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart'
     hide transactionRepositoryProvider;
-import '../../../wallet/presentation/providers/balance_websocket_provider.dart';
-import '../../../wallet/presentation/providers/balance_settings_provider.dart';
-import '../../../wallet/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_settings_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/wallet/presentation/widgets/receive_flow_ui.dart';
-import 'package:kerosene/features/wallet/presentation/widgets/wallet_flow_selector.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+import 'package:kerosene/features/receive/presentation/widgets/receive_flow_ui.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
-import '../../../wallet/presentation/screens/send_money_screen.dart'
+import 'package:kerosene/features/send/presentation/screens/send_money_screen.dart'
     deferred as send_money;
 import '../widgets/animated_balance_display.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
@@ -55,47 +57,48 @@ import 'package:kerosene/features/notifications/presentation/notification_naviga
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
 import 'package:kerosene/features/notifications/presentation/screens/notification_center_screen.dart';
 
-part 'home_screen_surface.dart';
-part 'home_screen_education.dart';
-part 'home_screen_send_method.dart';
-part 'home_screen_payment_link.dart';
-part 'home_screen_balance.dart';
-part 'home_screen_navigation.dart';
-part 'home_screen_transactions.dart';
+import 'home_screen_surface.dart';
+import 'home_screen_education.dart';
+import 'home_screen_send_method.dart';
+import 'home_screen_payment_link.dart';
+import 'home_screen_balance.dart';
+import 'home_screen_navigation.dart';
+import 'home_screen_transactions.dart';
+import 'home_wallet_distribution_detail_screen.dart';
 
-enum _HomeLedgerBalanceView { total, platform, onChain }
+enum HomeLedgerBalanceView { total, platform, onChain }
 
-enum _HomeActivityFilter { platform, onChain, notices }
+enum HomeActivityFilter { all, incoming, outgoing, pending, failed }
 
-final _homeLedgerBalanceViewProvider = StateProvider<_HomeLedgerBalanceView>((
+final homeLedgerBalanceViewProvider = StateProvider<HomeLedgerBalanceView>((
   ref,
 ) {
-  return _HomeLedgerBalanceView.total;
+  return HomeLedgerBalanceView.total;
 });
 
-final _homeLedgerBalancePageProvider = StateProvider<int>((ref) => 0);
+final homeLedgerBalancePageProvider = StateProvider<int>((ref) => 0);
 
-final _homeActivityFilterProvider = StateProvider<_HomeActivityFilter>((ref) {
-  return _HomeActivityFilter.onChain;
+final homeActivityFilterProvider = StateProvider<HomeActivityFilter>((ref) {
+  return HomeActivityFilter.all;
 });
 
-final _homeRouteActiveProvider = StateProvider<bool>((ref) => true);
+final homeRouteActiveProvider = StateProvider<bool>((ref) => true);
 
-const Color _homeBackgroundColor = AppColors.hexFF000000;
-const Color _homeCardColor = AppColors.hexFF141517;
-const Color _homePanelTopColor = AppColors.hexFF1A1A1A;
-const Color _homePanelBottomColor = AppColors.hexFF121212;
-const Color _homePanelBorderColor = AppColors.hexFF2A2A2A;
-const Color _homeMutedTextColor = AppColors.hexFFA3A3A3;
-const Color _homeAmberColor = AppColors.hexFFF59E0B;
-const Color _homePositiveColor = AppColors.hexFF4ADE80;
-const double _homeDensityScale = 1.0;
+const Color homeBackgroundColor = AppColors.hexFF000000;
+const Color homeCardColor = AppColors.hexFF141517;
+const Color homePanelTopColor = AppColors.hexFF1A1A1A;
+const Color homePanelBottomColor = AppColors.hexFF121212;
+const Color homePanelBorderColor = AppColors.hexFF2A2A2A;
+const Color homeMutedTextColor = AppColors.hexFFA3A3A3;
+const Color homeAmberColor = AppColors.hexFFF59E0B;
+const Color homePositiveColor = AppColors.hexFF4ADE80;
+const double homeDensityScale = 1.0;
 
-double _homeSize(double value) => value * _homeDensityScale;
+double homeSize(double value) => value * homeDensityScale;
 
-double _homeFontSize(double value) => value;
+double homeFontSize(double value) => value;
 
-bool _isLightningPaymentPayload(String value) {
+bool isLightningPaymentPayload(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {
     return false;
@@ -110,7 +113,7 @@ bool _isLightningPaymentPayload(String value) {
       RegExp(r'^lnurl[0-9a-z]+$').hasMatch(lower);
 }
 
-bool _isOnChainPaymentPayload(String raw, String candidate) {
+bool isOnChainPaymentPayload(String raw, String candidate) {
   final trimmedRaw = raw.trim().toLowerCase();
   final trimmedCandidate = candidate.trim();
 
@@ -120,7 +123,7 @@ bool _isOnChainPaymentPayload(String raw, String candidate) {
       ).hasMatch(trimmedCandidate);
 }
 
-double? _extractLightningAmountBtc(String value) {
+double? extractLightningAmountBtc(String value) {
   final trimmed = value.trim();
   if (trimmed.isEmpty) {
     return null;
@@ -162,24 +165,24 @@ class HomeScreen extends ConsumerStatefulWidget {
   const HomeScreen({super.key});
 
   @override
-  ConsumerState<HomeScreen> createState() => _HomeScreenState();
+  ConsumerState<HomeScreen> createState() => HomeScreenState();
 }
 
-class _HomeScreenState extends ConsumerState<HomeScreen> {
+class HomeScreenState extends ConsumerState<HomeScreen> {
   Future<void>? _refreshHomeFuture;
   String? _firstUseActionPanelUserId;
-  late final StateController<bool> _homeRouteActiveController;
+  late final StateController<bool> homeRouteActiveController;
 
   @override
   void initState() {
     super.initState();
-    _homeRouteActiveController = ref.read(_homeRouteActiveProvider.notifier);
-    _homeRouteActiveController.state = true;
+    homeRouteActiveController = ref.read(homeRouteActiveProvider.notifier);
+    homeRouteActiveController.state = true;
   }
 
   @override
   void dispose() {
-    _homeRouteActiveController.state = false;
+    homeRouteActiveController.state = false;
     super.dispose();
   }
 
@@ -421,13 +424,12 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
   @override
   Widget build(BuildContext context) {
     final responsive = context.responsive;
-    final contentMaxWidth = responsive.isCompact
-        ? responsive.mobileContentMaxWidth
-        : _homeSize(448);
+    final contentMaxWidth =
+        responsive.isCompact ? responsive.mobileContentMaxWidth : homeSize(448);
     final pageHorizontalPadding =
-        responsive.isTinyPhone ? _homeSize(18) : _homeSize(24);
+        responsive.isTinyPhone ? homeSize(18) : homeSize(24);
     final navigationClearance =
-        MediaQuery.viewPaddingOf(context).bottom + _homeSize(112);
+        MediaQuery.viewPaddingOf(context).bottom + homeSize(112);
 
     final authState = ref.watch(authControllerProvider);
     final walletState = ref.watch(walletProvider);
@@ -480,6 +482,15 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
+    void openWalletDistributionDetails(Wallet wallet) {
+      HapticFeedback.selectionClick();
+      unawaited(
+        _pushFromBottom<void>(
+          (_) => HomeWalletDistributionDetailScreen(initialWallet: wallet),
+        ),
+      );
+    }
+
     // ── NOME DE USUÁRIO REAL E SEGURO ──
     String userName = '';
 
@@ -502,16 +513,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
     return AnnotatedRegion<SystemUiOverlayStyle>(
       value: SystemUiOverlayStyle.light.copyWith(
         statusBarColor: Colors.transparent,
-        systemNavigationBarColor: _homeBackgroundColor,
+        systemNavigationBarColor: homeBackgroundColor,
         systemNavigationBarIconBrightness: Brightness.light,
       ),
       child: Scaffold(
-        backgroundColor: _homeBackgroundColor,
+        backgroundColor: homeBackgroundColor,
         body: Stack(
           fit: StackFit.expand,
           children: [
-            const _HomePageBackground(),
-            const _HomeRealtimeBootstrap(),
+            const HomePageBackground(),
+            const HomeRealtimeBootstrap(),
             SafeArea(
               bottom: false,
               child: CustomScrollView(
@@ -527,9 +538,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                         child: Padding(
                           padding: EdgeInsets.fromLTRB(
                             pageHorizontalPadding,
-                            responsive.isTinyPhone
-                                ? _homeSize(8)
-                                : _homeSize(16),
+                            responsive.isTinyPhone ? homeSize(8) : homeSize(16),
                             pageHorizontalPadding,
                             0,
                           ),
@@ -537,16 +546,16 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                             crossAxisAlignment: CrossAxisAlignment.stretch,
                             children: [
                               if (showHomeLoading)
-                                const _HomeLoadingContent().animate().fade(
+                                const HomeLoadingContent().animate().fade(
                                       duration: 220.ms,
                                     )
                               else
-                                _HomeEntryTransition(
+                                HomeEntryTransition(
                                   child: Column(
                                     crossAxisAlignment:
                                         CrossAxisAlignment.stretch,
                                     children: [
-                                      _HomeBalanceSection(
+                                      HomeBalanceSection(
                                         userName: userName,
                                         walletState: walletState,
                                         activeWallet: activeWallet,
@@ -561,8 +570,8 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                         ),
                                       ),
                                       if (showPrimaryActionPanel) ...[
-                                        SizedBox(height: _homeSize(18)),
-                                        _HomeSetupNotice(
+                                        SizedBox(height: homeSize(18)),
+                                        HomeSetupNotice(
                                           icon: !hasWallet
                                               ? KeroseneIcons.wallet
                                               : !hasBalance
@@ -601,25 +610,27 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                                                       _openSend(walletState),
                                         ),
                                       ],
-                                      SizedBox(height: _homeSize(24)),
-                                      const _HomeEducationCarousel(),
-                                      SizedBox(height: _homeSize(14)),
-                                      SizedBox(height: _homeSize(28)),
-                                      _HomeFundsDistributionSection(
+                                      SizedBox(height: homeSize(24)),
+                                      const HomeEducationCarousel(),
+                                      SizedBox(height: homeSize(14)),
+                                      SizedBox(height: homeSize(28)),
+                                      HomeFundsDistributionSection(
                                         walletState: walletState,
                                         onViewStatement: openStatement,
+                                        onOpenWalletDetails:
+                                            openWalletDistributionDetails,
                                       ),
-                                      SizedBox(height: _homeSize(28)),
-                                      _HomeSectionHeader(
-                                        title: _homeRecentActivitiesTitle(
+                                      SizedBox(height: homeSize(28)),
+                                      HomeSectionHeader(
+                                        title: homeRecentActivitiesTitle(
                                           context,
                                         ),
-                                        actionLabel: _homeViewAllLabel(context),
+                                        actionLabel: homeViewAllLabel(context),
                                         onAction: openStatement,
                                       ),
-                                      SizedBox(height: _homeSize(12)),
-                                      const _HomeActivityFilterChips(),
-                                      SizedBox(height: _homeSize(14)),
+                                      SizedBox(height: homeSize(12)),
+                                      const HomeActivityFilterChips(),
+                                      SizedBox(height: homeSize(14)),
                                       HomeTransactionsList(
                                         onCreateWallet: _openCreateWallet,
                                         onDepositWallet: _openDepositForWallet,
@@ -637,7 +648,7 @@ class _HomeScreenState extends ConsumerState<HomeScreen> {
                 ],
               ),
             ),
-            const _HomeBottomNavigationOverlay(
+            const HomeBottomNavigationOverlay(
               currentDestination: AppPrimaryDestination.home,
             ),
           ],

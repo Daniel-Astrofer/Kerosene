@@ -22,7 +22,7 @@ import '../features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import '../features/home/presentation/screens/home_loading_screen.dart';
 import '../features/home/presentation/screens/startup_connection_loading_screen.dart';
 import '../features/auth/presentation/screens/server_unavailable_screen.dart';
-import '../features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+import '../features/financial_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
 import '../features/home/presentation/screens/home_screen.dart'
     deferred as home;
@@ -33,12 +33,12 @@ import '../features/settings/presentation/screens/settings_screen.dart'
 import '../features/notifications/presentation/widgets/global_notification_host.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
-import '../features/transactions/presentation/screens/deposits_screen.dart'
+import '../features/financial_activity/presentation/screens/deposits_screen.dart'
     deferred as deposits;
-import '../features/wallet/domain/entities/wallet.dart';
-import '../features/wallet/presentation/screens/send_money_screen.dart'
+import '../features/financial_accounts/domain/entities/wallet.dart';
+import '../features/send/presentation/screens/send_money_screen.dart'
     deferred as send_money;
-import '../features/wallet/presentation/widgets/wallet_flow_selector.dart';
+import '../features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
 import '../core/providers/tor_providers.dart';
 import '../core/services/tor_network_bootstrap.dart';
 import '../core/services/tor_service.dart';
@@ -46,7 +46,8 @@ import '../core/performance/kerosene_performance_boundary.dart';
 import '../core/utils/qr_payment_parser.dart';
 import '../features/auth/controller/auth_controller.dart';
 import '../core/utils/snackbar_helper.dart';
-import '../features/wallet/presentation/providers/balance_websocket_provider.dart';
+import '../features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
+import '../app/providers/price_alert_provider.dart';
 
 Future<void> bootstrapMobile() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -145,7 +146,6 @@ class MyApp extends ConsumerWidget {
           ),
         );
         current = KeroseneResponsiveBoundary(
-          requestedTextScale: appearance.fontScale.scaleFactor,
           child: current,
         );
         current = GlobalNotificationHost(child: current);
@@ -195,19 +195,22 @@ class MyApp extends ConsumerWidget {
                 ),
               ),
             ),
-        '/history': (context) => _PrivateMobileRoute(
+        '/settings/notifications': (context) => _PrivateMobileRoute(
+              child: DeferredPage(
+                loadLibrary: settings.loadLibrary,
+                builder: (_) => settings.SettingsScreen(
+                  showPrimaryNavigation: true,
+                  openNotificationsPane: true,
+                ),
+              ),
+            ),
+        '/activity': (context) => _PrivateMobileRoute(
               child: DeferredPage(
                 loadLibrary: deposits.loadLibrary,
                 builder: (_) => deposits.TransactionStatementScreen(),
               ),
             ),
-        '/card': (context) => _PrivateMobileRoute(
-              child: DeferredPage(
-                loadLibrary: bitcoin_accounts.loadLibrary,
-                builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
-              ),
-            ),
-        '/bitcoin/advanced': (context) => _PrivateMobileRoute(
+        '/accounts': (context) => _PrivateMobileRoute(
               child: DeferredPage(
                 loadLibrary: bitcoin_accounts.loadLibrary,
                 builder: (_) => bitcoin_accounts.BitcoinAccountsScreen(),
@@ -238,7 +241,7 @@ class MyApp extends ConsumerWidget {
           settings.name ?? '',
         );
         if (linkId != null) {
-          return MaterialPageRoute(
+          return keroseneHorizontalRoute(
             settings: settings,
             builder: (_) => _PrivateMobileRoute(
               child: _WalletFlowMobileRoute(
@@ -326,6 +329,8 @@ class _AppRealtimeBootstrap extends ConsumerWidget {
     );
     if (authState is AuthAuthenticated && appPinSatisfied) {
       ref.watch(balanceWebSocketServiceProvider);
+      // Trigger market-price alert notifications (BTC up/down X%).
+      ref.watch(priceAlertProvider);
     }
     return child;
   }

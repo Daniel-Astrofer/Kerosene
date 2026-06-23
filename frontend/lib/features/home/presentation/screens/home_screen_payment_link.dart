@@ -1,7 +1,10 @@
-part of 'home_screen.dart';
+// ignore_for_file: use_key_in_widget_constructors, unused_import, unused_element
 
-class _HomeRealtimeBootstrap extends ConsumerWidget {
-  const _HomeRealtimeBootstrap();
+import 'home_screen_dependencies.dart';
+import 'home_screen.dart';
+
+class HomeRealtimeBootstrap extends ConsumerWidget {
+  const HomeRealtimeBootstrap();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
@@ -10,13 +13,13 @@ class _HomeRealtimeBootstrap extends ConsumerWidget {
   }
 }
 
-final _homePaymentLinkPreviewProvider =
+final homePaymentLinkPreviewProvider =
     FutureProvider.family<PaymentLink, String>((ref, linkId) {
   final repo = ref.watch(transactionRepositoryProvider);
   return repo.getPaymentLink(linkId);
 });
 
-enum _PaymentPayloadKind {
+enum PaymentPayloadKind {
   empty,
   paymentLink,
   onChain,
@@ -25,8 +28,8 @@ enum _PaymentPayloadKind {
   invalid,
 }
 
-class _PaymentPayloadDraft {
-  final _PaymentPayloadKind kind;
+class PaymentPayloadDraft {
+  final PaymentPayloadKind kind;
   final String normalizedPayload;
   final String title;
   final String destinationLabel;
@@ -35,7 +38,7 @@ class _PaymentPayloadDraft {
   final double? amountBtc;
   final IconData icon;
 
-  const _PaymentPayloadDraft({
+  const PaymentPayloadDraft({
     required this.kind,
     required this.normalizedPayload,
     required this.title,
@@ -47,20 +50,20 @@ class _PaymentPayloadDraft {
   });
 
   bool get canContinue =>
-      kind != _PaymentPayloadKind.empty && kind != _PaymentPayloadKind.invalid;
+      kind != PaymentPayloadKind.empty && kind != PaymentPayloadKind.invalid;
 
-  bool get isPaymentLink => kind == _PaymentPayloadKind.paymentLink;
+  bool get isPaymentLink => kind == PaymentPayloadKind.paymentLink;
 
   String? get paymentLinkId => isPaymentLink
       ? QrPaymentParser.extractPaymentLinkId(normalizedPayload)
       : null;
 
-  static _PaymentPayloadDraft analyze(BuildContext context, String raw) {
+  static PaymentPayloadDraft analyze(BuildContext context, String raw) {
     final l10n = context.tr;
     final trimmed = raw.trim();
     if (trimmed.isEmpty) {
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.empty,
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.empty,
         normalizedPayload: '',
         title: l10n.homePendingLinkTitle,
         destinationLabel: l10n.homePendingLinkMessage,
@@ -71,31 +74,31 @@ class _PaymentPayloadDraft {
 
     final explicitLinkId = QrPaymentParser.extractPaymentLinkId(trimmed);
     if (explicitLinkId != null) {
-      return _paymentLink(context, explicitLinkId, normalizedPayload: trimmed);
+      return paymentLink(context, explicitLinkId, normalizedPayload: trimmed);
     }
 
     final parsed = QrPaymentParser.decode(trimmed);
     final candidate = parsed?.preferredDestination ?? trimmed;
-    if (_isLightningPaymentPayload(candidate)) {
+    if (isLightningPaymentPayload(candidate)) {
       final normalized = candidate.toLowerCase().startsWith('lightning:')
           ? candidate.substring(10).trim()
           : candidate;
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.lightning,
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.lightning,
         normalizedPayload: normalized,
         title: l10n.homeLightningPaymentTitle,
         destinationLabel: _shortPaymentValue(normalized),
         supportingLabel:
             parsed?.message ?? parsed?.label ?? l10n.homeInvoiceOrLnurl,
         actionLabel: l10n.homePayloadActionContinueLightning,
-        amountBtc: parsed?.amountBtc ?? _extractLightningAmountBtc(normalized),
+        amountBtc: parsed?.amountBtc ?? extractLightningAmountBtc(normalized),
         icon: KeroseneIcons.lightning,
       );
     }
 
-    if (_isOnChainPaymentPayload(trimmed, candidate)) {
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.onChain,
+    if (isOnChainPaymentPayload(trimmed, candidate)) {
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.onChain,
         normalizedPayload: trimmed,
         title: l10n.homeOnchainPaymentTitle,
         destinationLabel: _shortPaymentValue(candidate),
@@ -110,8 +113,8 @@ class _PaymentPayloadDraft {
     if (trimmed.toLowerCase().startsWith('kerosene:pay') &&
         parsed != null &&
         parsed.address.trim().isNotEmpty) {
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.internal,
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.internal,
         normalizedPayload: trimmed,
         title: l10n.homeInternalTransferTitle,
         destinationLabel: parsed.label?.trim().isNotEmpty == true
@@ -127,8 +130,8 @@ class _PaymentPayloadDraft {
     if (trimmed.startsWith('@') &&
         RegExp(r'^@[a-zA-Z0-9_]{3,30}$').hasMatch(trimmed)) {
       final username = trimmed.substring(1);
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.internal,
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.internal,
         normalizedPayload: username,
         title: l10n.homeInternalTransferTitle,
         destinationLabel: '@$username',
@@ -139,8 +142,8 @@ class _PaymentPayloadDraft {
     }
 
     if (RegExp(r'\s').hasMatch(trimmed)) {
-      return _PaymentPayloadDraft(
-        kind: _PaymentPayloadKind.invalid,
+      return PaymentPayloadDraft(
+        kind: PaymentPayloadKind.invalid,
         normalizedPayload: '',
         title: l10n.homeInvalidLinkTitle,
         destinationLabel: l10n.homeInvalidLinkMessage,
@@ -153,22 +156,22 @@ class _PaymentPayloadDraft {
     if (uri != null && uri.scheme.isNotEmpty && uri.pathSegments.isNotEmpty) {
       final last = uri.pathSegments.last.trim();
       if (last.isNotEmpty) {
-        return _paymentLink(context, last);
+        return paymentLink(context, last);
       }
     }
 
-    return _paymentLink(context, trimmed);
+    return paymentLink(context, trimmed);
   }
 
-  static _PaymentPayloadDraft _paymentLink(
+  static PaymentPayloadDraft paymentLink(
     BuildContext context,
     String id, {
     String? normalizedPayload,
   }) {
     final l10n = context.tr;
     final normalizedId = id.trim();
-    return _PaymentPayloadDraft(
-      kind: _PaymentPayloadKind.paymentLink,
+    return PaymentPayloadDraft(
+      kind: PaymentPayloadKind.paymentLink,
       normalizedPayload: normalizedPayload ?? 'kerosene:link:$normalizedId',
       title: l10n.homeInternalLinkTitle,
       destinationLabel: _shortPaymentValue(normalizedId),
@@ -187,16 +190,16 @@ String _shortPaymentValue(String value) {
   return '${trimmed.substring(0, 18)}...${trimmed.substring(trimmed.length - 10)}';
 }
 
-class _PaymentLinkEntryScreen extends ConsumerStatefulWidget {
-  const _PaymentLinkEntryScreen();
+class PaymentLinkEntryScreen extends ConsumerStatefulWidget {
+  const PaymentLinkEntryScreen();
 
   @override
-  ConsumerState<_PaymentLinkEntryScreen> createState() =>
-      _PaymentLinkEntryScreenState();
+  ConsumerState<PaymentLinkEntryScreen> createState() =>
+      PaymentLinkEntryScreenState();
 }
 
-class _PaymentLinkEntryScreenState
-    extends ConsumerState<_PaymentLinkEntryScreen> {
+class PaymentLinkEntryScreenState
+    extends ConsumerState<PaymentLinkEntryScreen> {
   final _controller = TextEditingController();
 
   @override
@@ -221,11 +224,11 @@ class _PaymentLinkEntryScreenState
 
   @override
   Widget build(BuildContext context) {
-    final draft = _PaymentPayloadDraft.analyze(context, _controller.text);
+    final draft = PaymentPayloadDraft.analyze(context, _controller.text);
     final linkId = draft.paymentLinkId;
     final linkAsync = linkId == null
         ? null
-        : ref.watch(_homePaymentLinkPreviewProvider(linkId));
+        : ref.watch(homePaymentLinkPreviewProvider(linkId));
     final selectedCurrency = ref.watch(currencyProvider);
     final btcUsd = ref.watch(latestBtcPriceProvider);
     final btcEur = ref.watch(btcEurPriceProvider);
@@ -282,7 +285,7 @@ class _PaymentLinkEntryScreenState
             onTap: _pasteFromClipboard,
           ),
           const SizedBox(height: AppSpacing.xl),
-          _PaymentPayloadPreview(
+          PaymentPayloadPreview(
             draft: draft,
             linkAsync: linkAsync,
             selectedCurrency: selectedCurrency,
@@ -304,15 +307,15 @@ class _PaymentLinkEntryScreenState
   }
 }
 
-class _PaymentPayloadPreview extends StatelessWidget {
-  final _PaymentPayloadDraft draft;
+class PaymentPayloadPreview extends StatelessWidget {
+  final PaymentPayloadDraft draft;
   final AsyncValue<PaymentLink>? linkAsync;
   final Currency selectedCurrency;
   final double? btcUsd;
   final double? btcEur;
   final double? btcBrl;
 
-  const _PaymentPayloadPreview({
+  const PaymentPayloadPreview({
     required this.draft,
     required this.linkAsync,
     required this.selectedCurrency,
@@ -396,17 +399,17 @@ class _PaymentPayloadPreview extends StatelessWidget {
             ],
           ),
           const SizedBox(height: AppSpacing.lg),
-          _PaymentPreviewRow(
+          PaymentPreviewRow(
             label: context.tr.homeNetworkLabel,
             value: _networkLabel(context, draft.kind),
           ),
           const ReceiveFlowDivider(),
-          _PaymentPreviewRow(
+          PaymentPreviewRow(
             label: context.tr.homeDestinationLabel,
             value: destination,
           ),
           const ReceiveFlowDivider(),
-          _PaymentPreviewRow(
+          PaymentPreviewRow(
             label: context.tr.homeAmountLabel,
             value: amountLabel,
           ),
@@ -415,23 +418,23 @@ class _PaymentPayloadPreview extends StatelessWidget {
     );
   }
 
-  String _networkLabel(BuildContext context, _PaymentPayloadKind kind) {
+  String _networkLabel(BuildContext context, PaymentPayloadKind kind) {
     return switch (kind) {
-      _PaymentPayloadKind.paymentLink => context.tr.homeNetworkInternal,
-      _PaymentPayloadKind.onChain => context.tr.homeNetworkOnchain,
-      _PaymentPayloadKind.lightning => context.tr.homeNetworkLightning,
-      _PaymentPayloadKind.internal => context.tr.homeNetworkInternal,
-      _PaymentPayloadKind.invalid => context.tr.homeNetworkInvalid,
-      _PaymentPayloadKind.empty => context.tr.homeNetworkWaiting,
+      PaymentPayloadKind.paymentLink => context.tr.homeNetworkInternal,
+      PaymentPayloadKind.onChain => context.tr.homeNetworkOnchain,
+      PaymentPayloadKind.lightning => context.tr.homeNetworkLightning,
+      PaymentPayloadKind.internal => context.tr.homeNetworkInternal,
+      PaymentPayloadKind.invalid => context.tr.homeNetworkInvalid,
+      PaymentPayloadKind.empty => context.tr.homeNetworkWaiting,
     };
   }
 }
 
-class _PaymentPreviewRow extends StatelessWidget {
+class PaymentPreviewRow extends StatelessWidget {
   final String label;
   final String value;
 
-  const _PaymentPreviewRow({required this.label, required this.value});
+  const PaymentPreviewRow({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {

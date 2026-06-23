@@ -11,21 +11,20 @@ import 'package:kerosene/features/auth/presentation/screens/passkey_verification
 import 'package:kerosene/features/auth/presentation/screens/server_unavailable_screen.dart';
 import 'package:kerosene/features/auth/presentation/screens/signup/signup_flow_screen.dart';
 import 'package:kerosene/features/auth/presentation/screens/welcome_screen.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart';
 import 'package:kerosene/features/home/presentation/screens/home_loading_screen.dart';
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
 import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart';
 import 'package:kerosene/features/notifications/presentation/screens/notification_center_screen.dart';
 import 'package:kerosene/features/profile/presentation/screens/notification_settings_screen.dart';
-import 'package:kerosene/features/profile/presentation/screens/security_settings_screen.dart';
 import 'package:kerosene/features/security/presentation/screens/sovereignty_status_screen.dart';
 import 'package:kerosene/features/settings/presentation/screens/settings_screen.dart';
-import 'package:kerosene/features/transactions/presentation/screens/deposits_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/receive_amount_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/receive_method.dart';
-import 'package:kerosene/features/wallet/presentation/screens/receive_nfc_flow_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/receive_request_flow_screen.dart';
-import 'package:kerosene/features/wallet/presentation/screens/send_money_screen.dart';
+import 'package:kerosene/features/financial_activity/presentation/screens/deposits_screen.dart';
+import 'package:kerosene/features/receive/presentation/screens/receive_amount_screen.dart';
+import 'package:kerosene/features/receive/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/receive/presentation/screens/receive_nfc_flow_screen.dart';
+import 'package:kerosene/features/receive/presentation/screens/receive_request_flow_screen.dart';
+import 'package:kerosene/features/send/presentation/screens/send_money_screen.dart';
 import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
 import 'package:kerosene/features/web_admin/navigation/admin_routes.dart';
 import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart';
@@ -51,12 +50,12 @@ class KeroseneAppFlowNavigator extends StatefulWidget {
 }
 
 class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
-  late String _selectedId = _flowItems.first.id;
+  late String _selectedId = storybookFlowItems.first.id;
   String _query = '';
 
-  _FlowItem get _selectedItem => _flowItems.firstWhere(
+  FlowItem get _selectedItem => storybookFlowItems.firstWhere(
         (item) => item.id == _selectedId,
-        orElse: () => _flowItems.first,
+        orElse: () => storybookFlowItems.first,
       );
 
   @override
@@ -64,7 +63,7 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
     final filteredItems = _filteredItems(_query);
     final selectedItem = _selectedItem;
     final selectedIndex =
-        _flowItems.indexWhere((item) => item.id == _selectedId);
+        storybookFlowItems.indexWhere((item) => item.id == _selectedId);
 
     return Material(
       color: KeroseneBrandTokens.background,
@@ -77,7 +76,7 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
                 _FlowHeader(
                   item: selectedItem,
                   selectedIndex: selectedIndex,
-                  total: _flowItems.length,
+                  total: storybookFlowItems.length,
                   onPrevious: _selectPrevious,
                   onNext: _selectNext,
                 ),
@@ -115,7 +114,7 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
                     _FlowHeader(
                       item: selectedItem,
                       selectedIndex: selectedIndex,
-                      total: _flowItems.length,
+                      total: storybookFlowItems.length,
                       onPrevious: _selectPrevious,
                       onNext: _selectNext,
                     ),
@@ -130,12 +129,12 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
     );
   }
 
-  List<_FlowItem> _filteredItems(String query) {
+  List<FlowItem> _filteredItems(String query) {
     final normalized = query.trim().toLowerCase();
     if (normalized.isEmpty) {
-      return _flowItems;
+      return storybookFlowItems;
     }
-    return _flowItems.where((item) {
+    return storybookFlowItems.where((item) {
       return item.title.toLowerCase().contains(normalized) ||
           item.section.toLowerCase().contains(normalized) ||
           item.routeName.toLowerCase().contains(normalized);
@@ -147,20 +146,23 @@ class _KeroseneAppFlowNavigatorState extends State<KeroseneAppFlowNavigator> {
   }
 
   void _selectPrevious() {
-    final current = _flowItems.indexWhere((item) => item.id == _selectedId);
-    final previous = (current - 1) < 0 ? _flowItems.length - 1 : current - 1;
-    setState(() => _selectedId = _flowItems[previous].id);
+    final current =
+        storybookFlowItems.indexWhere((item) => item.id == _selectedId);
+    final previous =
+        (current - 1) < 0 ? storybookFlowItems.length - 1 : current - 1;
+    setState(() => _selectedId = storybookFlowItems[previous].id);
   }
 
   void _selectNext() {
-    final current = _flowItems.indexWhere((item) => item.id == _selectedId);
-    final next = (current + 1) % _flowItems.length;
-    setState(() => _selectedId = _flowItems[next].id);
+    final current =
+        storybookFlowItems.indexWhere((item) => item.id == _selectedId);
+    final next = (current + 1) % storybookFlowItems.length;
+    setState(() => _selectedId = storybookFlowItems[next].id);
   }
 }
 
 class _FlowNavigation extends StatelessWidget {
-  final List<_FlowItem> items;
+  final List<FlowItem> items;
   final String selectedId;
   final String query;
   final bool compact;
@@ -178,7 +180,7 @@ class _FlowNavigation extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final grouped = <String, List<_FlowItem>>{};
+    final grouped = <String, List<FlowItem>>{};
     for (final item in items) {
       grouped.putIfAbsent(item.section, () => []).add(item);
     }
@@ -295,7 +297,7 @@ class _SectionLabel extends StatelessWidget {
 }
 
 class _FlowNavigationTile extends StatelessWidget {
-  final _FlowItem item;
+  final FlowItem item;
   final bool selected;
   final bool compact;
   final VoidCallback onTap;
@@ -374,7 +376,7 @@ class _FlowNavigationTile extends StatelessWidget {
 }
 
 class _FlowHeader extends StatelessWidget {
-  final _FlowItem item;
+  final FlowItem item;
   final int selectedIndex;
   final int total;
   final VoidCallback onPrevious;
@@ -462,7 +464,7 @@ class _FlowHeader extends StatelessWidget {
 }
 
 class _FlowPreview extends StatelessWidget {
-  final _FlowItem item;
+  final FlowItem item;
 
   const _FlowPreview({required this.item});
 
@@ -504,14 +506,14 @@ class _FlowPreview extends StatelessWidget {
 }
 
 class _DeviceFrame extends StatelessWidget {
-  final _FlowItem item;
+  final FlowItem item;
 
   const _DeviceFrame({required this.item});
 
   @override
   Widget build(BuildContext context) {
     final borderRadius = BorderRadius.circular(
-      item.surface == _FlowSurface.mobile ? 28 : 12,
+      item.surface == FlowSurface.mobile ? 28 : 12,
     );
     return DecoratedBox(
       decoration: BoxDecoration(
@@ -569,11 +571,11 @@ Map<String, WidgetBuilder> _routeBuilders() {
     '/home_loading': (_) => const HomeLoadingScreen(),
     '/home': (_) => const HomeScreen(),
     '/settings': (_) => const SettingsScreen(showPrimaryNavigation: true),
-    '/card': (_) => const BitcoinAccountsScreen(),
-    '/bitcoin/advanced': (_) => const BitcoinAccountsScreen(),
-    '/history': (_) => const TransactionStatementScreen(),
+    '/accounts': (_) => const BitcoinAccountsScreen(),
+    '/accounts': (_) => const BitcoinAccountsScreen(),
+    '/activity': (_) => const TransactionStatementScreen(),
     '/notifications': (_) => const NotificationCenterScreen(),
-    '/account/security': (_) => const SecuritySettingsScreen(),
+    '/account/security': (_) => const SettingsScreen(),
     '/account/notifications': (_) => const NotificationSettingsScreen(),
     '/security/sovereignty': (_) => const SovereigntyStatusScreen(),
     '/send-money': (_) => SendMoneyScreen(
@@ -782,442 +784,3 @@ class _UnknownRoutePane extends StatelessWidget {
     );
   }
 }
-
-enum _FlowSurface {
-  mobile(Size(390, 844)),
-  desktop(Size(1180, 760)),
-  public(Size(1240, 780));
-
-  final Size targetSize;
-
-  const _FlowSurface(this.targetSize);
-}
-
-class _FlowItem {
-  final String id;
-  final String section;
-  final String title;
-  final String routeName;
-  final IconData icon;
-  final _FlowSurface surface;
-
-  const _FlowItem({
-    required this.id,
-    required this.section,
-    required this.title,
-    required this.routeName,
-    required this.icon,
-    required this.surface,
-  });
-}
-
-const _flowItems = [
-  _FlowItem(
-    id: 'auth-welcome',
-    section: 'Entrada',
-    title: 'Boas-vindas',
-    routeName: '/welcome',
-    icon: KeroseneIcons.home,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'auth-login',
-    section: 'Entrada',
-    title: 'Login',
-    routeName: '/login',
-    icon: KeroseneIcons.user,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'auth-recovery',
-    section: 'Entrada',
-    title: 'Recovery emergencial',
-    routeName: '/recovery/emergency',
-    icon: KeroseneIcons.passkey,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'auth-passkey',
-    section: 'Entrada',
-    title: 'Passkey',
-    routeName: '/passkey',
-    icon: KeroseneIcons.biometric,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'auth-signup',
-    section: 'Entrada',
-    title: 'Cadastro',
-    routeName: '/signup',
-    icon: KeroseneIcons.userCheck,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'auth-server',
-    section: 'Entrada',
-    title: 'Servidor indisponível',
-    routeName: '/server-unavailable',
-    icon: KeroseneIcons.serverUnavailable,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-loading',
-    section: 'App Mobile',
-    title: 'Carregamento',
-    routeName: '/home_loading',
-    icon: KeroseneIcons.pending,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-home',
-    section: 'App Mobile',
-    title: 'Home',
-    routeName: '/home',
-    icon: KeroseneIcons.wallet,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-card',
-    section: 'App Mobile',
-    title: 'Contas Bitcoin',
-    routeName: '/card',
-    icon: KeroseneIcons.wallet,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'bitcoin-advanced',
-    section: 'App Mobile',
-    title: 'Bitcoin Advanced',
-    routeName: '/bitcoin/advanced',
-    icon: KeroseneIcons.invoice,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-history',
-    section: 'App Mobile',
-    title: 'Extrato',
-    routeName: '/history',
-    icon: KeroseneIcons.history,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-send',
-    section: 'App Mobile',
-    title: 'Enviar',
-    routeName: '/send-money',
-    icon: KeroseneIcons.send,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-settings',
-    section: 'App Mobile',
-    title: 'Configurações',
-    routeName: '/settings',
-    icon: KeroseneIcons.settings,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'mobile-notifications',
-    section: 'App Mobile',
-    title: 'Notificações',
-    routeName: '/notifications',
-    icon: KeroseneIcons.notifications,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'account-security',
-    section: 'Conta',
-    title: 'Segurança',
-    routeName: '/account/security',
-    icon: KeroseneIcons.security,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'account-notifications',
-    section: 'Conta',
-    title: 'Preferências de notificação',
-    routeName: '/account/notifications',
-    icon: KeroseneIcons.notifications,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'account-sovereignty',
-    section: 'Conta',
-    title: 'Status soberano',
-    routeName: '/security/sovereignty',
-    icon: KeroseneIcons.shield,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-selection',
-    section: 'Receber',
-    title: 'Seleção',
-    routeName: '/receive',
-    icon: KeroseneIcons.down,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-providers',
-    section: 'Receber',
-    title: 'Provedores',
-    routeName: '/receive/providers',
-    icon: KeroseneIcons.creditCard,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-loading',
-    section: 'Receber',
-    title: 'Requests carregando',
-    routeName: '/receive/requests/loading',
-    icon: KeroseneIcons.pending,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-empty',
-    section: 'Receber',
-    title: 'Requests vazio',
-    routeName: '/receive/requests/empty',
-    icon: KeroseneIcons.inbox,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-pending',
-    section: 'Receber',
-    title: 'Request pendente',
-    routeName: '/receive/requests/pending',
-    icon: KeroseneIcons.pending,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-paid',
-    section: 'Receber',
-    title: 'Request pago',
-    routeName: '/receive/requests/paid',
-    icon: KeroseneIcons.success2,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-expired',
-    section: 'Receber',
-    title: 'Request expirado',
-    routeName: '/receive/requests/expired',
-    icon: KeroseneIcons.timerOff,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-requests-error',
-    section: 'Receber',
-    title: 'Requests erro',
-    routeName: '/receive/requests/error',
-    icon: KeroseneIcons.error,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-amount-qr',
-    section: 'Receber',
-    title: 'Valor para QR',
-    routeName: '/receive/amount/qr',
-    icon: KeroseneIcons.qr,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-amount-link',
-    section: 'Receber',
-    title: 'Valor para link',
-    routeName: '/receive/amount/link',
-    icon: KeroseneIcons.onchain,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-amount-nfc',
-    section: 'Receber',
-    title: 'Valor para NFC',
-    routeName: '/receive/amount/nfc',
-    icon: KeroseneIcons.nfc,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-qr',
-    section: 'Receber',
-    title: 'QR e dados',
-    routeName: '/receive/qr',
-    icon: KeroseneIcons.qr,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-onchain-confirming',
-    section: 'Receber',
-    title: 'Confirmações',
-    routeName: '/receive/onchain-confirming',
-    icon: KeroseneIcons.pending,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-onchain-identified',
-    section: 'Receber',
-    title: 'Pagamento identificado',
-    routeName: '/receive/onchain-identified',
-    icon: KeroseneIcons.success,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-nfc',
-    section: 'Receber',
-    title: 'NFC Kerosene',
-    routeName: '/receive/nfc',
-    icon: KeroseneIcons.nfc,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'receive-onchain-nfc',
-    section: 'Receber',
-    title: 'NFC on-chain',
-    routeName: '/receive/onchain-nfc',
-    icon: KeroseneIcons.nfc,
-    surface: _FlowSurface.mobile,
-  ),
-  _FlowItem(
-    id: 'public-landing',
-    section: 'Web Público',
-    title: 'Landing',
-    routeName: '/public/landing',
-    icon: KeroseneIcons.globe,
-    surface: _FlowSurface.public,
-  ),
-  _FlowItem(
-    id: 'public-download',
-    section: 'Web Público',
-    title: 'Download',
-    routeName: '/public/download',
-    icon: KeroseneIcons.download,
-    surface: _FlowSurface.public,
-  ),
-  _FlowItem(
-    id: 'public-status',
-    section: 'Web Público',
-    title: 'Status',
-    routeName: '/public/status',
-    icon: KeroseneIcons.activity,
-    surface: _FlowSurface.public,
-  ),
-  _FlowItem(
-    id: 'admin-login',
-    section: 'Admin Web',
-    title: 'Login admin',
-    routeName: '/admin/login',
-    icon: KeroseneIcons.passkey,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-dashboard',
-    section: 'Admin Web',
-    title: 'Dashboard',
-    routeName: '/admin/dashboard',
-    icon: KeroseneIcons.shares,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-monitoring',
-    section: 'Admin Web',
-    title: 'Monitoring',
-    routeName: '/admin/monitoring',
-    icon: KeroseneIcons.activity,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-transactions',
-    section: 'Admin Web',
-    title: 'Integrity Proofs',
-    routeName: '/admin/transactions',
-    icon: KeroseneIcons.biometric,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-lightning',
-    section: 'Admin Web',
-    title: 'Lightning',
-    routeName: '/admin/lightning',
-    icon: KeroseneIcons.lightning,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-onchain',
-    section: 'Admin Web',
-    title: 'On-chain',
-    routeName: '/admin/onchain',
-    icon: KeroseneIcons.onchain,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-checks',
-    section: 'Admin Web',
-    title: 'Hash Chain',
-    routeName: '/admin/checks',
-    icon: KeroseneIcons.network,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-payment-links',
-    section: 'Admin Web',
-    title: 'Payment Metrics',
-    routeName: '/admin/payment-links',
-    icon: KeroseneIcons.qr,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-analytics',
-    section: 'Admin Web',
-    title: 'Analytics',
-    routeName: '/admin/analytics',
-    icon: KeroseneIcons.gauge,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-volatility',
-    section: 'Admin Web',
-    title: 'Volatility',
-    routeName: '/admin/volatility',
-    icon: KeroseneIcons.trendUp,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-companies',
-    section: 'Admin Web',
-    title: 'Infrastructure',
-    routeName: '/admin/companies',
-    icon: KeroseneIcons.business,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-audit',
-    section: 'Admin Web',
-    title: 'Audit & Security',
-    routeName: '/admin/audit',
-    icon: KeroseneIcons.security,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-devices',
-    section: 'Admin Web',
-    title: 'Authenticated Devices',
-    routeName: '/admin/authenticated-devices',
-    icon: KeroseneIcons.device,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-notifications',
-    section: 'Admin Web',
-    title: 'Notifications',
-    routeName: '/admin/notifications',
-    icon: KeroseneIcons.notifications,
-    surface: _FlowSurface.desktop,
-  ),
-  _FlowItem(
-    id: 'admin-settings',
-    section: 'Admin Web',
-    title: 'Settings',
-    routeName: '/admin/settings',
-    icon: KeroseneIcons.settings,
-    surface: _FlowSurface.desktop,
-  ),
-];

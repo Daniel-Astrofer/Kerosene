@@ -6,8 +6,8 @@ import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/auth/domain/entities/user.dart';
 import 'package:kerosene/features/home/presentation/screens/home_loading_screen.dart';
-import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
-import 'package:kerosene/features/wallet/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

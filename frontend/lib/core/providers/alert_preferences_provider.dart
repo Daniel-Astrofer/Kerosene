@@ -6,12 +6,14 @@ class AlertPreferencesState {
   final bool inAppBannersEnabled;
   final bool transactionAlertsEnabled;
   final bool securityAlertsEnabled;
+  final bool marketAlertsEnabled;
 
   const AlertPreferencesState({
     this.backgroundAlertsEnabled = false,
     this.inAppBannersEnabled = true,
     this.transactionAlertsEnabled = true,
     this.securityAlertsEnabled = true,
+    this.marketAlertsEnabled = false,
   });
 
   AlertPreferencesState copyWith({
@@ -19,6 +21,7 @@ class AlertPreferencesState {
     bool? inAppBannersEnabled,
     bool? transactionAlertsEnabled,
     bool? securityAlertsEnabled,
+    bool? marketAlertsEnabled,
   }) {
     return AlertPreferencesState(
       backgroundAlertsEnabled:
@@ -28,6 +31,7 @@ class AlertPreferencesState {
           transactionAlertsEnabled ?? this.transactionAlertsEnabled,
       securityAlertsEnabled:
           securityAlertsEnabled ?? this.securityAlertsEnabled,
+      marketAlertsEnabled: marketAlertsEnabled ?? this.marketAlertsEnabled,
     );
   }
 }
@@ -37,6 +41,7 @@ class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
   static const String inAppBannersKey = 'in_app_banners_enabled';
   static const String transactionAlertsKey = 'transaction_alerts_enabled';
   static const String securityAlertsKey = 'security_alerts_enabled';
+  static const String marketAlertsKey = 'market_alerts_enabled';
 
   @override
   AlertPreferencesState build() {
@@ -51,6 +56,7 @@ class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
       inAppBannersEnabled: prefs.getBool(inAppBannersKey) ?? true,
       transactionAlertsEnabled: prefs.getBool(transactionAlertsKey) ?? true,
       securityAlertsEnabled: prefs.getBool(securityAlertsKey) ?? true,
+      marketAlertsEnabled: prefs.getBool(marketAlertsKey) ?? false,
     );
   }
 
@@ -76,6 +82,12 @@ class AlertPreferencesNotifier extends Notifier<AlertPreferencesState> {
     state = state.copyWith(securityAlertsEnabled: enabled);
     final prefs = await SharedPreferences.getInstance();
     await prefs.setBool(securityAlertsKey, enabled);
+  }
+
+  Future<void> setMarketAlertsEnabled(bool enabled) async {
+    state = state.copyWith(marketAlertsEnabled: enabled);
+    final prefs = await SharedPreferences.getInstance();
+    await prefs.setBool(marketAlertsKey, enabled);
   }
 }
 

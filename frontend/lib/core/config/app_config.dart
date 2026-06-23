@@ -3,12 +3,21 @@ class AppConfig {
   // ==================== Node Routing ====================
 
   /// Endereços .onion dos nós remotos
-  static const String nodeIS =
-      'http://epef24frbttdyirb45zif4smrkmhfd4di34my7wdhadzomfcpcf5fbyd.onion';
-  static const String nodeCH =
-      'http://aznllofvisv5xryqumr7ikbprgjvhyh6izyyslhgx4v3lsgydoegixid.onion';
-  static const String nodeSG =
-      'http://vck7thw2lk4yoxwtwwmwdndbwxjfkvdxck2ys25lkzrqiusbclak2kqd.onion';
+  static const String nodeIS = String.fromEnvironment(
+    'KERO_NODE_IS_URL',
+    defaultValue:
+        'http://2o3rbpfmyzswqxam52gnqtyq6ouhzmaoosfiidcfzb3ja25dx7g4yhad.onion',
+  );
+  static const String nodeCH = String.fromEnvironment(
+    'KERO_NODE_CH_URL',
+    defaultValue:
+        'http://tfex2ilkkobxbt425oggrko4uy4dwjqjw3vfutc3k7olg7p4mvczmtyd.onion',
+  );
+  static const String nodeSG = String.fromEnvironment(
+    'KERO_NODE_SG_URL',
+    defaultValue:
+        'http://4uznfz5cd6cvyg4msqjx36gk27vo6bh5qekiif2gfxepqhtrpgaoddad.onion',
+  );
 
   /// Mapeamento de nós com nomes amigáveis
   static const Map<String, String> nodes = {

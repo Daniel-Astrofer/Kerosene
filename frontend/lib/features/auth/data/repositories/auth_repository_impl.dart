@@ -4,6 +4,7 @@ import '../../../../core/errors/failures.dart';
 import '../../../../core/utils/device_helper.dart';
 import 'package:dartz/dartz.dart';
 import '../../domain/entities/user.dart';
+import '../../domain/entities/login_result.dart';
 import '../../domain/repositories/auth_repository.dart';
 import '../datasources/auth_local_datasource.dart';
 import '../datasources/auth_remote_datasource.dart';

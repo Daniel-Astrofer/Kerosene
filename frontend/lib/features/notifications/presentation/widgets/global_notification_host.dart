@@ -1,33 +1,64 @@
+import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:shared_preferences/shared_preferences.dart';
+
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
+import 'package:kerosene/core/providers/alert_preferences_provider.dart';
 import 'package:kerosene/core/presentation/widgets/app_screen_feedback_host.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
+import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:kerosene/features/notifications/presentation/screens/notification_center_screen.dart';
 
 import 'session_notification_sidebar.dart';
 
-class GlobalNotificationHost extends ConsumerWidget {
+class GlobalNotificationHost extends ConsumerStatefulWidget {
   final Widget child;
 
   const GlobalNotificationHost({super.key, required this.child});
 
   @override
-  Widget build(BuildContext context, WidgetRef ref) {
+  ConsumerState<GlobalNotificationHost> createState() =>
+      _GlobalNotificationHostState();
+}
+
+class _GlobalNotificationHostState
+    extends ConsumerState<GlobalNotificationHost> {
+  bool _backgroundNudgeScheduled = false;
+  bool _backgroundNudgeShownForSession = false;
+
+  @override
+  void initState() {
+    super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      _scheduleBackgroundAlertsNudge();
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    ref.listen<AuthState>(authControllerProvider, (_, __) {
+      _scheduleBackgroundAlertsNudge();
+    });
+    ref.listen<AlertPreferencesState>(alertPreferencesProvider, (_, __) {
+      _scheduleBackgroundAlertsNudge();
+    });
+
     final sidebarOpen = ref.watch(notificationSidebarProvider);
 
     return Stack(
       fit: StackFit.expand,
       children: [
-        Positioned.fill(child: AppScreenFeedbackHost(child: child)),
+        Positioned.fill(child: AppScreenFeedbackHost(child: widget.child)),
         Positioned.fill(
           child: IgnorePointer(
             ignoring: !sidebarOpen,
@@ -59,6 +90,67 @@ class GlobalNotificationHost extends ConsumerWidget {
         const _TopNotificationBanner(),
       ],
     );
+  }
+
+  void _scheduleBackgroundAlertsNudge() {
+    if (_backgroundNudgeShownForSession || _backgroundNudgeScheduled) {
+      return;
+    }
+
+    _backgroundNudgeScheduled = true;
+    unawaited(
+      Future<void>.delayed(const Duration(milliseconds: 900), () async {
+        _backgroundNudgeScheduled = false;
+        await _maybeShowBackgroundAlertsNudge();
+      }),
+    );
+  }
+
+  Future<void> _maybeShowBackgroundAlertsNudge() async {
+    if (!mounted || _backgroundNudgeShownForSession) {
+      return;
+    }
+
+    final authState = ref.read(authControllerProvider);
+    if (authState is! AuthAuthenticated) {
+      return;
+    }
+
+    final preferences = ref.read(alertPreferencesProvider);
+    if (!preferences.inAppBannersEnabled ||
+        preferences.backgroundAlertsEnabled) {
+      return;
+    }
+
+    final prefs = await SharedPreferences.getInstance();
+    final persistedEnabled =
+        prefs.getBool(AlertPreferencesNotifier.backgroundAlertsKey) ?? false;
+    if (persistedEnabled || !mounted) {
+      return;
+    }
+
+    final userId = authState.user.id.trim();
+    final now = DateTime.now();
+    final notification = SessionNotificationItem(
+      id: 'background-alerts-nudge-$userId-${now.millisecondsSinceEpoch}',
+      title: 'Ative alertas em segundo plano',
+      body:
+          'Receba transações, depósitos e atualizações importantes mesmo fora do app. Toque para revisar as configurações.',
+      timestamp: now,
+      kind: SessionNotificationItem.kindBackgroundAlertsSetup,
+      severity: SessionNotificationItem.severityInfo,
+      deeplink: '/settings/notifications',
+      entityType: 'device',
+      entityId: userId,
+      metadata: const {
+        'dedupeKey': 'background-alerts-setup-nudge',
+        'cta': 'Configurar agora',
+      },
+    );
+
+    _backgroundNudgeShownForSession = true;
+    ref.read(sessionNotificationFeedProvider.notifier).add(notification);
+    ref.read(notificationBannerProvider.notifier).show(notification);
   }
 }
 
@@ -252,12 +344,7 @@ class _NotificationBannerCard extends ConsumerWidget {
         child: InkWell(
           borderRadius: BorderRadius.circular(16),
           onTap: () async {
-            final navigation = openNotificationCenter(
-              context,
-              originKey: originKey,
-            );
-            ref.read(notificationBannerProvider.notifier).dismiss();
-            await navigation;
+            await _handleBannerTap(context, ref);
           },
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -324,18 +411,32 @@ class _NotificationBannerCard extends ConsumerWidget {
                                   ),
                                 ],
                                 SizedBox(height: compact ? 7 : 9),
-                                Text(
-                                  footer,
-                                  maxLines: 1,
-                                  overflow: TextOverflow.ellipsis,
-                                  style: AppTypography.caption.copyWith(
-                                    color: Colors.white.withValues(alpha: 0.42),
-                                    fontSize: 11,
-                                    fontWeight: FontWeight.w700,
-                                    height: 1,
-                                    letterSpacing: 0,
-                                    decoration: TextDecoration.none,
-                                  ),
+                                Row(
+                                  children: [
+                                    Expanded(
+                                      child: Text(
+                                        footer,
+                                        maxLines: 1,
+                                        overflow: TextOverflow.ellipsis,
+                                        style: AppTypography.caption.copyWith(
+                                          color: Colors.white
+                                              .withValues(alpha: 0.42),
+                                          fontSize: 11,
+                                          fontWeight: FontWeight.w700,
+                                          height: 1,
+                                          letterSpacing: 0,
+                                          decoration: TextDecoration.none,
+                                        ),
+                                      ),
+                                    ),
+                                    if (notification.isActionable) ...[
+                                      const SizedBox(width: 8),
+                                      _BannerActionPill(
+                                        label: notification.metadata['cta'] ??
+                                            _localizedAction(context),
+                                      ),
+                                    ],
+                                  ],
                                 ),
                               ],
                             ),
@@ -379,6 +480,24 @@ class _NotificationBannerCard extends ConsumerWidget {
     );
   }
 
+  Future<void> _handleBannerTap(BuildContext context, WidgetRef ref) {
+    ref.read(notificationBannerProvider.notifier).dismiss();
+    unawaited(
+      ref
+          .read(sessionNotificationFeedProvider.notifier)
+          .markRead(notification.id),
+    );
+
+    if (notification.isActionable) {
+      return NotificationNavigation.openFromContext(context, notification);
+    }
+
+    return openNotificationCenter(
+      context,
+      originKey: originKey,
+    );
+  }
+
   static Color _accentFor(AppNotificationTone tone) {
     return switch (tone) {
       AppNotificationTone.error => AppColors.hexFFF8312F,
@@ -400,6 +519,17 @@ class _NotificationBannerCard extends ConsumerWidget {
     }
   }
 
+  static String _localizedAction(BuildContext context) {
+    switch (Localizations.localeOf(context).languageCode) {
+      case 'en':
+        return 'Open';
+      case 'es':
+        return 'Abrir';
+      default:
+        return 'Abrir';
+    }
+  }
+
   static String _fallbackTitle(BuildContext context) {
     switch (Localizations.localeOf(context).languageCode) {
       case 'en':
@@ -409,5 +539,52 @@ class _NotificationBannerCard extends ConsumerWidget {
       default:
         return 'Notificação';
     }
+  }
+}
+
+class _BannerActionPill extends StatelessWidget {
+  final String label;
+
+  const _BannerActionPill({required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      height: 24,
+      padding: const EdgeInsets.symmetric(horizontal: 9),
+      alignment: Alignment.center,
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.08),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Row(
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 110),
+            child: Text(
+              label,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: AppTypography.caption.copyWith(
+                color: Colors.white.withValues(alpha: 0.86),
+                fontSize: 10.5,
+                fontWeight: FontWeight.w800,
+                height: 1,
+                letterSpacing: 0,
+                decoration: TextDecoration.none,
+              ),
+            ),
+          ),
+          const SizedBox(width: 5),
+          Icon(
+            KeroseneIcons.chevronRight,
+            size: 13,
+            color: Colors.white.withValues(alpha: 0.66),
+          ),
+        ],
+      ),
+    );
   }
 }

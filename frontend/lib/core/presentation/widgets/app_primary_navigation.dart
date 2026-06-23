@@ -1,4 +1,3 @@
-import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
@@ -16,9 +15,9 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
       case AppPrimaryDestination.home:
         return '/home';
       case AppPrimaryDestination.card:
-        return '/card';
+        return '/accounts';
       case AppPrimaryDestination.history:
-        return '/history';
+        return '/activity';
       case AppPrimaryDestination.settings:
         return '/settings';
     }
@@ -34,6 +33,19 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
         return context.tr.primaryNavHistory;
       case AppPrimaryDestination.settings:
         return context.tr.primaryNavSettings;
+    }
+  }
+
+  String supportingLabel(BuildContext context) {
+    switch (this) {
+      case AppPrimaryDestination.home:
+        return 'Visao geral da conta';
+      case AppPrimaryDestination.card:
+        return 'Carteiras e cartoes';
+      case AppPrimaryDestination.history:
+        return 'Extrato e comprovantes';
+      case AppPrimaryDestination.settings:
+        return 'Preferencias do app';
     }
   }
 
@@ -65,13 +77,36 @@ class AppPrimaryNavigationBar {
     BuildContext context,
     AppPrimaryDestination destination,
   ) {
-    if (ModalRoute.of(context)?.settings.name == destination.routeName) {
+    final navigator = Navigator.of(context);
+    final currentRouteName = ModalRoute.of(context)?.settings.name;
+    final targetRouteName = destination.routeName;
+
+    if (currentRouteName == targetRouteName) {
       return;
     }
 
-    Navigator.of(
-      context,
-    ).pushNamedAndRemoveUntil(destination.routeName, (route) => false);
+    HapticFeedback.selectionClick();
+
+    if (destination == AppPrimaryDestination.home) {
+      _returnToHome(navigator);
+      return;
+    }
+
+    if (currentRouteName == AppPrimaryDestination.home.routeName ||
+        currentRouteName == '/home_loading') {
+      navigator.pushNamed(targetRouteName);
+      return;
+    }
+
+    if (_isPrimaryRouteName(currentRouteName)) {
+      navigator.pushReplacementNamed(targetRouteName);
+      return;
+    }
+
+    navigator.pushNamedAndRemoveUntil(
+      targetRouteName,
+      (route) => route.settings.name == AppPrimaryDestination.home.routeName,
+    );
   }
 
   static void backOrHome(BuildContext context) {
@@ -79,14 +114,34 @@ class AppPrimaryNavigationBar {
 
     final navigator = Navigator.of(context);
     if (navigator.canPop()) {
-      navigator.pop();
+      navigator.maybePop();
       return;
     }
 
-    navigator.pushNamedAndRemoveUntil(
-      AppPrimaryDestination.home.routeName,
-      (route) => false,
+    navigator.pushReplacementNamed(AppPrimaryDestination.home.routeName);
+  }
+
+  static bool _isPrimaryRouteName(String? routeName) {
+    return AppPrimaryDestination.values.any(
+      (destination) => destination.routeName == routeName,
     );
+  }
+
+  static void _returnToHome(NavigatorState navigator) {
+    var foundHome = false;
+    if (navigator.canPop()) {
+      navigator.popUntil((route) {
+        foundHome = route.settings.name == AppPrimaryDestination.home.routeName;
+        return foundHome || route.isFirst;
+      });
+    }
+
+    if (!foundHome) {
+      navigator.pushNamedAndRemoveUntil(
+        AppPrimaryDestination.home.routeName,
+        (route) => false,
+      );
+    }
   }
 
   static double scaffoldBottomClearance(BuildContext context) {
@@ -167,10 +222,13 @@ class _AppPrimaryFloatingMenuButton extends StatefulWidget {
 }
 
 class _AppPrimaryFloatingMenuButtonState
-    extends State<_AppPrimaryFloatingMenuButton>
-    with SingleTickerProviderStateMixin {
+    extends State<_AppPrimaryFloatingMenuButton> with TickerProviderStateMixin {
   late final AnimationController _pressController;
+  late final AnimationController _menuController;
   late final Animation<double> _scaleAnimation;
+  OverlayEntry? _menuEntry;
+  bool _menuOpen = false;
+  bool _closing = false;
 
   @override
   void initState() {
@@ -179,74 +237,120 @@ class _AppPrimaryFloatingMenuButtonState
       vsync: this,
       duration: KeroseneMotion.fast,
     );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.9).animate(
+    _menuController = AnimationController(
+      vsync: this,
+      duration: KeroseneMotion.long,
+      reverseDuration: KeroseneMotion.short,
+    );
+    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
       CurvedAnimation(parent: _pressController, curve: KeroseneMotion.standard),
     );
   }
 
   @override
+  void didUpdateWidget(covariant _AppPrimaryFloatingMenuButton oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentDestination != widget.currentDestination &&
+        _menuOpen) {
+      _closeMenu();
+    }
+  }
+
+  @override
   void dispose() {
+    _removeOverlay();
     _pressController.dispose();
+    _menuController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final tooltip = MaterialLocalizations.of(context).showMenuTooltip;
+    final tooltip = _menuOpen
+        ? MaterialLocalizations.of(context).closeButtonTooltip
+        : widget.currentDestination.label(context);
 
     return Tooltip(
       message: tooltip,
       child: Semantics(
         button: true,
+        toggled: _menuOpen,
         label: tooltip,
         child: GestureDetector(
-          onTapDown: (_) {
-            _pressController.forward();
-          },
+          onTapDown: (_) => _pressController.forward(),
           onTapUp: (_) {
             _pressController.reverse();
             HapticFeedback.selectionClick();
-            _showMenu(context);
+            _toggleMenu();
           },
-          onTapCancel: () {
-            _pressController.reverse();
-          },
+          onTapCancel: () => _pressController.reverse(),
           child: ScaleTransition(
             scale: _scaleAnimation,
-            child: Container(
+            child: AnimatedContainer(
+              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+              curve: KeroseneMotion.standard,
               width: AppPrimaryNavigationBar._buttonSize,
               height: AppPrimaryNavigationBar._buttonSize,
               decoration: BoxDecoration(
                 shape: BoxShape.circle,
-                gradient: const LinearGradient(
+                gradient: LinearGradient(
                   begin: Alignment.topLeft,
                   end: Alignment.bottomRight,
-                  colors: [
-                    AppColors.surface,
-                    KeroseneBrandTokens.backgroundSoft,
-                  ],
+                  colors: _menuOpen
+                      ? const [
+                          KeroseneBrandTokens.textPrimary,
+                          AppColors.hexFFE2E2DC,
+                        ]
+                      : const [
+                          AppColors.surface,
+                          KeroseneBrandTokens.backgroundSoft,
+                        ],
                 ),
                 border: Border.all(
-                  color: AppColors.primary.withValues(alpha: 0.35),
-                  width: 1.5,
+                  color: _menuOpen
+                      ? AppColors.white.withValues(alpha: 0.34)
+                      : AppColors.white.withValues(alpha: 0.13),
+                  width: 1.2,
                 ),
                 boxShadow: [
                   BoxShadow(
-                    color: AppColors.primary.withValues(alpha: 0.12),
-                    blurRadius: 16,
-                    spreadRadius: 1,
+                    color: Colors.black.withValues(alpha: 0.48),
+                    blurRadius: 24,
+                    offset: const Offset(0, 14),
                   ),
                   BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.45),
-                    blurRadius: 12,
-                    offset: const Offset(0, 6),
+                    color: AppColors.white.withValues(alpha: 0.08),
+                    blurRadius: 18,
+                    spreadRadius: 1,
                   ),
                 ],
               ),
-              child: const Icon(
-                KeroseneIcons.menu,
-                color: KeroseneBrandTokens.textPrimary,
-                size: 24,
+              child: AnimatedSwitcher(
+                duration:
+                    KeroseneMotion.duration(context, KeroseneMotion.short),
+                switchInCurve: KeroseneMotion.entrance,
+                switchOutCurve: KeroseneMotion.exit,
+                transitionBuilder: (child, animation) {
+                  return RotationTransition(
+                    turns:
+                        Tween<double>(begin: -0.06, end: 0).animate(animation),
+                    child: ScaleTransition(scale: animation, child: child),
+                  );
+                },
+                child: Icon(
+                  _menuOpen
+                      ? KeroseneIcons.close
+                      : widget.currentDestination.icon,
+                  key: ValueKey<String>(
+                    _menuOpen
+                        ? 'navigation-close'
+                        : widget.currentDestination.name,
+                  ),
+                  color: _menuOpen
+                      ? AppColors.background
+                      : KeroseneBrandTokens.textPrimary,
+                  size: 23,
+                ),
               ),
             ),
           ),
@@ -255,25 +359,313 @@ class _AppPrimaryFloatingMenuButtonState
     );
   }
 
-  Future<void> _showMenu(BuildContext context) async {
-    await showModalBottomSheet<void>(
-      context: context,
-      backgroundColor: Colors.transparent,
-      barrierColor: Colors.black.withValues(alpha: 0.6),
-      builder: (sheetContext) {
-        return SafeArea(
-          top: false,
-          child: Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 16),
-            child: _AppPrimaryMenuPanel(
+  Future<void> _toggleMenu() async {
+    if (_menuOpen) {
+      await _closeMenu();
+      return;
+    }
+
+    _openMenu();
+  }
+
+  void _openMenu() {
+    if (_menuEntry != null) return;
+
+    _menuEntry = OverlayEntry(
+      builder: (overlayContext) {
+        return _AppPrimaryExpandingMenuOverlay(
+          animation: _menuController,
+          currentDestination: widget.currentDestination,
+          onDismiss: _closeMenu,
+          onDestinationSelected: (destination) async {
+            if (destination != widget.currentDestination) {
+              HapticFeedback.selectionClick();
+            }
+
+            await _closeMenu();
+            if (!mounted || destination == widget.currentDestination) return;
+            AppPrimaryNavigationBar.navigateTo(context, destination);
+          },
+        );
+      },
+    );
+
+    Overlay.of(context, rootOverlay: true).insert(_menuEntry!);
+    setState(() => _menuOpen = true);
+    _menuController.forward(from: 0);
+  }
+
+  Future<void> _closeMenu() async {
+    if (_menuEntry == null || _closing) return;
+    _closing = true;
+
+    await _menuController.reverse();
+    _removeOverlay();
+    _closing = false;
+    if (mounted) setState(() => _menuOpen = false);
+  }
+
+  void _removeOverlay() {
+    _menuEntry?.remove();
+    _menuEntry = null;
+    if (_menuController.value != 0) {
+      _menuController.value = 0;
+    }
+  }
+}
+
+class _AppPrimaryExpandingMenuOverlay extends StatelessWidget {
+  final Animation<double> animation;
+  final AppPrimaryDestination currentDestination;
+  final Future<void> Function() onDismiss;
+  final Future<void> Function(AppPrimaryDestination destination)
+      onDestinationSelected;
+
+  const _AppPrimaryExpandingMenuOverlay({
+    required this.animation,
+    required this.currentDestination,
+    required this.onDismiss,
+    required this.onDestinationSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final media = MediaQuery.of(context);
+    final width = (media.size.width - 32).clamp(252.0, 342.0).toDouble();
+    final bottomInset = media.viewPadding.bottom +
+        AppPrimaryNavigationBar._buttonBottomSpacing +
+        AppPrimaryNavigationBar._buttonSize +
+        AppSpacing.sm;
+
+    return Positioned.fill(
+      child: Material(
+        color: Colors.transparent,
+        child: AnimatedBuilder(
+          animation: animation,
+          builder: (context, child) {
+            final fade = CurvedAnimation(
+              parent: animation,
+              curve: KeroseneMotion.standard,
+            ).value;
+            final panelValue = CurvedAnimation(
+              parent: animation,
+              curve: KeroseneMotion.emphasized,
+              reverseCurve: KeroseneMotion.exit,
+            ).value;
+
+            return Stack(
               children: [
-                for (final destination in AppPrimaryDestination.values)
-                  _AppPrimaryMenuDestinationTile(
-                    destination: destination,
-                    selected: destination == widget.currentDestination,
+                Positioned.fill(
+                  child: GestureDetector(
+                    behavior: HitTestBehavior.opaque,
+                    onTap: onDismiss,
+                    child: ColoredBox(
+                      color: Colors.black.withValues(alpha: 0.18 * fade),
+                    ),
                   ),
+                ),
+                Positioned(
+                  right: AppPrimaryNavigationBar._buttonRightSpacing,
+                  bottom: bottomInset,
+                  width: width,
+                  child: Transform.scale(
+                    alignment: Alignment.bottomRight,
+                    scale: 0.72 + (0.28 * panelValue),
+                    child: Opacity(
+                      opacity: fade,
+                      child: _AppPrimaryMenuPanel(
+                        animation: animation,
+                        currentDestination: currentDestination,
+                        onDestinationSelected: onDestinationSelected,
+                      ),
+                    ),
+                  ),
+                ),
+              ],
+            );
+          },
+        ),
+      ),
+    );
+  }
+}
+
+class _AppPrimaryMenuPanel extends StatelessWidget {
+  final Animation<double> animation;
+  final AppPrimaryDestination currentDestination;
+  final Future<void> Function(AppPrimaryDestination destination)
+      onDestinationSelected;
+
+  const _AppPrimaryMenuPanel({
+    required this.animation,
+    required this.currentDestination,
+    required this.onDestinationSelected,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(28),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: KeroseneBrandTokens.backgroundSoft,
+          borderRadius: BorderRadius.circular(28),
+          border: Border.all(
+            color: AppColors.white.withValues(alpha: 0.10),
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withValues(alpha: 0.48),
+              blurRadius: 40,
+              offset: const Offset(0, 20),
+            ),
+          ],
+        ),
+        child: Padding(
+          padding: const EdgeInsets.all(10),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.stretch,
+            children: [
+              _AppPrimaryMenuHeader(
+                icon: currentDestination.icon,
+                title: currentDestination.label(context),
+                subtitle: 'Navegacao principal',
+              ),
+              const SizedBox(height: 8),
+              for (var index = 0;
+                  index < AppPrimaryDestination.values.length;
+                  index++)
+                _AnimatedMenuEntry(
+                  animation: animation,
+                  index: index,
+                  child: _AppPrimaryMenuDestinationTile(
+                    destination: AppPrimaryDestination.values[index],
+                    selected: AppPrimaryDestination.values[index] ==
+                        currentDestination,
+                    onTap: () => onDestinationSelected(
+                      AppPrimaryDestination.values[index],
+                    ),
+                  ),
+                ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _AppPrimaryMenuHeader extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+
+  const _AppPrimaryMenuHeader({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(22),
+        color: AppColors.white.withValues(alpha: 0.045),
+        border: Border.all(
+          color: AppColors.white.withValues(alpha: 0.065),
+        ),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: 38,
+            height: 38,
+            decoration: BoxDecoration(
+              shape: BoxShape.circle,
+              color: AppColors.white.withValues(alpha: 0.08),
+              border: Border.all(
+                color: AppColors.white.withValues(alpha: 0.10),
+              ),
+            ),
+            child: Icon(
+              icon,
+              color: KeroseneBrandTokens.textPrimary,
+              size: 19,
+            ),
+          ),
+          const SizedBox(width: 12),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: const TextStyle(
+                    color: KeroseneBrandTokens.textPrimary,
+                    fontSize: 14.5,
+                    fontWeight: FontWeight.w700,
+                    letterSpacing: -0.1,
+                  ),
+                ),
+                const SizedBox(height: 3),
+                Text(
+                  subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: TextStyle(
+                    color: KeroseneBrandTokens.textSecondary.withValues(
+                      alpha: 0.78,
+                    ),
+                    fontSize: 11.5,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.2,
+                  ),
+                ),
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AnimatedMenuEntry extends StatelessWidget {
+  final Animation<double> animation;
+  final int index;
+  final Widget child;
+
+  const _AnimatedMenuEntry({
+    required this.animation,
+    required this.index,
+    required this.child,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final start = (0.16 + index * 0.07).clamp(0.0, 0.72).toDouble();
+    final entryAnimation = CurvedAnimation(
+      parent: animation,
+      curve: Interval(start, 1.0, curve: KeroseneMotion.entrance),
+      reverseCurve: KeroseneMotion.exit,
+    );
+
+    return AnimatedBuilder(
+      animation: entryAnimation,
+      child: child,
+      builder: (context, child) {
+        final value = entryAnimation.value;
+        return Transform.translate(
+          offset: Offset(10 * (1 - value), 8 * (1 - value)),
+          child: Transform.scale(
+            alignment: Alignment.bottomRight,
+            scale: 0.96 + (0.04 * value),
+            child: Opacity(opacity: value, child: child),
           ),
         );
       },
@@ -281,97 +673,15 @@ class _AppPrimaryFloatingMenuButtonState
   }
 }
 
-class _AppPrimaryMenuPanel extends StatefulWidget {
-  final List<Widget> children;
-
-  const _AppPrimaryMenuPanel({required this.children});
-
-  @override
-  State<_AppPrimaryMenuPanel> createState() => _AppPrimaryMenuPanelState();
-}
-
-class _AppPrimaryMenuPanelState extends State<_AppPrimaryMenuPanel>
-    with SingleTickerProviderStateMixin {
-  late final AnimationController _controller;
-
-  @override
-  void initState() {
-    super.initState();
-    _controller = AnimationController(
-      vsync: this,
-      duration: KeroseneMotion.long,
-    );
-    _controller.forward();
-  }
-
-  @override
-  void dispose() {
-    _controller.dispose();
-    super.dispose();
-  }
-
-  @override
-  Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(20),
-      child: BackdropFilter(
-        filter: ImageFilter.blur(sigmaX: 16.0, sigmaY: 16.0),
-        child: Container(
-          decoration: BoxDecoration(
-            color: KeroseneBrandTokens.backgroundSoft
-                .withValues(alpha: 0.80), // Elegant dark translucent background
-            borderRadius: BorderRadius.circular(20),
-            border: Border.all(color: AppColors.white.withValues(alpha: 0.08)),
-            boxShadow: [
-              BoxShadow(
-                color: Colors.black.withValues(alpha: 0.45),
-                blurRadius: 32,
-                offset: const Offset(0, 12),
-              ),
-            ],
-          ),
-          child: Padding(
-            padding: const EdgeInsets.all(8.0),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: List.generate(widget.children.length, (index) {
-                final double start = (index * 0.08).clamp(0.0, 1.0);
-                final double end = (start + 0.65).clamp(0.0, 1.0);
-
-                final animation = CurvedAnimation(
-                  parent: _controller,
-                  curve: Interval(start, end, curve: KeroseneMotion.entrance),
-                );
-
-                return AnimatedBuilder(
-                  animation: animation,
-                  builder: (context, child) {
-                    return Transform.translate(
-                      offset: Offset(0, 20 * (1.0 - animation.value)),
-                      child: Opacity(
-                        opacity: animation.value,
-                        child: child,
-                      ),
-                    );
-                  },
-                  child: widget.children[index],
-                );
-              }),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AppPrimaryMenuDestinationTile extends StatefulWidget {
   final AppPrimaryDestination destination;
   final bool selected;
+  final VoidCallback onTap;
 
   const _AppPrimaryMenuDestinationTile({
     required this.destination,
     required this.selected,
+    required this.onTap,
   });
 
   @override
@@ -381,99 +691,128 @@ class _AppPrimaryMenuDestinationTile extends StatefulWidget {
 
 class _AppPrimaryMenuDestinationTileState
     extends State<_AppPrimaryMenuDestinationTile> {
-  bool _isPressed = false;
+  bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     final label = widget.destination.label(context);
-    final activeColor = AppColors.primary;
-
-    // Determine colors based on selection and state
-    final Color contentColor = widget.selected
-        ? activeColor
-        : (_isPressed
-            ? KeroseneBrandTokens.textPrimary
-            : KeroseneBrandTokens.textSecondary);
+    final supporting = widget.destination.supportingLabel(context);
+    final contentColor = widget.selected
+        ? KeroseneBrandTokens.textPrimary
+        : KeroseneBrandTokens.textSecondary;
 
     return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 4, horizontal: 6),
+      padding: const EdgeInsets.symmetric(vertical: 3),
       child: AnimatedScale(
-        scale: _isPressed ? 0.98 : 1.0,
-        duration: KeroseneMotion.fast,
+        scale: _pressed ? 0.985 : 1.0,
+        duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+        curve: KeroseneMotion.standard,
         child: Material(
           color: Colors.transparent,
           child: InkWell(
-            onTapDown: (_) => setState(() => _isPressed = true),
-            onTapCancel: () => setState(() => _isPressed = false),
-            onTapUp: (_) => setState(() => _isPressed = false),
-            onTap: widget.selected
-                ? null
-                : () {
-                    HapticFeedback.selectionClick();
-                    Navigator.of(context).pop();
-                    AppPrimaryNavigationBar.navigateTo(
-                        context, widget.destination);
-                  },
-            borderRadius: BorderRadius.circular(12),
+            onTap: widget.onTap,
+            onTapDown: (_) => setState(() => _pressed = true),
+            onTapCancel: () => setState(() => _pressed = false),
+            onTapUp: (_) => setState(() => _pressed = false),
+            borderRadius: BorderRadius.circular(18),
+            splashColor: AppColors.white.withValues(alpha: 0.06),
+            highlightColor: AppColors.white.withValues(alpha: 0.04),
             child: AnimatedContainer(
-              duration: KeroseneMotion.short,
+              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
               curve: KeroseneMotion.standard,
+              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
               decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(12),
+                borderRadius: BorderRadius.circular(18),
                 color: widget.selected
-                    ? AppColors.primary.withValues(alpha: 0.08)
-                    : (_isPressed
-                        ? AppColors.white.withValues(alpha: 0.05)
+                    ? AppColors.white.withValues(alpha: 0.075)
+                    : (_pressed
+                        ? AppColors.white.withValues(alpha: 0.045)
                         : Colors.transparent),
                 border: Border.all(
                   color: widget.selected
-                      ? AppColors.primary.withValues(alpha: 0.15)
+                      ? AppColors.white.withValues(alpha: 0.12)
                       : Colors.transparent,
-                  width: 1,
                 ),
               ),
-              padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
               child: Row(
                 children: [
-                  Icon(
-                    widget.destination.icon,
-                    color: contentColor,
-                    size: 20,
-                  ),
-                  const SizedBox(width: 16),
-                  Expanded(
-                    child: AnimatedDefaultTextStyle(
-                      duration: KeroseneMotion.short,
-                      style: TextStyle(
-                        color: contentColor,
-                        fontSize: 14.5,
-                        fontWeight:
-                            widget.selected ? FontWeight.w600 : FontWeight.w400,
-                        letterSpacing: 0.2,
-                      ),
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
+                  AnimatedContainer(
+                    duration:
+                        KeroseneMotion.duration(context, KeroseneMotion.short),
+                    curve: KeroseneMotion.standard,
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      borderRadius: BorderRadius.circular(14),
+                      color: widget.selected
+                          ? AppColors.white.withValues(alpha: 0.12)
+                          : AppColors.white.withValues(alpha: 0.055),
+                      border: Border.all(
+                        color: AppColors.white.withValues(
+                          alpha: widget.selected ? 0.14 : 0.075,
+                        ),
                       ),
                     ),
+                    child: Icon(
+                      widget.destination.icon,
+                      color: contentColor,
+                      size: 19,
+                    ),
                   ),
-                  if (widget.selected)
-                    TweenAnimationBuilder<double>(
-                      tween: Tween<double>(begin: 0.0, end: 1.0),
-                      duration: KeroseneMotion.medium,
-                      curve: KeroseneMotion.spring,
-                      builder: (context, value, child) {
-                        return Transform.scale(
-                          scale: value,
-                          child: const Icon(
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: contentColor,
+                            fontSize: 14.5,
+                            fontWeight: widget.selected
+                                ? FontWeight.w700
+                                : FontWeight.w600,
+                            letterSpacing: -0.1,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          supporting,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: TextStyle(
+                            color: KeroseneBrandTokens.textSecondary.withValues(
+                              alpha: 0.66,
+                            ),
+                            fontSize: 11.4,
+                            fontWeight: FontWeight.w500,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  AnimatedSwitcher(
+                    duration:
+                        KeroseneMotion.duration(context, KeroseneMotion.short),
+                    child: widget.selected
+                        ? const Icon(
                             KeroseneIcons.success,
-                            color: AppColors.primary,
+                            key: ValueKey<String>('selected'),
+                            color: KeroseneBrandTokens.textPrimary,
+                            size: 17,
+                          )
+                        : Icon(
+                            KeroseneIcons.chevronRight,
+                            key: const ValueKey<String>('next'),
+                            color: KeroseneBrandTokens.textSecondary.withValues(
+                              alpha: 0.46,
+                            ),
                             size: 16,
                           ),
-                        );
-                      },
-                    ),
+                  ),
                 ],
               ),
             ),

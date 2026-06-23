@@ -4,20 +4,31 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import '../../../core/navigation/deferred_page.dart';
 import '../navigation/admin_routes.dart';
 
-import '../screens/analytics/analytics_screen.dart' deferred as analytics_screen;
-import '../screens/authenticated_devices/authenticated_devices_screen.dart' deferred as authenticated_devices_screen;
+import '../screens/analytics/analytics_screen.dart'
+    deferred as analytics_screen;
+import '../screens/authenticated_devices/authenticated_devices_screen.dart'
+    deferred as authenticated_devices_screen;
 import '../screens/audit/audit_screen.dart' deferred as audit_screen;
 import '../screens/checks/checks_screen.dart' deferred as checks_screen;
-import '../screens/companies/companies_screen.dart' deferred as companies_screen;
-import '../screens/dashboard/dashboard_screen.dart' deferred as dashboard_screen;
-import '../screens/lightning/lightning_screen.dart' deferred as lightning_screen;
-import '../screens/monitoring/monitoring_screen.dart' deferred as monitoring_screen;
-import '../screens/notifications/notifications_screen.dart' deferred as notifications_screen;
+import '../screens/companies/companies_screen.dart'
+    deferred as companies_screen;
+import '../screens/dashboard/dashboard_screen.dart'
+    deferred as dashboard_screen;
+import '../screens/lightning/lightning_screen.dart'
+    deferred as lightning_screen;
+import '../screens/monitoring/monitoring_screen.dart'
+    deferred as monitoring_screen;
+import '../screens/notifications/notifications_screen.dart'
+    deferred as notifications_screen;
 import '../screens/onchain/onchain_screen.dart' deferred as onchain_screen;
-import '../screens/payment_links/payment_links_screen.dart' deferred as payment_links_screen;
-import '../screens/settings/admin_settings_screen.dart' deferred as admin_settings_screen;
-import '../screens/transactions/transactions_screen.dart' deferred as transactions_screen;
-import '../screens/volatility/volatility_screen.dart' deferred as volatility_screen;
+import '../screens/payment_links/payment_links_screen.dart'
+    deferred as payment_links_screen;
+import '../screens/settings/admin_settings_screen.dart'
+    deferred as admin_settings_screen;
+import '../screens/transactions/transactions_screen.dart'
+    deferred as transactions_screen;
+import '../screens/volatility/volatility_screen.dart'
+    deferred as volatility_screen;
 
 class AdminContentRouter extends ConsumerWidget {
   const AdminContentRouter({super.key});
@@ -62,7 +73,8 @@ class AdminContentRouter extends ConsumerWidget {
           builder: (_) => audit_screen.AuditScreen()),
       AdminRoute.authenticatedDevices => DeferredPage(
           loadLibrary: authenticated_devices_screen.loadLibrary,
-          builder: (_) => authenticated_devices_screen.AuthenticatedDevicesScreen()),
+          builder: (_) =>
+              authenticated_devices_screen.AuthenticatedDevicesScreen()),
       AdminRoute.notifications => DeferredPage(
           loadLibrary: notifications_screen.loadLibrary,
           builder: (_) => notifications_screen.NotificationsScreen()),

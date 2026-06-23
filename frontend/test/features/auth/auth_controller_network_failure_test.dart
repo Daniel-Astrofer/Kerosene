@@ -7,8 +7,7 @@ import 'package:kerosene/features/auth/controller/auth_providers.dart';
 import 'package:kerosene/features/auth/domain/repositories/auth_repository.dart';
 import 'package:kerosene/features/auth/domain/entities/user.dart';
 import 'package:kerosene/features/auth/domain/usecases/login_usecase.dart';
-import 'package:kerosene/features/auth/data/datasources/auth_remote_datasource.dart'
-    show LoginResult;
+import 'package:kerosene/features/auth/domain/entities/login_result.dart';
 import 'package:kerosene/core/errors/failures.dart';
 import 'package:dartz/dartz.dart';
 

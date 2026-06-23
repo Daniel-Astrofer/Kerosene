@@ -13,7 +13,6 @@ import 'package:kerosene/features/notifications/domain/entities/session_notifica
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:kerosene/features/profile/presentation/screens/notification_settings_screen.dart';
 
 Future<void> openNotificationCenter(
   BuildContext context, {
@@ -381,11 +380,8 @@ class _NotificationCenterHeader extends StatelessWidget {
             en: 'Settings',
             es: 'Configuración',
           ),
-          onPressed: () => Navigator.of(context).push<void>(
-            MaterialPageRoute(
-              builder: (_) => const NotificationSettingsScreen(),
-            ),
-          ),
+          onPressed: () =>
+              Navigator.of(context).pushNamed('/settings/notifications'),
           icon: const Icon(KeroseneIcons.settings),
           color: Colors.white.withValues(alpha: 0.78),
           iconSize: 18,

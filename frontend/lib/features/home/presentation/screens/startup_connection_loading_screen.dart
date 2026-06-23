@@ -2,6 +2,7 @@ import 'dart:async';
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/config/app_config.dart';
 import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
@@ -26,7 +27,8 @@ class _StartupConnectionLoadingScreenState
   @override
   void initState() {
     super.initState();
-    _progressTimer = Timer.periodic(const Duration(milliseconds: 420), (_) {
+    _progressTimer =
+        Timer.periodic(KeroseneMotion.startupConnectionProgressTick, (_) {
       if (!mounted || _failed) return;
       setState(() {
         if (AppConfig.isTorEnabled) {
@@ -42,7 +44,7 @@ class _StartupConnectionLoadingScreenState
         }
       });
     });
-    _timeoutTimer = Timer(const Duration(seconds: 55), () {
+    _timeoutTimer = Timer(KeroseneMotion.startupConnectionTimeout, () {
       if (!mounted) return;
       if (_progress < 1) {
         _progressTimer?.cancel();

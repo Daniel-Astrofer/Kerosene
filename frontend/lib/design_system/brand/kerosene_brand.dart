@@ -22,7 +22,8 @@ class KeroseneBrand {
       'Pagamentos privados para empresas que querem reduzir taxas, intermediários e exposição operacional.';
 
   /// Brand essence for internal guidance and editorial surfaces.
-  static const String essence = 'Privacidade financeira com clareza operacional.';
+  static const String essence =
+      'Privacidade financeira com clareza operacional.';
 
   /// Short institutional description.
   static const String institutional =

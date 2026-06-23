@@ -11,7 +11,8 @@ import 'app_colors.dart';
 /// Brand direction:
 /// - Display / hero / onboarding: Newsreader.
 /// - UI / section hierarchy / descriptions: Inter.
-/// - Financial values / BTC / sats / hashes: IBM Plex Mono.
+/// - Editable transaction amounts and Home balance: Inter SemiBold with tabular figures.
+/// - Ledger values, BTC, sats, hashes and technical IDs outside primary balance/input: IBM Plex Mono.
 class AppTypography {
   AppTypography._();
 
@@ -228,8 +229,8 @@ class AppTypography {
 
   // ─────────────────────────────────────────────────────────────
   // Financial values
-  // Usage: BTC, sats, balance, fees, TXID, hashes.
-  // IBM Plex Mono, 500/600, tabular figures.
+  // Usage: ledger rows, BTC/sats breakdowns, fees, TXID, hashes.
+  // IBM Plex Mono, 500/600, tabular figures. Primary input and Home balance use Inter SemiBold.
   // ─────────────────────────────────────────────────────────────
 
   static final TextStyle number = financial(
@@ -270,11 +271,26 @@ class AppTypography {
     required bool isBtc,
     Color color = AppColors.textPrimary,
   }) {
-    return financial(
+    return inter(
       fontSize: isBtc ? 48 : 56,
       fontWeight: FontWeight.w600,
       color: color,
       height: 1.02,
+      letterSpacing: -0.7,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+  }
+
+  static TextStyle homeBalance({
+    Color color = AppColors.textPrimary,
+  }) {
+    return inter(
+      fontSize: 46,
+      fontWeight: FontWeight.w600,
+      color: color,
+      height: 1.02,
+      letterSpacing: -0.7,
+      fontFeatures: const [FontFeature.tabularFigures()],
     );
   }
 

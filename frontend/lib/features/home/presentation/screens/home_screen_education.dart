@@ -1,18 +1,23 @@
-part of 'home_screen.dart';
+// ignore_for_file: use_key_in_widget_constructors, unused_import, unused_element
 
-class _HomeEducationCarousel extends ConsumerStatefulWidget {
-  const _HomeEducationCarousel();
+import 'dart:math' as math;
+
+import 'home_screen_dependencies.dart';
+import 'home_screen.dart';
+import 'home_screen_surface.dart';
+
+class HomeEducationCarousel extends ConsumerStatefulWidget {
+  const HomeEducationCarousel();
 
   @override
-  ConsumerState<_HomeEducationCarousel> createState() =>
-      _HomeEducationCarouselState();
+  ConsumerState<HomeEducationCarousel> createState() =>
+      HomeEducationCarouselState();
 }
 
-class _HomeEducationCarouselState
-    extends ConsumerState<_HomeEducationCarousel> {
+class HomeEducationCarouselState extends ConsumerState<HomeEducationCarousel> {
   final PageController _pageController = PageController();
   int _activeIndex = 0;
-  _HomeLedgerBalanceView? _lastView;
+  HomeLedgerBalanceView? _lastView;
 
   @override
   void dispose() {
@@ -23,8 +28,8 @@ class _HomeEducationCarouselState
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final view = ref.watch(_homeLedgerBalanceViewProvider);
-    final cards = _homeEducationCards(context, view);
+    final view = ref.watch(homeLedgerBalanceViewProvider);
+    final cards = homeEducationCards(context, view);
 
     if (_lastView != view) {
       _lastView = view;
@@ -39,7 +44,7 @@ class _HomeEducationCarouselState
     return Column(
       children: [
         SizedBox(
-          height: _homeSize(154),
+          height: homeSize(154),
           child: PageView.builder(
             controller: _pageController,
             physics: const BouncingScrollPhysics(),
@@ -52,17 +57,17 @@ class _HomeEducationCarouselState
               final card = cards[index];
               return Padding(
                 padding: EdgeInsets.only(
-                  left: index == 0 ? 0 : _homeSize(4),
-                  right: index == cards.length - 1 ? 0 : _homeSize(4),
+                  left: index == 0 ? 0 : homeSize(4),
+                  right: index == cards.length - 1 ? 0 : homeSize(4),
                 ),
-                child: _HomeGlassPanel(
-                  borderRadius: BorderRadius.circular(_homeSize(16)),
-                  padding: EdgeInsets.all(_homeSize(18)),
+                child: HomeGlassPanel(
+                  borderRadius: BorderRadius.circular(homeSize(16)),
+                  padding: EdgeInsets.all(homeSize(18)),
                   child: Row(
                     children: [
                       Container(
-                        width: _homeSize(46),
-                        height: _homeSize(46),
+                        width: homeSize(46),
+                        height: homeSize(46),
                         decoration: BoxDecoration(
                           color: Colors.white.withValues(alpha: 0.08),
                           shape: BoxShape.circle,
@@ -73,10 +78,10 @@ class _HomeEducationCarouselState
                         child: Icon(
                           card.icon,
                           color: Colors.white,
-                          size: _homeSize(21),
+                          size: homeSize(21),
                         ),
                       ),
-                      SizedBox(width: _homeSize(16)),
+                      SizedBox(width: homeSize(16)),
                       Expanded(
                         child: Column(
                           mainAxisAlignment: MainAxisAlignment.center,
@@ -89,32 +94,32 @@ class _HomeEducationCarouselState
                               style: AppTypography.newsreader(
                                 textStyle: theme.textTheme.titleMedium,
                                 color: Colors.white,
-                                fontSize: _homeFontSize(20),
+                                fontSize: homeFontSize(20),
                                 fontWeight: FontWeight.w300,
                                 height: 1.1,
                                 letterSpacing: 0,
                               ),
                             ),
-                            SizedBox(height: _homeSize(8)),
+                            SizedBox(height: homeSize(8)),
                             Text(
                               card.body,
                               maxLines: 3,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.bodySmall?.copyWith(
-                                color: _homeMutedTextColor,
-                                fontSize: _homeFontSize(12),
+                                color: homeMutedTextColor,
+                                fontSize: homeFontSize(12),
                                 height: 1.45,
                                 letterSpacing: 0,
                               ),
                             ),
-                            SizedBox(height: _homeSize(12)),
+                            SizedBox(height: homeSize(12)),
                             Text(
                               card.tag.toUpperCase(),
                               maxLines: 1,
                               overflow: TextOverflow.ellipsis,
                               style: theme.textTheme.labelSmall?.copyWith(
                                 color: Colors.white.withValues(alpha: 0.72),
-                                fontSize: _homeFontSize(10),
+                                fontSize: homeFontSize(10),
                                 fontWeight: FontWeight.w300,
                                 letterSpacing: 1.2,
                               ),
@@ -129,8 +134,8 @@ class _HomeEducationCarouselState
             },
           ),
         ),
-        SizedBox(height: _homeSize(12)),
-        _HomePaginationDots(
+        SizedBox(height: homeSize(12)),
+        HomePaginationDots(
           count: cards.length,
           activeIndex: _activeIndex.clamp(0, cards.length - 1),
         ),
@@ -139,13 +144,13 @@ class _HomeEducationCarouselState
   }
 }
 
-class _HomeEducationCardData {
+class HomeEducationCardData {
   final IconData icon;
   final String title;
   final String body;
   final String tag;
 
-  const _HomeEducationCardData({
+  const HomeEducationCardData({
     required this.icon,
     required this.title,
     required this.body,
@@ -153,47 +158,47 @@ class _HomeEducationCardData {
   });
 }
 
-List<_HomeEducationCardData> _homeEducationCards(
+List<HomeEducationCardData> homeEducationCards(
   BuildContext context,
-  _HomeLedgerBalanceView view,
+  HomeLedgerBalanceView view,
 ) {
   final tr = context.tr;
 
   return switch (view) {
-    _HomeLedgerBalanceView.platform => [
-        _HomeEducationCardData(
+    HomeLedgerBalanceView.platform => [
+        HomeEducationCardData(
           icon: KeroseneIcons.internalTransfer,
           title: tr.homeEducationInternalTitle,
           body: tr.homeEducationInternalBody,
           tag: tr.homeEducationInternalTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.biometric,
           title: tr.homeEducationWalletHashTitle,
           body: tr.homeEducationWalletHashBody,
           tag: tr.homeEducationWalletHashTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.lightning,
           title: tr.homeEducationLightningTitle,
           body: tr.homeEducationLightningBody,
           tag: tr.homeEducationLightningTag,
         ),
       ],
-    _HomeLedgerBalanceView.onChain => [
-        _HomeEducationCardData(
+    HomeLedgerBalanceView.onChain => [
+        HomeEducationCardData(
           icon: KeroseneIcons.bitcoin,
           title: tr.homeEducationOnchainTitle,
           body: tr.homeEducationOnchainBody,
           tag: tr.homeEducationOnchainTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.sync,
           title: tr.homeEducationConfirmationsTitle,
           body: tr.homeEducationConfirmationsBody,
           tag: tr.homeEducationConfirmationsTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.gauge,
           title: tr.homeEducationFeesTitle,
           body: tr.homeEducationFeesBody,
@@ -201,19 +206,19 @@ List<_HomeEducationCardData> _homeEducationCards(
         ),
       ],
     _ => [
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.bitcoin,
           title: tr.homeEducationBitcoinTitle,
           body: tr.homeEducationBitcoinBody,
           tag: tr.homeEducationBitcoinTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.lightning,
           title: tr.homeEducationLightningTitle,
           body: tr.homeEducationLightningGeneralBody,
           tag: tr.homeEducationLightningGeneralTag,
         ),
-        _HomeEducationCardData(
+        HomeEducationCardData(
           icon: KeroseneIcons.wallet,
           title: tr.homeEducationInternalTitle,
           body: tr.homeEducationKeroseneGeneralBody,
@@ -223,36 +228,46 @@ List<_HomeEducationCardData> _homeEducationCards(
   };
 }
 
-class _HomeFundsDistributionSection extends StatelessWidget {
+class HomeFundsDistributionSection extends ConsumerWidget {
   final WalletState walletState;
   final VoidCallback onViewStatement;
+  final ValueChanged<Wallet> onOpenWalletDetails;
 
-  const _HomeFundsDistributionSection({
+  const HomeFundsDistributionSection({
     required this.walletState,
     required this.onViewStatement,
+    required this.onOpenWalletDetails,
   });
 
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
+    final selectedCurrency = ref.watch(currencyProvider);
+    final btcUsd = ref.watch(latestBtcPriceProvider);
+    final btcEur = ref.watch(btcEurPriceProvider);
+    final btcBrl = ref.watch(btcBrlPriceProvider);
     final wallets = walletState is WalletLoaded
         ? (walletState as WalletLoaded).wallets
         : const <Wallet>[];
-    final onchainBalance = _sumWallets(
-      wallets.where((wallet) => wallet.isSelfCustody),
+    final displayWallets = _sortedWallets(wallets);
+    final totalBalance = displayWallets.fold<double>(
+      0,
+      (sum, wallet) => sum + math.max(0, wallet.balance),
     );
-    final keroseneBalance = _sumWallets(
-      wallets.where((wallet) => wallet.isKeroseneCustody),
-    );
-    final totalBalance = onchainBalance + keroseneBalance;
-    final onchainShare = totalBalance > 0 ? onchainBalance / totalBalance : 0.0;
-    final keroseneShare =
-        totalBalance > 0 ? keroseneBalance / totalBalance : 0.0;
-    final totalLabel = totalBalance > 0 ? '100%' : '0%';
+    final entries = <HomeWalletDistributionEntry>[
+      for (var index = 0; index < displayWallets.length; index++)
+        HomeWalletDistributionEntry(
+          wallet: displayWallets[index],
+          color: _walletDistributionColor(index),
+          share: totalBalance > 0
+              ? math.max(0, displayWallets[index].balance) / totalBalance
+              : 0,
+        ),
+    ];
 
-    return _HomeGlassPanel(
-      borderRadius: BorderRadius.circular(_homeSize(16)),
-      padding: EdgeInsets.all(_homeSize(20)),
+    return HomeGlassPanel(
+      borderRadius: BorderRadius.circular(homeSize(16)),
+      padding: EdgeInsets.all(homeSize(20)),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -260,10 +275,10 @@ class _HomeFundsDistributionSection extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  _homeFundsDistributionTitle(context),
+                  homeFundsDistributionTitle(context),
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: Colors.white,
-                    fontSize: _homeFontSize(14),
+                    fontSize: homeFontSize(14),
                     fontWeight: FontWeight.w300,
                     letterSpacing: 0,
                   ),
@@ -273,203 +288,417 @@ class _HomeFundsDistributionSection extends StatelessWidget {
                 onPressed: onViewStatement,
                 style: TextButton.styleFrom(
                   foregroundColor: Colors.white.withValues(alpha: 0.72),
-                  padding: EdgeInsets.symmetric(horizontal: _homeSize(8)),
-                  minimumSize: Size(0, _homeSize(32)),
+                  padding: EdgeInsets.symmetric(horizontal: homeSize(8)),
+                  minimumSize: Size(0, homeSize(32)),
                   tapTargetSize: MaterialTapTargetSize.shrinkWrap,
                   textStyle: theme.textTheme.labelSmall?.copyWith(
-                    fontSize: _homeFontSize(12),
+                    fontSize: homeFontSize(12),
                     fontWeight: FontWeight.w300,
                     letterSpacing: 0,
                   ),
                 ),
-                child: Text(_homeViewStatementShortLabel(context)),
+                child: Text(homeViewStatementShortLabel(context)),
               ),
             ],
           ),
-          SizedBox(height: _homeSize(14)),
-          Row(
-            children: [
-              SizedBox(
-                width: _homeSize(96),
-                height: _homeSize(96),
-                child: Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    CustomPaint(
-                      size: Size.square(_homeSize(96)),
-                      painter: _HomeDistributionChartPainter(
-                        onchainShare: onchainShare,
-                        keroseneShare: keroseneShare,
+          SizedBox(height: homeSize(14)),
+          if (entries.isEmpty)
+            const HomeDistributionEmptyState()
+          else
+            LayoutBuilder(
+              builder: (context, constraints) {
+                final compact = constraints.maxWidth < homeSize(330);
+                final chart = SizedBox(
+                  width: homeSize(104),
+                  height: homeSize(104),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      CustomPaint(
+                        size: Size.square(homeSize(104)),
+                        painter: HomeDistributionChartPainter(entries: entries),
                       ),
-                    ),
-                    Text(
-                      totalLabel,
-                      style: theme.textTheme.labelLarge?.copyWith(
-                        color: Colors.white,
-                        fontSize: _homeFontSize(12),
-                        fontWeight: FontWeight.w300,
-                        letterSpacing: 0,
+                      Column(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Text(
+                            totalBalance > 0 ? '100%' : '0%',
+                            style: theme.textTheme.labelLarge?.copyWith(
+                              color: Colors.white,
+                              fontSize: homeFontSize(12),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                          SizedBox(height: homeSize(2)),
+                          Text(
+                            '${entries.length}',
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: homeMutedTextColor,
+                              fontSize: homeFontSize(10),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ],
                       ),
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: _homeSize(24)),
-              Expanded(
-                child: Column(
+                    ],
+                  ),
+                );
+                final rows = Column(
                   children: [
-                    _HomeDistributionLegendRow(
-                      color: _homeAmberColor,
-                      label: context.tr.homeOnchainWalletLabel,
-                      percent: onchainShare,
-                    ),
-                    SizedBox(height: _homeSize(14)),
-                    _HomeDistributionLegendRow(
-                      color: _homePositiveColor,
-                      label: context.tr.homeKeroseneWalletLabel,
-                      percent: keroseneShare,
-                    ),
+                    for (var index = 0; index < entries.length; index++) ...[
+                      if (index > 0) SizedBox(height: homeSize(10)),
+                      HomeDistributionLegendRow(
+                        entry: entries[index],
+                        balanceLabel: MoneyDisplay.formatAmountFromBtc(
+                          btcAmount: entries[index].wallet.balance,
+                          currency: selectedCurrency,
+                          btcUsd: btcUsd,
+                          btcEur: btcEur,
+                          btcBrl: btcBrl,
+                        ),
+                        btcLabel: MoneyDisplay.format(
+                          amount: entries[index].wallet.balance,
+                          currency: Currency.btc,
+                        ),
+                        onTap: () {
+                          HapticFeedback.selectionClick();
+                          onOpenWalletDetails(entries[index].wallet);
+                        },
+                      ),
+                    ],
                   ],
-                ),
-              ),
-            ],
-          ),
+                );
+
+                if (compact) {
+                  return Column(
+                    children: [
+                      Center(child: chart),
+                      SizedBox(height: homeSize(18)),
+                      rows,
+                    ],
+                  );
+                }
+
+                return Row(
+                  crossAxisAlignment: CrossAxisAlignment.center,
+                  children: [
+                    chart,
+                    SizedBox(width: homeSize(22)),
+                    Expanded(child: rows),
+                  ],
+                );
+              },
+            ),
         ],
       ),
     );
   }
 
-  static double _sumWallets(Iterable<Wallet> wallets) {
-    return wallets.fold<double>(0, (sum, wallet) => sum + wallet.balance);
+  static List<Wallet> _sortedWallets(List<Wallet> wallets) {
+    final active = wallets.where((wallet) => wallet.isActive).toList();
+    final source = active.isNotEmpty ? active : List<Wallet>.from(wallets);
+    source.sort((a, b) {
+      final byBalance = b.balance.compareTo(a.balance);
+      if (byBalance != 0) return byBalance;
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+    });
+    return source;
   }
 }
 
-class _HomeDistributionLegendRow extends StatelessWidget {
+class HomeWalletDistributionEntry {
+  final Wallet wallet;
   final Color color;
-  final String label;
-  final double percent;
+  final double share;
 
-  const _HomeDistributionLegendRow({
+  const HomeWalletDistributionEntry({
+    required this.wallet,
     required this.color,
-    required this.label,
-    required this.percent,
+    required this.share,
+  });
+}
+
+class HomeDistributionEmptyState extends StatelessWidget {
+  const HomeDistributionEmptyState();
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Container(
+      width: double.infinity,
+      padding: EdgeInsets.all(homeSize(16)),
+      decoration: BoxDecoration(
+        color: homeCardColor,
+        borderRadius: BorderRadius.circular(homeSize(14)),
+        border: Border.all(color: homePanelBorderColor),
+      ),
+      child: Row(
+        children: [
+          Container(
+            width: homeSize(36),
+            height: homeSize(36),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: 0.055),
+              shape: BoxShape.circle,
+            ),
+            child: Icon(
+              KeroseneIcons.wallet,
+              color: Colors.white.withValues(alpha: 0.84),
+              size: homeSize(18),
+            ),
+          ),
+          SizedBox(width: homeSize(12)),
+          Expanded(
+            child: Text(
+              _distributionCopy(
+                context,
+                pt: 'Nenhuma carteira disponível para distribuir fundos.',
+                en: 'No wallet available for fund distribution.',
+                es: 'No hay billeteras disponibles para distribuir fondos.',
+              ),
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: homeMutedTextColor,
+                fontSize: homeFontSize(12),
+                height: 1.35,
+                fontWeight: FontWeight.w300,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class HomeDistributionLegendRow extends StatelessWidget {
+  final HomeWalletDistributionEntry entry;
+  final String balanceLabel;
+  final String btcLabel;
+  final VoidCallback onTap;
+
+  const HomeDistributionLegendRow({
+    required this.entry,
+    required this.balanceLabel,
+    required this.btcLabel,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
-    final percentLabel = '${(percent * 100).toStringAsFixed(1)}%';
+    final wallet = entry.wallet;
+    final percentLabel = '${(entry.share * 100).toStringAsFixed(1)}%';
 
-    return Row(
-      children: [
-        Container(
-          width: _homeSize(10),
-          height: _homeSize(10),
-          decoration: BoxDecoration(color: color, shape: BoxShape.circle),
-        ),
-        SizedBox(width: _homeSize(8)),
-        Expanded(
-          child: Text(
-            label,
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
-            style: theme.textTheme.bodySmall?.copyWith(
-              color: _homeMutedTextColor,
-              fontSize: _homeFontSize(12),
-              fontWeight: FontWeight.w300,
-              letterSpacing: 0,
-            ),
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(homeSize(14)),
+        child: Ink(
+          padding: EdgeInsets.symmetric(
+            horizontal: homeSize(10),
+            vertical: homeSize(9),
+          ),
+          decoration: BoxDecoration(
+            color: Colors.white.withValues(alpha: 0.025),
+            borderRadius: BorderRadius.circular(homeSize(14)),
+            border: Border.all(color: Colors.white.withValues(alpha: 0.055)),
+          ),
+          child: Row(
+            children: [
+              Container(
+                width: homeSize(10),
+                height: homeSize(10),
+                decoration:
+                    BoxDecoration(color: entry.color, shape: BoxShape.circle),
+              ),
+              SizedBox(width: homeSize(10)),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            wallet.name,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.bodySmall?.copyWith(
+                              color: Colors.white,
+                              fontSize: homeFontSize(12),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: homeSize(8)),
+                        Text(
+                          percentLabel,
+                          style: theme.textTheme.labelSmall?.copyWith(
+                            color: Colors.white.withValues(alpha: 0.88),
+                            fontSize: homeFontSize(11),
+                            fontWeight: FontWeight.w300,
+                            letterSpacing: 0,
+                          ),
+                        ),
+                      ],
+                    ),
+                    SizedBox(height: homeSize(4)),
+                    Row(
+                      children: [
+                        Expanded(
+                          child: Text(
+                            wallet.custodyDisplayLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: homeMutedTextColor,
+                              fontSize: homeFontSize(10),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                        SizedBox(width: homeSize(8)),
+                        Flexible(
+                          child: Text(
+                            balanceLabel,
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                            textAlign: TextAlign.right,
+                            style: theme.textTheme.labelSmall?.copyWith(
+                              color: Colors.white.withValues(alpha: 0.72),
+                              fontSize: homeFontSize(10),
+                              fontWeight: FontWeight.w300,
+                              letterSpacing: 0,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+              SizedBox(width: homeSize(8)),
+              Icon(
+                KeroseneIcons.chevronRight,
+                size: homeSize(14),
+                color: Colors.white.withValues(alpha: 0.35),
+              ),
+            ],
           ),
         ),
-        SizedBox(width: _homeSize(8)),
-        Text(
-          percentLabel,
-          style: theme.textTheme.labelSmall?.copyWith(
-            color: Colors.white,
-            fontSize: _homeFontSize(12),
-            fontWeight: FontWeight.w300,
-            letterSpacing: 0,
-          ),
-        ),
-      ],
+      ),
     );
   }
 }
 
-class _HomeDistributionChartPainter extends CustomPainter {
-  final double onchainShare;
-  final double keroseneShare;
+class HomeDistributionChartPainter extends CustomPainter {
+  final List<HomeWalletDistributionEntry> entries;
 
-  const _HomeDistributionChartPainter({
-    required this.onchainShare,
-    required this.keroseneShare,
-  });
+  const HomeDistributionChartPainter({required this.entries});
 
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - _homeSize(5);
-    final strokeWidth = _homeSize(4);
+    final radius = math.min(size.width, size.height) / 2 - homeSize(5);
+    final strokeWidth = homeSize(5);
     final basePaint = Paint()
-      ..color = _homePanelBorderColor
+      ..color = homePanelBorderColor
       ..style = PaintingStyle.stroke
-      ..strokeWidth = _homeSize(3);
+      ..strokeWidth = homeSize(3);
     canvas.drawCircle(center, radius, basePaint);
+
+    final totalShare =
+        entries.fold<double>(0, (sum, entry) => sum + entry.share);
+    if (totalShare <= 0) return;
 
     final segmentPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
       ..strokeCap = StrokeCap.round;
     final rect = Rect.fromCircle(center: center, radius: radius);
-    const start = -math.pi / 2;
-    final onchainSweep = (math.pi * 2) * onchainShare.clamp(0.0, 1.0);
-    final keroseneSweep = (math.pi * 2) * keroseneShare.clamp(0.0, 1.0);
+    var start = -math.pi / 2;
+    const gap = 0.018;
 
-    if (onchainSweep > 0) {
-      segmentPaint.color = _homeAmberColor;
-      canvas.drawArc(rect, start, onchainSweep, false, segmentPaint);
-    }
-    if (keroseneSweep > 0) {
-      segmentPaint.color = _homePositiveColor;
+    for (final entry in entries) {
+      final normalizedShare = entry.share / totalShare;
+      final sweep = (math.pi * 2) * normalizedShare;
+      if (sweep <= 0) continue;
+      segmentPaint.color = entry.color;
       canvas.drawArc(
         rect,
-        start + onchainSweep,
-        keroseneSweep,
+        start + gap,
+        math.max(0, sweep - gap * 2),
         false,
         segmentPaint,
       );
+      start += sweep;
     }
   }
 
   @override
-  bool shouldRepaint(covariant _HomeDistributionChartPainter oldDelegate) {
-    return oldDelegate.onchainShare != onchainShare ||
-        oldDelegate.keroseneShare != keroseneShare;
+  bool shouldRepaint(covariant HomeDistributionChartPainter oldDelegate) {
+    if (oldDelegate.entries.length != entries.length) return true;
+    for (var index = 0; index < entries.length; index++) {
+      final old = oldDelegate.entries[index];
+      final current = entries[index];
+      if (old.wallet.id != current.wallet.id ||
+          old.wallet.balance != current.wallet.balance ||
+          old.share != current.share ||
+          old.color != current.color) {
+        return true;
+      }
+    }
+    return false;
   }
 }
 
-class _HomeActivityFilterChips extends ConsumerWidget {
-  const _HomeActivityFilterChips();
+Color _walletDistributionColor(int index) {
+  return switch (index % 6) {
+    0 => Colors.white,
+    1 => Colors.white.withValues(alpha: 0.78),
+    2 => Colors.white.withValues(alpha: 0.62),
+    3 => Colors.white.withValues(alpha: 0.48),
+    4 => Colors.white.withValues(alpha: 0.34),
+    _ => Colors.white.withValues(alpha: 0.24),
+  };
+}
+
+String _distributionCopy(
+  BuildContext context, {
+  required String pt,
+  required String en,
+  required String es,
+}) {
+  return switch (Localizations.localeOf(context).languageCode) {
+    'en' => en,
+    'es' => es,
+    _ => pt,
+  };
+}
+
+class HomeActivityFilterChips extends ConsumerWidget {
+  const HomeActivityFilterChips();
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
-    final selectedFilter = ref.watch(_homeActivityFilterProvider);
+    final selectedFilter = ref.watch(homeActivityFilterProvider);
     const filters = [
-      _HomeActivityFilter.onChain,
-      _HomeActivityFilter.platform,
-      _HomeActivityFilter.notices,
+      HomeActivityFilter.all,
+      HomeActivityFilter.incoming,
+      HomeActivityFilter.outgoing,
+      HomeActivityFilter.pending,
+      HomeActivityFilter.failed,
     ];
 
-    void selectFilter(_HomeActivityFilter filter) {
+    void selectFilter(HomeActivityFilter filter) {
       HapticFeedback.selectionClick();
-      ref.read(_homeActivityFilterProvider.notifier).state = filter;
-      if (filter == _HomeActivityFilter.platform) {
-        ref.read(_homeLedgerBalanceViewProvider.notifier).state =
-            _HomeLedgerBalanceView.platform;
-      } else if (filter == _HomeActivityFilter.onChain) {
-        ref.read(_homeLedgerBalanceViewProvider.notifier).state =
-            _HomeLedgerBalanceView.onChain;
-      }
+      ref.read(homeActivityFilterProvider.notifier).state = filter;
     }
 
     return SingleChildScrollView(
@@ -478,9 +707,9 @@ class _HomeActivityFilterChips extends ConsumerWidget {
       child: Row(
         children: [
           for (var index = 0; index < filters.length; index++) ...[
-            if (index > 0) SizedBox(width: _homeSize(8)),
-            _HomeActivityFilterChip(
-              label: _homeFilterLabel(context, filters[index]),
+            if (index > 0) SizedBox(width: homeSize(8)),
+            HomeActivityFilterChip(
+              label: homeFilterLabel(context, filters[index]),
               selected: selectedFilter == filters[index],
               onTap: () => selectFilter(filters[index]),
             ),
@@ -491,12 +720,12 @@ class _HomeActivityFilterChips extends ConsumerWidget {
   }
 }
 
-class _HomeActivityFilterChip extends StatelessWidget {
+class HomeActivityFilterChip extends StatelessWidget {
   final String label;
   final bool selected;
   final VoidCallback onTap;
 
-  const _HomeActivityFilterChip({
+  const HomeActivityFilterChip({
     required this.label,
     required this.selected,
     required this.onTap,
@@ -510,17 +739,17 @@ class _HomeActivityFilterChip extends StatelessWidget {
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
-        borderRadius: BorderRadius.circular(_homeSize(999)),
+        borderRadius: BorderRadius.circular(homeSize(999)),
         child: Ink(
           padding: EdgeInsets.symmetric(
-            horizontal: _homeSize(16),
-            vertical: _homeSize(7),
+            horizontal: homeSize(16),
+            vertical: homeSize(7),
           ),
           decoration: BoxDecoration(
-            color: selected ? Colors.white : _homeCardColor,
-            borderRadius: BorderRadius.circular(_homeSize(999)),
+            color: selected ? Colors.white : homeCardColor,
+            borderRadius: BorderRadius.circular(homeSize(999)),
             border: Border.all(
-              color: selected ? Colors.white : _homePanelBorderColor,
+              color: selected ? Colors.white : homePanelBorderColor,
             ),
           ),
           child: Text(
@@ -528,8 +757,8 @@ class _HomeActivityFilterChip extends StatelessWidget {
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.labelSmall?.copyWith(
-              color: selected ? Colors.black : _homeMutedTextColor,
-              fontSize: _homeFontSize(12),
+              color: selected ? Colors.black : homeMutedTextColor,
+              fontSize: homeFontSize(12),
               fontWeight: FontWeight.w300,
               letterSpacing: 0,
             ),
@@ -540,48 +769,50 @@ class _HomeActivityFilterChip extends StatelessWidget {
   }
 }
 
-String _homeFundsDistributionTitle(BuildContext context) {
+String homeFundsDistributionTitle(BuildContext context) {
   return context.tr.homeFundsDistributionTitle;
 }
 
-String _homeRecentActivitiesTitle(BuildContext context) {
+String homeRecentActivitiesTitle(BuildContext context) {
   return context.tr.homeRecentActivitiesTitle;
 }
 
-String _homeViewAllLabel(BuildContext context) {
+String homeViewAllLabel(BuildContext context) {
   return context.tr.viewAll;
 }
 
-String _homeViewStatementShortLabel(BuildContext context) {
+String homeViewStatementShortLabel(BuildContext context) {
   return context.tr.homeViewStatementShortLabel;
 }
 
-String _homeOnchainFilterLabel(BuildContext context) {
+String homeOnchainFilterLabel(BuildContext context) {
   return context.tr.homeOnchainFilterLabel;
 }
 
-String _homePlatformFilterLabel(BuildContext context) {
+String homePlatformFilterLabel(BuildContext context) {
   return context.tr.homePlatformFilterLabel;
 }
 
-String _homeNoticesFilterLabel(BuildContext context) {
+String homeNoticesFilterLabel(BuildContext context) {
   return context.tr.homeNoticesFilterLabel;
 }
 
-String _homeFilterLabel(BuildContext context, _HomeActivityFilter filter) {
+String homeFilterLabel(BuildContext context, HomeActivityFilter filter) {
   return switch (filter) {
-    _HomeActivityFilter.platform => _homePlatformFilterLabel(context),
-    _HomeActivityFilter.onChain => _homeOnchainFilterLabel(context),
-    _HomeActivityFilter.notices => _homeNoticesFilterLabel(context),
+    HomeActivityFilter.all => context.tr.financialStatementFilterAll,
+    HomeActivityFilter.incoming => context.tr.financialStatementFilterIncoming,
+    HomeActivityFilter.outgoing => context.tr.financialStatementFilterOutgoing,
+    HomeActivityFilter.pending => context.tr.financialStatementFilterPending,
+    HomeActivityFilter.failed => context.tr.financialStatementFilterFailed,
   };
 }
 
-class _HomeSectionHeader extends StatelessWidget {
+class HomeSectionHeader extends StatelessWidget {
   final String title;
   final String actionLabel;
   final VoidCallback onAction;
 
-  const _HomeSectionHeader({
+  const HomeSectionHeader({
     required this.title,
     required this.actionLabel,
     required this.onAction,
@@ -608,7 +839,7 @@ class _HomeSectionHeader extends StatelessWidget {
         TextButton(
           onPressed: onAction,
           style: TextButton.styleFrom(
-            foregroundColor: _homeAmberColor,
+            foregroundColor: homeAmberColor,
             padding: const EdgeInsets.symmetric(horizontal: 6),
             minimumSize: const Size(0, 36),
             tapTargetSize: MaterialTapTargetSize.shrinkWrap,

@@ -29,9 +29,24 @@ class WalletSecurityService {
     }
   }
 
-  Future<bool> saveMnemonic(String mnemonic) async {
+  String _mnemonicStorageKey(String? storageScope) {
+    final scope = storageScope?.trim();
+    if (scope == null || scope.isEmpty) {
+      return _mnemonicKey;
+    }
+    return '${_mnemonicKey}_$scope';
+  }
+
+  Future<bool> saveMnemonic(String mnemonic, {String? storageScope}) async {
     try {
-      await _storageService.write(key: _mnemonicKey, value: mnemonic);
+      await _storageService.write(
+        key: _mnemonicStorageKey(storageScope),
+        value: mnemonic,
+      );
+
+      if (storageScope != null && storageScope.trim().isNotEmpty) {
+        await _storageService.delete(key: _mnemonicKey);
+      }
       return true;
     } catch (e) {
       debugPrint('Error saving mnemonic: $e');
@@ -39,7 +54,7 @@ class WalletSecurityService {
     }
   }
 
-  Future<String?> authenticateAndGetMnemonic() async {
+  Future<String?> authenticateAndGetMnemonic({String? storageScope}) async {
     try {
       final bool canAuthenticate = await _biometricService.canAuthenticate();
       if (!canAuthenticate) return null;
@@ -49,7 +64,9 @@ class WalletSecurityService {
       );
 
       if (didAuthenticate) {
-        return await _storageService.read(key: _mnemonicKey);
+        return await _storageService.read(
+          key: _mnemonicStorageKey(storageScope),
+        );
       }
       return null;
     } catch (e) {
@@ -93,7 +110,10 @@ class WalletSecurityService {
     }
   }
 
-  Future<void> clearMnemonic() async {
-    await _storageService.delete(key: _mnemonicKey);
+  Future<void> clearMnemonic({String? storageScope}) async {
+    await _storageService.delete(key: _mnemonicStorageKey(storageScope));
+    if (storageScope != null && storageScope.trim().isNotEmpty) {
+      await _storageService.delete(key: _mnemonicKey);
+    }
   }
 }

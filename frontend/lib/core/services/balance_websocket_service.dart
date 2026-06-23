@@ -347,7 +347,7 @@ class RealtimeNotificationEvent {
 
 /// Modelo de atualização de saldo recebida via WebSocket
 class BalanceUpdate {
-  final int walletId;
+  final String walletId;
   final String walletName;
   final int userId;
   final double newBalance;
@@ -380,7 +380,7 @@ class BalanceUpdate {
         .firstWhere((e) => e != null && e.isNotEmpty, orElse: () => null);
 
     return BalanceUpdate(
-      walletId: (json['walletId'] as num?)?.toInt() ?? 0,
+      walletId: (json['walletId'] ?? '').toString(),
       walletName: json['walletName']?.toString() ?? '',
       userId: (json['userId'] as num?)?.toInt() ?? 0,
       newBalance: (json['newBalance'] as num?)?.toDouble() ?? 0.0,

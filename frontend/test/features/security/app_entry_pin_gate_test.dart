@@ -7,7 +7,7 @@ import 'package:kerosene/features/auth/domain/entities/user.dart';
 import 'package:kerosene/features/security/domain/entities/app_pin_status.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
 import 'package:kerosene/features/security/presentation/widgets/app_entry_pin_gate.dart';
-import 'package:kerosene/features/wallet/presentation/providers/balance_websocket_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();

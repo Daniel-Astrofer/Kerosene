@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import 'package:equatable/equatable.dart';
 import '../../../../core/errors/failures.dart';
-import '../../data/datasources/auth_remote_datasource.dart' show LoginResult;
+import 'package:kerosene/features/auth/domain/entities/login_result.dart';
 import '../repositories/auth_repository.dart';
 
 /// Caso de uso para login

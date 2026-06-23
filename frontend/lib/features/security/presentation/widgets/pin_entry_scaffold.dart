@@ -59,13 +59,13 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
     final compactWidth = size.width < 380;
     final compactHeight = size.height < 720;
     final horizontalPadding = compactWidth ? 20.0 : 24.0;
-    final maxWidth = compactWidth ? 360.0 : 390.0;
-    final topSpacing = compactHeight ? 20.0 : 54.0;
-    final instructionFontSize = compactWidth ? 17.0 : 19.0;
-    final dotSize = compactWidth ? 48.0 : 56.0;
-    final padKeySize = compactHeight ? 68.0 : 76.0;
-    final digitFontSize = compactWidth ? 30.0 : 32.0;
-    final contentGap = compactHeight ? 22.0 : 28.0;
+    final maxWidth = compactWidth ? 360.0 : 420.0;
+    final topSpacing = compactHeight ? 18.0 : 38.0;
+    final instructionFontSize = compactWidth ? 31.0 : 36.0;
+    final dotSize = compactWidth ? 8.0 : 9.0;
+    final padKeySize = compactHeight ? 66.0 : 74.0;
+    final digitFontSize = compactWidth ? 28.0 : 31.0;
+    final contentGap = compactHeight ? 24.0 : 30.0;
     const tapToEnterLabel = 'Toque para digitar';
 
     return ColoredBox(
@@ -94,24 +94,28 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
                           behavior: HitTestBehavior.opaque,
                           onTap: _openPad,
                           child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
                             children: [
                               Text(
                                 widget.instruction,
-                                textAlign: TextAlign.center,
-                                style: AppTypography.bodyLarge.copyWith(
-                                  color: monoMutedTextColor,
-                                  fontFamily: AppTypography.serifFontFamily,
+                                textAlign: TextAlign.left,
+                                style: AppTypography.newsreader(
+                                  color: monoTextColor,
                                   fontSize: instructionFontSize,
-                                  height: 1.22,
-                                  letterSpacing: 0,
+                                  fontWeight: FontWeight.w500,
+                                  height: 1.04,
+                                  letterSpacing: -0.35,
                                   decoration: TextDecoration.none,
                                 ),
                               ),
                               SizedBox(height: contentGap),
-                              PinEntryDots(
-                                length: widget.valueLength,
-                                maxLength: widget.maxLength,
-                                dotSize: dotSize,
+                              Align(
+                                alignment: Alignment.centerLeft,
+                                child: PinEntryDots(
+                                  length: widget.valueLength,
+                                  maxLength: widget.maxLength,
+                                  dotSize: dotSize,
+                                ),
                               ),
                               const SizedBox(height: 14),
                               SizedBox(
@@ -123,7 +127,7 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
                                       : Text(
                                           widget.error!,
                                           key: ValueKey(widget.error),
-                                          textAlign: TextAlign.center,
+                                          textAlign: TextAlign.left,
                                           style: AppTypography.caption.copyWith(
                                             color: monoMutedTextColor,
                                             height: 1.28,
@@ -138,7 +142,7 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
                                 const SizedBox(height: 14),
                                 Text(
                                   tapToEnterLabel,
-                                  textAlign: TextAlign.center,
+                                  textAlign: TextAlign.left,
                                   style: AppTypography.caption.copyWith(
                                     color: monoFaintTextColor,
                                     height: 1.2,
@@ -231,39 +235,136 @@ class PinEntryDots extends StatelessWidget {
     super.key,
     required this.length,
     required this.maxLength,
-    this.dotSize = 56,
+    this.dotSize = 9,
   });
 
   @override
   Widget build(BuildContext context) {
     final total = maxLength.clamp(4, 8);
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(total, (index) {
-        final filled = index < length;
-        return AnimatedContainer(
+    return Semantics(
+      label: '$length de $total dígitos preenchidos',
+      child: AnimatedContainer(
+        duration: KeroseneMotion.short,
+        curve: KeroseneMotion.standard,
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 9),
+        decoration: BoxDecoration(
+          color: monoSurfaceAltColor,
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: monoBorderStrongColor),
+        ),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: List.generate(total, (index) {
+            final filled = index < length;
+            return AnimatedContainer(
+              duration: KeroseneMotion.short,
+              curve: KeroseneMotion.standard,
+              margin: EdgeInsets.only(right: index == total - 1 ? 0 : 8),
+              width: filled ? dotSize * 2.55 : dotSize,
+              height: dotSize,
+              decoration: BoxDecoration(
+                color: filled
+                    ? monoTextColor
+                    : monoFaintTextColor.withValues(alpha: 0.26),
+                borderRadius: BorderRadius.circular(999),
+              ),
+            );
+          }),
+        ),
+      ),
+    );
+  }
+}
+
+class _PinPadKey extends StatefulWidget {
+  final String value;
+  final bool isSpecial;
+  final bool enabled;
+  final double keySize;
+  final double digitFontSize;
+  final VoidCallback onTap;
+
+  const _PinPadKey({
+    required this.value,
+    required this.isSpecial,
+    required this.enabled,
+    required this.keySize,
+    required this.digitFontSize,
+    required this.onTap,
+  });
+
+  @override
+  State<_PinPadKey> createState() => _PinPadKeyState();
+}
+
+class _PinPadKeyState extends State<_PinPadKey> {
+  bool _pressed = false;
+
+  void _setPressed(bool value) {
+    if (_pressed == value || !widget.enabled) {
+      return;
+    }
+    setState(() => _pressed = value);
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final foreground = widget.enabled ? monoTextColor : monoFaintTextColor;
+
+    return Listener(
+      onPointerDown: (_) => _setPressed(true),
+      onPointerUp: (_) => _setPressed(false),
+      onPointerCancel: (_) => _setPressed(false),
+      child: AnimatedScale(
+        scale: _pressed ? 0.94 : 1,
+        duration: KeroseneMotion.fast,
+        curve: KeroseneMotion.standard,
+        child: AnimatedContainer(
           duration: KeroseneMotion.short,
           curve: KeroseneMotion.standard,
-          margin: const EdgeInsets.symmetric(horizontal: 7),
-          width: dotSize,
-          height: dotSize,
-          alignment: Alignment.center,
+          height: widget.keySize,
           decoration: BoxDecoration(
-            color: monoSurfaceAltColor,
-            borderRadius: BorderRadius.circular(14),
-            border: Border.all(color: monoBorderStrongColor),
-          ),
-          child: AnimatedContainer(
-            duration: KeroseneMotion.short,
-            width: filled ? dotSize * 0.28 : 0,
-            height: filled ? dotSize * 0.28 : 0,
-            decoration: const BoxDecoration(
-              color: monoTextColor,
-              shape: BoxShape.circle,
+            shape: BoxShape.circle,
+            color: _pressed
+                ? monoSurfaceAltColor.withValues(alpha: 0.88)
+                : Colors.transparent,
+            border: Border.all(
+              color: _pressed ? monoBorderStrongColor : Colors.transparent,
             ),
           ),
-        );
-      }),
+          child: Material(
+            color: Colors.transparent,
+            shape: const CircleBorder(),
+            clipBehavior: Clip.antiAlias,
+            child: InkResponse(
+              enableFeedback: true,
+              onTap: widget.enabled ? widget.onTap : null,
+              containedInkWell: true,
+              customBorder: const CircleBorder(),
+              child: Center(
+                child: widget.isSpecial
+                    ? Icon(
+                        KeroseneIcons.backspace,
+                        size: widget.keySize * 0.34,
+                        color: widget.enabled
+                            ? monoMutedTextColor
+                            : monoFaintTextColor,
+                      )
+                    : Text(
+                        widget.value,
+                        style: AppTypography.financial(
+                          color: foreground,
+                          fontWeight: FontWeight.w500,
+                          fontSize: widget.digitFontSize,
+                          height: 1,
+                          letterSpacing: 0,
+                        ),
+                      ),
+              ),
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -306,51 +407,19 @@ class PinNumericPad extends StatelessWidget {
               return Expanded(
                 child: Padding(
                   padding: const EdgeInsets.symmetric(horizontal: 8),
-                  child: Material(
-                    color: Colors.transparent,
-                    shape: const CircleBorder(),
-                    clipBehavior: Clip.antiAlias,
-                    child: InkResponse(
-                      onTap: !enabled
-                          ? null
-                          : () {
-                              if (isSpecial) {
-                                onDelete();
-                                return;
-                              }
-                              onDigit(key);
-                            },
-                      child: SizedBox(
-                        height: keySize,
-                        child: Center(
-                          child: isSpecial
-                              ? Icon(
-                                  KeroseneIcons.backspace,
-                                  size: keySize * 0.37,
-                                  color: enabled
-                                      ? monoMutedTextColor
-                                      : monoFaintTextColor,
-                                )
-                              : Text(
-                                  key,
-                                  style: Theme.of(context)
-                                      .textTheme
-                                      .titleMedium
-                                      ?.copyWith(
-                                        fontFamily:
-                                            AppTypography.displayFontFamily,
-                                        color: enabled
-                                            ? monoTextColor
-                                            : monoFaintTextColor,
-                                        fontWeight: FontWeight.w500,
-                                        fontSize: digitFontSize,
-                                        height: 1,
-                                        letterSpacing: 0,
-                                      ),
-                                ),
-                        ),
-                      ),
-                    ),
+                  child: _PinPadKey(
+                    value: key,
+                    isSpecial: isSpecial,
+                    enabled: enabled,
+                    keySize: keySize,
+                    digitFontSize: digitFontSize,
+                    onTap: () {
+                      if (isSpecial) {
+                        onDelete();
+                        return;
+                      }
+                      onDigit(key);
+                    },
                   ),
                 ),
               );

@@ -2,8 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
 
 import 'package:kerosene/core/l10n/l10n_extension.dart';
-import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
-import 'package:kerosene/features/wallet/presentation/widgets/wallet_flow_selector.dart';
+import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
 
 import '../storybook_mocks.dart';
 

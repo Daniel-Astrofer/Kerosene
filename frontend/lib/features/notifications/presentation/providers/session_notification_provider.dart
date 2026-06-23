@@ -5,13 +5,11 @@ import 'dart:convert';
 
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:shared_preferences/shared_preferences.dart';
-import 'package:kerosene/core/network/api_client_provider.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/notifications/data/datasources/notification_remote_datasource.dart';
-import 'package:kerosene/features/notifications/data/repositories/notification_repository_impl.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/domain/entities/device_token.dart';
-import 'package:kerosene/features/notifications/domain/repositories/notification_repository.dart';
+import 'package:kerosene/features/notifications/application/providers/notification_data_providers.dart';
+export 'package:kerosene/features/notifications/application/providers/notification_data_providers.dart';
 
 class SessionNotificationFeedNotifier
     extends Notifier<List<SessionNotificationItem>> {
@@ -225,17 +223,6 @@ final sessionNotificationFeedProvider = NotifierProvider<
     SessionNotificationFeedNotifier, List<SessionNotificationItem>>(
   SessionNotificationFeedNotifier.new,
 );
-
-final notificationRemoteDataSourceProvider =
-    Provider<NotificationRemoteDataSource>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return NotificationRemoteDataSourceImpl(apiClient);
-});
-
-final notificationRepositoryProvider = Provider<NotificationRepository>((ref) {
-  final remoteDataSource = ref.watch(notificationRemoteDataSourceProvider);
-  return NotificationRepositoryImpl(remoteDataSource: remoteDataSource);
-});
 
 final sessionNotificationUnreadCountProvider = Provider<int>((ref) {
   final notifications = ref.watch(sessionNotificationFeedProvider);

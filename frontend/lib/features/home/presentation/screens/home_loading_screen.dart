@@ -6,11 +6,11 @@ import 'package:kerosene/core/navigation/deferred_page.dart';
 
 import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart'
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
-import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart';
-import 'package:kerosene/features/wallet/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart'
     deferred as home;
 import 'package:kerosene/features/auth/controller/auth_controller.dart';

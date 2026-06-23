@@ -1,25 +1,14 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kerosene/core/network/api_client_provider.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import '../../data/datasources/security_remote_datasource.dart';
-import '../../data/repositories/security_repository_impl.dart';
 import '../../domain/entities/app_pin_status.dart';
 import '../../domain/entities/account_security_profile.dart';
 import '../../domain/entities/admin_access.dart';
-import '../../domain/repositories/security_repository.dart';
 import '../../domain/entities/security_status.dart';
 import '../../domain/entities/kfe_reserve_overview.dart';
 
-final securityRemoteDataSourceProvider =
-    Provider<SecurityRemoteDataSource>((ref) {
-  final apiClient = ref.watch(apiClientProvider);
-  return SecurityRemoteDataSourceImpl(apiClient);
-});
-
-final securityRepositoryProvider = Provider<SecurityRepository>((ref) {
-  final remoteDataSource = ref.watch(securityRemoteDataSourceProvider);
-  return SecurityRepositoryImpl(remoteDataSource: remoteDataSource);
-});
+export 'package:kerosene/features/security/application/providers/security_data_providers.dart';
+import 'package:kerosene/features/security/application/providers/security_data_providers.dart';
 
 final sovereigntyStatusProvider = FutureProvider<SecurityStatus>((ref) async {
   final repository = ref.watch(securityRepositoryProvider);
@@ -75,8 +64,7 @@ Duration? _retryAppPinStatus(int retryCount, Object error) {
   if (error is Error) {
     return null;
   }
-  final cappedRetryCount = retryCount.clamp(0, 5).toInt();
-  return Duration(milliseconds: 200 * (1 << cappedRetryCount));
+  return KeroseneMotion.exponentialBackoff(retryCount);
 }
 
 final adminKeyStatusProvider =

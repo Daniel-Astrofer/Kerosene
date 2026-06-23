@@ -1,8 +1,10 @@
-// ignore_for_file: unused_element
+// ignore_for_file: use_key_in_widget_constructors, unused_import, unused_element
 
-part of 'home_screen.dart';
+import 'home_screen_dependencies.dart';
+import 'home_screen.dart';
+import 'home_screen_surface.dart';
 
-class _HomeBalanceSection extends ConsumerStatefulWidget {
+class HomeBalanceSection extends ConsumerStatefulWidget {
   final String userName;
   final WalletState walletState;
   final Wallet? activeWallet;
@@ -11,7 +13,7 @@ class _HomeBalanceSection extends ConsumerStatefulWidget {
   final VoidCallback onViewStatement;
   final VoidCallback onOpenWallets;
 
-  const _HomeBalanceSection({
+  const HomeBalanceSection({
     required this.userName,
     required this.walletState,
     required this.activeWallet,
@@ -22,11 +24,10 @@ class _HomeBalanceSection extends ConsumerStatefulWidget {
   });
 
   @override
-  ConsumerState<_HomeBalanceSection> createState() =>
-      _HomeBalanceSectionState();
+  ConsumerState<HomeBalanceSection> createState() => HomeBalanceSectionState();
 }
 
-class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
+class HomeBalanceSectionState extends ConsumerState<HomeBalanceSection> {
   late final PageController _pageController;
   final GlobalKey _notificationButtonKey = GlobalKey();
 
@@ -34,7 +35,7 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
   void initState() {
     super.initState();
     _pageController = PageController(
-      initialPage: ref.read(_homeLedgerBalancePageProvider),
+      initialPage: ref.read(homeLedgerBalancePageProvider),
     );
   }
 
@@ -51,14 +52,14 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
     final selectedCurrency = ref.watch(currencyProvider);
     final balanceSettings = ref.watch(balanceSettingsProvider);
     final notificationCount = ref.watch(sessionNotificationUnreadCountProvider);
-    final priceFeedActive = ref.watch(_homeRouteActiveProvider);
+    final priceFeedActive = ref.watch(homeRouteActiveProvider);
     final btcUsd = priceFeedActive ? ref.watch(latestBtcPriceProvider) : null;
     final btcEur = priceFeedActive ? ref.watch(btcEurPriceProvider) : null;
     final btcBrl = priceFeedActive ? ref.watch(btcBrlPriceProvider) : null;
     final btcDailyChangePercent =
         priceFeedActive ? ref.watch(btcDailyChangePercentProvider) : null;
-    final selectedView = ref.watch(_homeLedgerBalanceViewProvider);
-    final selectedPage = ref.watch(_homeLedgerBalancePageProvider);
+    final selectedView = ref.watch(homeLedgerBalanceViewProvider);
+    final selectedPage = ref.watch(homeLedgerBalancePageProvider);
     final wallets = widget.walletState is WalletLoaded
         ? (widget.walletState as WalletLoaded).wallets
         : const <Wallet>[];
@@ -71,18 +72,18 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
       Currency.brl => btcBrl != null && btcBrl > 0,
     };
 
-    int pageForView(_HomeLedgerBalanceView view) {
-      if (view == _HomeLedgerBalanceView.total) {
+    int pageForView(HomeLedgerBalanceView view) {
+      if (view == HomeLedgerBalanceView.total) {
         return 0;
       }
       final index = wallets.indexWhere((wallet) =>
-          view == _HomeLedgerBalanceView.onChain
+          view == HomeLedgerBalanceView.onChain
               ? wallet.isColdWallet
               : !wallet.isColdWallet);
       return index < 0 ? 0 : index + 1;
     }
 
-    ref.listen<_HomeLedgerBalanceView>(_homeLedgerBalanceViewProvider, (
+    ref.listen<HomeLedgerBalanceView>(homeLedgerBalanceViewProvider, (
       previous,
       next,
     ) {
@@ -111,7 +112,7 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
 
     final walletCardData = [
       for (final wallet in wallets)
-        _HomeBalanceCardData.forWallet(
+        HomeBalanceCardData.forWallet(
           wallet: wallet,
           convertedBalanceLabel: _convertedWalletBalanceLabel(
             wallet: wallet,
@@ -145,7 +146,7 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
         ),
     ];
 
-    _HomeBalanceCardData cardDataFor(_HomeLedgerBalanceView view) {
+    HomeBalanceCardData cardDataFor(HomeLedgerBalanceView view) {
       final scopedWallets = _walletsForView(wallets, view);
       final primaryWallet = _primaryWalletForView(
         activeWallet: widget.activeWallet,
@@ -173,7 +174,7 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
           : null;
       final isDailyChangePositive = (dailyChangeValue ?? 0) >= 0;
       final dailyChangeColor =
-          isDailyChangePositive ? _homePositiveColor : AppColors.hexFFFF5A67;
+          isDailyChangePositive ? homePositiveColor : AppColors.hexFFFF5A67;
       final dailyChangeSign = isDailyChangePositive ? '+' : '-';
       final percentSeparator =
           MoneyDisplay.localeFor(quoteCurrency).startsWith('en') ? '.' : ',';
@@ -185,9 +186,9 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
           ? '$dailyChangeSign$dailyChangePercentLabel% (24h)'
           : '${quoteCurrency.code} indisponivel';
 
-      return _HomeBalanceCardData(
+      return HomeBalanceCardData(
         view: view,
-        wallet: view == _HomeLedgerBalanceView.total ? null : primaryWallet,
+        wallet: view == HomeLedgerBalanceView.total ? null : primaryWallet,
         balanceBtc: balanceBtc,
         convertedBalanceLabel: convertedBalanceLabel,
         dailyChangeLabel: dailyChangeLabel,
@@ -203,24 +204,17 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
     }
 
     void selectPage(int page) {
-      ref.read(_homeLedgerBalancePageProvider.notifier).state = page;
+      ref.read(homeLedgerBalancePageProvider.notifier).state = page;
       final walletIndex = page - 1;
       final wallet = walletIndex >= 0 && walletIndex < walletCardData.length
           ? walletCardData[walletIndex].wallet
           : null;
       final view = page == 0
-          ? _HomeLedgerBalanceView.total
+          ? HomeLedgerBalanceView.total
           : wallet?.isColdWallet == true
-              ? _HomeLedgerBalanceView.onChain
-              : _HomeLedgerBalanceView.platform;
-      ref.read(_homeLedgerBalanceViewProvider.notifier).state = view;
-      if (view == _HomeLedgerBalanceView.platform) {
-        ref.read(_homeActivityFilterProvider.notifier).state =
-            _HomeActivityFilter.platform;
-      } else if (view == _HomeLedgerBalanceView.onChain) {
-        ref.read(_homeActivityFilterProvider.notifier).state =
-            _HomeActivityFilter.onChain;
-      }
+              ? HomeLedgerBalanceView.onChain
+              : HomeLedgerBalanceView.platform;
+      ref.read(homeLedgerBalanceViewProvider.notifier).state = view;
     }
 
     return Column(
@@ -230,48 +224,40 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
           crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             Expanded(
-              child: Row(
-                children: [
-                  _HomeAvatar(name: widget.userName),
-                  SizedBox(width: _homeSize(12)),
-                  Expanded(
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.centerLeft,
-                      child: Text(
-                        _localizedGreeting(context, widget.userName),
-                        maxLines: 1,
-                        overflow: TextOverflow.visible,
-                        style: AppTypography.newsreader(
-                          textStyle: theme.textTheme.titleLarge,
-                          color: Colors.white,
-                          fontSize: _greetingFontSize(
-                            userName: widget.userName,
-                            baseFontSize: responsive.compactFontSize(
-                              tiny: _homeFontSize(22),
-                              compact: _homeFontSize(24),
-                              regular: _homeFontSize(25),
-                            ),
-                          ),
-                          fontWeight: FontWeight.w300,
-                          height: 1.1,
-                          letterSpacing: 0,
-                        ),
+              child: FittedBox(
+                fit: BoxFit.scaleDown,
+                alignment: Alignment.centerLeft,
+                child: Text(
+                  _localizedGreeting(context, widget.userName),
+                  maxLines: 1,
+                  overflow: TextOverflow.visible,
+                  style: AppTypography.newsreader(
+                    textStyle: theme.textTheme.titleLarge,
+                    color: Colors.white,
+                    fontSize: _greetingFontSize(
+                      userName: widget.userName,
+                      baseFontSize: responsive.compactFontSize(
+                        tiny: homeFontSize(22),
+                        compact: homeFontSize(24),
+                        regular: homeFontSize(25),
                       ),
                     ),
+                    fontWeight: FontWeight.w300,
+                    height: 1.1,
+                    letterSpacing: 0,
                   ),
-                ],
+                ),
               ),
             ),
-            SizedBox(width: _homeSize(12)),
-            _HomeHeaderIconButton(
+            SizedBox(width: homeSize(12)),
+            HomeHeaderIconButton(
               icon: balanceSettings.isHidden
                   ? KeroseneIcons.eyeOff
                   : KeroseneIcons.eye,
               onTap: toggleVisibility,
             ),
-            SizedBox(width: _homeSize(8)),
-            _HomeHeaderIconButton(
+            SizedBox(width: homeSize(8)),
+            HomeHeaderIconButton(
               key: _notificationButtonKey,
               icon: KeroseneIcons.notifications,
               hasBadge: notificationCount > 0,
@@ -288,14 +274,14 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
             ),
           ],
         ),
-        SizedBox(height: _homeSize(18)),
+        SizedBox(height: homeSize(18)),
         SizedBox(
-          height: responsive.isTinyPhone ? _homeSize(276) : _homeSize(286),
+          height: responsive.isTinyPhone ? homeSize(276) : homeSize(286),
           child: walletCardData.isEmpty
-              ? _HomeBalanceCard(
+              ? HomeBalanceCard(
                   data: walletCardData.isNotEmpty
                       ? walletCardData.first
-                      : cardDataFor(_HomeLedgerBalanceView.total),
+                      : cardDataFor(HomeLedgerBalanceView.total),
                   onViewStatement: widget.onViewStatement,
                   onOpenWallets: widget.onOpenWallets,
                 )
@@ -305,13 +291,13 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
                   physics: const BouncingScrollPhysics(),
                   onPageChanged: selectPage,
                   children: [
-                    _HomeBalanceCard(
-                      data: cardDataFor(_HomeLedgerBalanceView.total),
+                    HomeBalanceCard(
+                      data: cardDataFor(HomeLedgerBalanceView.total),
                       onViewStatement: widget.onViewStatement,
                       onOpenWallets: widget.onOpenWallets,
                     ),
                     for (final data in walletCardData)
-                      _HomeBalanceCard(
+                      HomeBalanceCard(
                         data: data,
                         onViewStatement: widget.onViewStatement,
                         onOpenWallets: widget.onOpenWallets,
@@ -319,20 +305,20 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
                   ],
                 ),
         ),
-        SizedBox(height: _homeSize(16)),
+        SizedBox(height: homeSize(16)),
         Row(
           children: [
             Expanded(
-              child: _HomeBalanceActionButton(
+              child: HomeBalanceActionButton(
                 icon: KeroseneIcons.down,
                 label: context.tr.homeReceiveActionShort,
                 onTap: widget.onReceive,
                 primary: true,
               ),
             ),
-            SizedBox(width: _homeSize(12)),
+            SizedBox(width: homeSize(12)),
             Expanded(
-              child: _HomeBalanceActionButton(
+              child: HomeBalanceActionButton(
                 icon: KeroseneIcons.up,
                 label: context.tr.homeSendTitle,
                 onTap: widget.onSend,
@@ -341,12 +327,12 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
             ),
           ],
         ),
-        SizedBox(height: _homeSize(14)),
+        SizedBox(height: homeSize(14)),
         if (walletCardData.isNotEmpty)
-          _HomePaginationDots(
+          HomePaginationDots(
             count: walletCardData.length + 1,
             activeIndex: selectedPage.clamp(
-              selectedView == _HomeLedgerBalanceView.total ? 0 : 0,
+              selectedView == HomeLedgerBalanceView.total ? 0 : 0,
               walletCardData.length,
             ),
           ),
@@ -411,29 +397,29 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
     required double? btcBrl,
   }) {
     return (btcDailyChangePercent ?? 0) >= 0
-        ? _homePositiveColor
+        ? homePositiveColor
         : AppColors.hexFFFF5A67;
   }
 
-  static int _pageIndexFor(_HomeLedgerBalanceView view) {
+  static int _pageIndexFor(HomeLedgerBalanceView view) {
     return switch (view) {
-      _HomeLedgerBalanceView.total => 0,
-      _HomeLedgerBalanceView.platform => 1,
-      _HomeLedgerBalanceView.onChain => 2,
+      HomeLedgerBalanceView.total => 0,
+      HomeLedgerBalanceView.platform => 1,
+      HomeLedgerBalanceView.onChain => 2,
     };
   }
 
   static List<Wallet> _walletsForView(
     List<Wallet> wallets,
-    _HomeLedgerBalanceView view,
+    HomeLedgerBalanceView view,
   ) {
-    if (view == _HomeLedgerBalanceView.total) {
+    if (view == HomeLedgerBalanceView.total) {
       return wallets;
     }
 
     final filtered = wallets
         .where(
-          (wallet) => view == _HomeLedgerBalanceView.onChain
+          (wallet) => view == HomeLedgerBalanceView.onChain
               ? wallet.isSelfCustody
               : wallet.isKeroseneCustody,
         )
@@ -444,15 +430,15 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
   static Wallet? _primaryWalletForView({
     required Wallet? activeWallet,
     required List<Wallet> scopedWallets,
-    required _HomeLedgerBalanceView view,
+    required HomeLedgerBalanceView view,
   }) {
-    if (view == _HomeLedgerBalanceView.total) {
+    if (view == HomeLedgerBalanceView.total) {
       return activeWallet ??
           (scopedWallets.isNotEmpty ? scopedWallets.first : null);
     }
 
     final activeMatches = activeWallet != null &&
-        (view == _HomeLedgerBalanceView.onChain
+        (view == HomeLedgerBalanceView.onChain
             ? activeWallet.isSelfCustody
             : activeWallet.isKeroseneCustody);
     if (activeMatches) {
@@ -487,12 +473,12 @@ class _HomeBalanceSectionState extends ConsumerState<_HomeBalanceSection> {
     }
 
     return (baseFontSize * maxNameCharsAtBaseSize / nameLength)
-        .clamp(_homeFontSize(14), baseFontSize);
+        .clamp(homeFontSize(14), baseFontSize);
   }
 }
 
-class _HomeBalanceCardData {
-  final _HomeLedgerBalanceView view;
+class HomeBalanceCardData {
+  final HomeLedgerBalanceView view;
   final Wallet? wallet;
   final double balanceBtc;
   final String convertedBalanceLabel;
@@ -501,7 +487,7 @@ class _HomeBalanceCardData {
   final int decimalPlaces;
   final bool balanceHidden;
 
-  const _HomeBalanceCardData({
+  const HomeBalanceCardData({
     required this.view,
     required this.wallet,
     required this.balanceBtc,
@@ -512,7 +498,7 @@ class _HomeBalanceCardData {
     required this.balanceHidden,
   });
 
-  factory _HomeBalanceCardData.forWallet({
+  factory HomeBalanceCardData.forWallet({
     required Wallet wallet,
     required String convertedBalanceLabel,
     required String dailyChangeLabel,
@@ -520,10 +506,10 @@ class _HomeBalanceCardData {
     required int decimalPlaces,
     required bool balanceHidden,
   }) {
-    return _HomeBalanceCardData(
+    return HomeBalanceCardData(
       view: wallet.isColdWallet
-          ? _HomeLedgerBalanceView.onChain
-          : _HomeLedgerBalanceView.platform,
+          ? HomeLedgerBalanceView.onChain
+          : HomeLedgerBalanceView.platform,
       wallet: wallet,
       balanceBtc: wallet.balance,
       convertedBalanceLabel: convertedBalanceLabel,
@@ -535,12 +521,12 @@ class _HomeBalanceCardData {
   }
 }
 
-class _HomeBalanceCard extends ConsumerWidget {
-  final _HomeBalanceCardData data;
+class HomeBalanceCard extends ConsumerWidget {
+  final HomeBalanceCardData data;
   final VoidCallback onViewStatement;
   final VoidCallback onOpenWallets;
 
-  const _HomeBalanceCard({
+  const HomeBalanceCard({
     required this.data,
     required this.onViewStatement,
     required this.onOpenWallets,
@@ -550,19 +536,18 @@ class _HomeBalanceCard extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
     final responsive = context.responsive;
-    final isTotal = data.view == _HomeLedgerBalanceView.total;
+    final isTotal = data.view == HomeLedgerBalanceView.total;
     final title = isTotal
-        ? _homeTotalBalanceTitle(context)
+        ? homeTotalBalanceTitle(context)
         : data.wallet?.custodyDisplayLabel ??
             switch (data.view) {
-              _HomeLedgerBalanceView.platform =>
-                _homeInternalBalanceTitle(context),
-              _HomeLedgerBalanceView.onChain =>
-                _homeOnchainBalanceTitle(context),
-              _HomeLedgerBalanceView.total => _homeTotalBalanceTitle(context),
+              HomeLedgerBalanceView.platform =>
+                homeInternalBalanceTitle(context),
+              HomeLedgerBalanceView.onChain => homeOnchainBalanceTitle(context),
+              HomeLedgerBalanceView.total => homeTotalBalanceTitle(context),
             };
     final walletName =
-        _nonEmpty(data.wallet?.name, _homeGlobalWalletTitle(context));
+        _nonEmpty(data.wallet?.name, homeGlobalWalletTitle(context));
     final btcUnitLabel = 'BTC';
 
     final content = Column(
@@ -579,8 +564,8 @@ class _HomeBalanceCard extends ConsumerWidget {
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       style: theme.textTheme.labelSmall?.copyWith(
-                        color: _homeMutedTextColor,
-                        fontSize: _homeFontSize(12),
+                        color: homeMutedTextColor,
+                        fontSize: homeFontSize(12),
                         fontWeight: FontWeight.w300,
                         letterSpacing: 0.8,
                       ),
@@ -598,18 +583,18 @@ class _HomeBalanceCard extends ConsumerWidget {
                 visualDensity: VisualDensity.compact,
                 padding: EdgeInsets.zero,
                 constraints: BoxConstraints.tightFor(
-                  width: _homeSize(32),
-                  height: _homeSize(32),
+                  width: homeSize(32),
+                  height: homeSize(32),
                 ),
                 icon: Icon(
                   KeroseneIcons.send,
-                  size: _homeSize(20),
-                  color: _homeMutedTextColor,
+                  size: homeSize(20),
+                  color: homeMutedTextColor,
                 ),
               ),
           ],
         ),
-        SizedBox(height: _homeSize(10)),
+        SizedBox(height: homeSize(10)),
         if (data.wallet != null) ...[
           Text(
             walletName,
@@ -617,14 +602,14 @@ class _HomeBalanceCard extends ConsumerWidget {
             overflow: TextOverflow.ellipsis,
             style: theme.textTheme.titleSmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.92),
-              fontSize: _homeFontSize(14),
+              fontSize: homeFontSize(14),
               fontWeight: FontWeight.w300,
               letterSpacing: 0,
             ),
           ),
-          SizedBox(height: _homeSize(15)),
+          SizedBox(height: homeSize(15)),
         ] else
-          SizedBox(height: _homeSize(24)),
+          SizedBox(height: homeSize(24)),
         FittedBox(
           fit: BoxFit.scaleDown,
           alignment: Alignment.centerLeft,
@@ -645,26 +630,25 @@ class _HomeBalanceCard extends ConsumerWidget {
                   HapticFeedback.selectionClick();
                   ref.read(balanceSettingsProvider.notifier).cycleDecimals();
                 },
-                style: AppTypography.amountInput(isBtc: true).copyWith(
-                  color: Colors.white,
+                style: AppTypography.homeBalance(color: Colors.white).copyWith(
                   fontSize: responsive.compactFontSize(
-                    tiny: _homeFontSize(isTotal ? 36 : 32),
-                    compact: _homeFontSize(isTotal ? 42 : 38),
-                    regular: _homeFontSize(isTotal ? 46 : 42),
+                    tiny: homeFontSize(isTotal ? 36 : 32),
+                    compact: homeFontSize(isTotal ? 42 : 38),
+                    regular: homeFontSize(isTotal ? 46 : 42),
                   ),
                   letterSpacing: 0,
                 ),
               ),
               Padding(
                 padding: EdgeInsets.only(
-                  left: _homeSize(6),
-                  bottom: _homeSize(4),
+                  left: homeSize(6),
+                  bottom: homeSize(4),
                 ),
                 child: Text(
                   btcUnitLabel,
                   style: theme.textTheme.bodyLarge?.copyWith(
-                    color: _homeMutedTextColor,
-                    fontSize: _homeFontSize(16),
+                    color: homeMutedTextColor,
+                    fontSize: homeFontSize(16),
                     fontWeight: FontWeight.w300,
                     letterSpacing: 0,
                   ),
@@ -673,29 +657,29 @@ class _HomeBalanceCard extends ConsumerWidget {
             ],
           ),
         ),
-        SizedBox(height: _homeSize(5)),
+        SizedBox(height: homeSize(5)),
         Text(
           data.convertedBalanceLabel,
           maxLines: 1,
           overflow: TextOverflow.ellipsis,
           style: theme.textTheme.bodyMedium?.copyWith(
-            color: _homeMutedTextColor,
-            fontSize: _homeFontSize(14),
+            color: homeMutedTextColor,
+            fontSize: homeFontSize(14),
             fontWeight: FontWeight.w300,
             letterSpacing: 0,
           ),
         ),
-        SizedBox(height: _homeSize(5)),
+        SizedBox(height: homeSize(5)),
         Row(
           children: [
             Icon(
-              data.dailyChangeColor == _homePositiveColor
+              data.dailyChangeColor == homePositiveColor
                   ? KeroseneIcons.up
                   : KeroseneIcons.down,
               color: data.dailyChangeColor,
-              size: _homeSize(12),
+              size: homeSize(12),
             ),
-            SizedBox(width: _homeSize(5)),
+            SizedBox(width: homeSize(5)),
             Flexible(
               child: Text(
                 data.dailyChangeLabel,
@@ -703,7 +687,7 @@ class _HomeBalanceCard extends ConsumerWidget {
                 overflow: TextOverflow.ellipsis,
                 style: theme.textTheme.bodySmall?.copyWith(
                   color: data.dailyChangeColor,
-                  fontSize: _homeFontSize(13),
+                  fontSize: homeFontSize(13),
                   fontWeight: FontWeight.w300,
                   letterSpacing: 0,
                 ),
@@ -712,43 +696,16 @@ class _HomeBalanceCard extends ConsumerWidget {
           ],
         ),
         const Spacer(),
-        Align(
-          alignment: Alignment.centerLeft,
-          child: OutlinedButton(
-            onPressed: onViewStatement,
-            style: OutlinedButton.styleFrom(
-              foregroundColor: Colors.white.withValues(alpha: 0.82),
-              side: BorderSide(
-                color: Colors.white.withValues(alpha: isTotal ? 0.36 : 1),
-              ),
-              padding: EdgeInsets.symmetric(
-                horizontal: _homeSize(12),
-                vertical: _homeSize(7),
-              ),
-              minimumSize: Size(0, _homeSize(34)),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(_homeSize(8)),
-              ),
-              textStyle: theme.textTheme.labelSmall?.copyWith(
-                fontSize: _homeFontSize(12),
-                fontWeight: FontWeight.w300,
-                letterSpacing: 0,
-              ),
-            ),
-            child: Text(_homeStatementActionLabel(context)),
-          ),
-        ),
       ],
     );
 
     if (isTotal && data.wallet == null) {
       return Padding(
         padding: EdgeInsets.fromLTRB(
-          _homeSize(6),
-          _homeSize(20),
-          _homeSize(6),
-          _homeSize(20),
+          homeSize(6),
+          homeSize(20),
+          homeSize(6),
+          homeSize(20),
         ),
         child: content,
       );
@@ -760,9 +717,9 @@ class _HomeBalanceCard extends ConsumerWidget {
         HapticFeedback.selectionClick();
         onOpenWallets();
       },
-      child: _HomeGlassPanel(
-        borderRadius: BorderRadius.circular(_homeSize(18)),
-        padding: EdgeInsets.all(_homeSize(20)),
+      child: HomeGlassPanel(
+        borderRadius: BorderRadius.circular(homeSize(18)),
+        padding: EdgeInsets.all(homeSize(20)),
         child: content,
       ),
     );
@@ -774,22 +731,22 @@ class _HomeBalanceCard extends ConsumerWidget {
   }
 }
 
-class _HomeAvatar extends StatelessWidget {
+class HomeAvatar extends StatelessWidget {
   final String name;
 
-  const _HomeAvatar({required this.name});
+  const HomeAvatar({required this.name});
 
   @override
   Widget build(BuildContext context) {
     final initial = _initialFor(name);
 
     return Container(
-      width: _homeSize(40),
-      height: _homeSize(40),
+      width: homeSize(40),
+      height: homeSize(40),
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _homeCardColor,
-        border: Border.all(color: _homePanelBorderColor),
+        color: homeCardColor,
+        border: Border.all(color: homePanelBorderColor),
         image: const DecorationImage(
           image: AssetImage(KeroseneLogo.assetPath),
           fit: BoxFit.cover,
@@ -818,7 +775,7 @@ class _HomeAvatar extends StatelessWidget {
   }
 }
 
-String _homeInternalBalanceTitle(BuildContext context) {
+String homeInternalBalanceTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'Internal balance',
     'es' => 'Saldo interno',
@@ -826,7 +783,7 @@ String _homeInternalBalanceTitle(BuildContext context) {
   };
 }
 
-String _homeOnchainBalanceTitle(BuildContext context) {
+String homeOnchainBalanceTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'On-chain balance',
     'es' => 'Saldo On-chain',
@@ -834,7 +791,7 @@ String _homeOnchainBalanceTitle(BuildContext context) {
   };
 }
 
-String _homeTotalBalanceTitle(BuildContext context) {
+String homeTotalBalanceTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'Total balance',
     'es' => 'Saldo total',
@@ -842,7 +799,7 @@ String _homeTotalBalanceTitle(BuildContext context) {
   };
 }
 
-String _homeGlobalWalletTitle(BuildContext context) {
+String homeGlobalWalletTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'Global wallet',
     'es' => 'Cartera global',
@@ -850,7 +807,7 @@ String _homeGlobalWalletTitle(BuildContext context) {
   };
 }
 
-String _homeConsolidatedWalletTitle(BuildContext context) {
+String homeConsolidatedWalletTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'Total Balance',
     'es' => 'Saldo Total',
@@ -858,7 +815,7 @@ String _homeConsolidatedWalletTitle(BuildContext context) {
   };
 }
 
-String _homeOnchainWalletCardTitle(BuildContext context) {
+String homeOnchainWalletCardTitle(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'On-chain wallet',
     'es' => 'Cartera On-chain',
@@ -866,7 +823,7 @@ String _homeOnchainWalletCardTitle(BuildContext context) {
   };
 }
 
-String _homeStatementActionLabel(BuildContext context) {
+String homeStatementActionLabel(BuildContext context) {
   return switch (Localizations.localeOf(context).languageCode) {
     'en' => 'Go to statement',
     'es' => 'Ir al extracto',

@@ -2,7 +2,8 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_screens/cold_wallet_creation_screen.dart';
 import 'package:kerosene/storybook/stories/bitcoin_advanced_stories.dart';
 
 void main() {
@@ -38,7 +39,7 @@ void main() {
     expect(find.text('Cartão Kerosene'), findsWidgets);
     expect(find.text('STATUS DA CARTEIRA'), findsOneWidget);
     expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
-    expect(find.text('Criar Carteira'), findsOneWidget);
+    expect(find.text('Criar carteira'), findsOneWidget);
   });
 
   testWidgets('cold wallet creation story renders the first flow screen',

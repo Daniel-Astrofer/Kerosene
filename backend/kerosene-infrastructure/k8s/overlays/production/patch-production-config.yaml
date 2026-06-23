@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: kerosene-app-config
+data:
+  SPRING_PROFILES_ACTIVE: "prod"
+  REGION: "PROD"
+  AUDIT_SOLVENCY_ENFORCED: "true"
+  RELEASE_ATTESTATION_REQUIRED: "true"
+  RELEASE_REMOTE_ATTESTATION_ENABLED: "true"
+  SERVER_SHUTDOWN: "graceful"
+  SPRING_LIFECYCLE_TIMEOUT_PER_SHUTDOWN_PHASE: "45s"

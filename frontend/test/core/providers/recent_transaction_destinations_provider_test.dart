@@ -3,6 +3,7 @@ import 'package:flutter_secure_storage/flutter_secure_storage.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
+import 'package:kerosene/app/providers/session_storage_scope_provider.dart';
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 
 void main() {
@@ -16,6 +17,7 @@ void main() {
     return ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        sessionStorageScopeProvider.overrideWithValue('test-session'),
       ],
     );
   }
@@ -80,6 +82,7 @@ void main() {
     final reloaded = ProviderContainer(
       overrides: [
         sharedPreferencesProvider.overrideWithValue(sharedPreferences),
+        sessionStorageScopeProvider.overrideWithValue('test-session'),
       ],
     );
     addTearDown(reloaded.dispose);

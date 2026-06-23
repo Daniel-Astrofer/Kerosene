@@ -1,8 +1,7 @@
 import 'dart:math';
-import 'dart:ui' as ui;
+
 import 'package:flutter/cupertino.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
-import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 class BitcoinRefreshIndicator extends StatefulWidget {
   final Future<void> Function() onRefresh;
@@ -54,7 +53,6 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
       refreshTriggerPullDistance: 120.0,
       refreshIndicatorExtent: 70.0,
       onRefresh: () async {
-        // Reset check animation when starting refresh
         _checkController.reset();
         await widget.onRefresh();
       },
@@ -65,53 +63,57 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
         double refreshTriggerPullDistance,
         double refreshIndicatorExtent,
       ) {
-        // State transition detection
         if (refreshState == RefreshIndicatorMode.done &&
             _lastState != RefreshIndicatorMode.done) {
           _checkController.forward();
         }
         _lastState = refreshState;
 
-        final double opacity = (pulledExtent / 50.0).clamp(0.0, 1.0);
-        final double scale = (pulledExtent / 100.0).clamp(0.0, 1.2);
+        final pullProgress =
+            (pulledExtent / refreshTriggerPullDistance).clamp(0.0, 1.0);
+        final opacity = (pulledExtent / 48.0).clamp(0.0, 1.0);
+        final scale = (0.62 + (pullProgress * 0.38)).clamp(0.62, 1.0);
 
-        // Rotation logic
-        double rotation = 0;
+        final pullRotation = pullProgress * 2 * pi;
         if (refreshState == RefreshIndicatorMode.drag ||
             refreshState == RefreshIndicatorMode.armed) {
-          rotation = (pulledExtent / 100.0) * 2 * pi;
           if (_spinnerController.isAnimating) _spinnerController.stop();
         } else if (refreshState == RefreshIndicatorMode.refresh) {
           if (!_spinnerController.isAnimating) _spinnerController.repeat();
-          rotation = _spinnerController.value * 2 * pi;
-        } else if (refreshState == RefreshIndicatorMode.done) {
+        } else if (refreshState == RefreshIndicatorMode.done ||
+            refreshState == RefreshIndicatorMode.inactive) {
           if (_spinnerController.isAnimating) _spinnerController.stop();
-          // Align to upright
-          rotation = 0;
         }
 
-        return Container(
+        return SizedBox(
           height: refreshIndicatorExtent,
-          alignment: Alignment.center,
-          child: Opacity(
-            opacity: opacity,
-            child: Transform.scale(
-              scale: scale,
-              child: AnimatedBuilder(
-                animation: Listenable.merge([
-                  _spinnerController,
-                  _checkController,
-                ]),
-                builder: (context, child) {
-                  return CustomPaint(
-                    size: const Size(30, 30),
-                    painter: BitcoinPainter(
-                      rotation: rotation,
-                      checkProgress: _checkAnim.value,
-                      isDone: refreshState == RefreshIndicatorMode.done,
-                    ),
-                  );
-                },
+          child: Center(
+            child: Opacity(
+              opacity: opacity,
+              child: Transform.scale(
+                scale: scale,
+                child: AnimatedBuilder(
+                  animation: Listenable.merge([
+                    _spinnerController,
+                    _checkController,
+                  ]),
+                  builder: (context, child) {
+                    final rotation =
+                        refreshState == RefreshIndicatorMode.refresh
+                            ? _spinnerController.value * 2 * pi
+                            : pullRotation;
+
+                    return CustomPaint(
+                      size: const Size(30, 30),
+                      painter: PullLoadingPainter(
+                        rotation: rotation,
+                        pullProgress: pullProgress,
+                        checkProgress: _checkAnim.value,
+                        isDone: refreshState == RefreshIndicatorMode.done,
+                      ),
+                    );
+                  },
+                ),
               ),
             ),
           ),
@@ -121,13 +123,15 @@ class _BitcoinRefreshIndicatorState extends State<BitcoinRefreshIndicator>
   }
 }
 
-class BitcoinPainter extends CustomPainter {
+class PullLoadingPainter extends CustomPainter {
   final double rotation;
+  final double pullProgress;
   final double checkProgress;
   final bool isDone;
 
-  BitcoinPainter({
+  const PullLoadingPainter({
     required this.rotation,
+    required this.pullProgress,
     required this.checkProgress,
     required this.isDone,
   });
@@ -135,158 +139,91 @@ class BitcoinPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = size.width / 2;
+    final radius = min(size.width, size.height) / 2;
 
-    // 1. Rotate Canvas
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    // Se estiver "Done", a rotação deve parar ou fazer um flip?
-    // Vamos manter a rotação zero se done, controlado pelo widget.
     if (!isDone) canvas.rotate(rotation);
     canvas.translate(-center.dx, -center.dy);
 
-    // 2. Coin Body (Gold Gradient)
-    final Paint bodyPaint = Paint()
-      ..shader = ui.Gradient.linear(
-        Offset(0, 0),
-        Offset(size.width, size.height),
-        [
-          KeroseneBrandTokens.brand, // Gold
-          KeroseneBrandTokens.amberDeep, // Darker Gold
-          KeroseneBrandTokens.bitcoin, // Light Gold
-          KeroseneBrandTokens.warning,
-        ],
-        [0.0, 0.4, 0.6, 1.0],
-      );
-
-    // Shadow/Glow
-    final Paint shadowPaint = Paint()
-      ..color = KeroseneBrandTokens.bitcoin.withValues(alpha: 0.32)
-      ..maskFilter = const MaskFilter.blur(BlurStyle.normal, 8);
-
-    canvas.drawCircle(center, radius, shadowPaint);
-    canvas.drawCircle(center, radius, bodyPaint);
-
-    // 3. Glassmorphism / Shine
-    final Paint shinePaint = Paint()
-      ..shader = ui.Gradient.linear(
-        Offset(0, 0),
-        Offset(size.width * 0.5, size.height),
-        [
-          KeroseneBrandTokens.textPrimary.withValues(alpha: 0.36),
-          KeroseneBrandTokens.textPrimary.withValues(alpha: 0.0),
-        ],
-      );
-    canvas.drawCircle(center, radius * 0.9, shinePaint);
-
-    // 4. Content (B or Check)
     if (isDone && checkProgress > 0) {
-      // Draw Checkmark
-      _drawCheckmark(canvas, size, center, radius, checkProgress);
+      _drawCheckmark(canvas, center, radius, checkProgress);
     } else {
-      // Draw Bitcoin Symbol
-      // Fade out B if transitioning?
-      double bOpacity = 1.0;
-      if (isDone) bOpacity = 1.0 - checkProgress;
-
-      if (bOpacity > 0) {
-        _drawBitcoinSymbol(canvas, center, radius, bOpacity);
-      }
+      _drawLoadingGlyph(canvas, center, radius, pullProgress);
     }
 
     canvas.restore();
   }
 
-  void _drawBitcoinSymbol(
+  void _drawLoadingGlyph(
     Canvas canvas,
-    Offset center,
-    double radius,
-    double opacity,
-  ) {
-    final TextPainter textPainter = TextPainter(
-      text: TextSpan(
-        text: '₿',
-        style: TextStyle(
-          fontSize: radius * 1.4,
-          fontWeight: FontWeight.bold,
-          color:
-              KeroseneBrandTokens.textPrimary.withValues(alpha: opacity * 0.9),
-          shadows: [
-            Shadow(
-              color: KeroseneBrandTokens.textInverse
-                  .withValues(alpha: 0.2 * opacity),
-              offset: const Offset(1, 1),
-              blurRadius: 2,
-            ),
-          ],
-        ),
-      ),
-      textDirection: TextDirection.ltr,
-    );
-    textPainter.layout();
-    textPainter.paint(
-      canvas,
-      Offset(
-        center.dx - textPainter.width / 2,
-        center.dy - textPainter.height / 2,
-      ),
-    );
-  }
-
-  void _drawCheckmark(
-    Canvas canvas,
-    Size size,
     Offset center,
     double radius,
     double progress,
   ) {
-    // Simple Check Path
-    final Path path = Path();
-    // Percentuais relativos ao centro/raio
-    final double r = radius * 0.6;
+    final stroke = radius * 0.16;
+    final ringRadius = radius - stroke;
+    final rect = Rect.fromCircle(center: center, radius: ringRadius);
+    final trackPaint = Paint()
+      ..color = CupertinoColors.white.withValues(alpha: 0.18)
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final activePaint = Paint()
+      ..color = CupertinoColors.white
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = stroke
+      ..strokeCap = StrokeCap.round;
+    final dotPaint = Paint()..color = CupertinoColors.white;
+    final sweep = pi * (0.42 + (1.28 * progress.clamp(0.0, 1.0)));
 
-    // Check coordinates (approx)
-    final Offset p1 = Offset(center.dx - r * 0.7, center.dy + r * 0.1);
-    final Offset p2 = Offset(center.dx - r * 0.2, center.dy + r * 0.6);
-    final Offset p3 = Offset(center.dx + r * 0.8, center.dy - r * 0.5);
+    canvas.drawArc(rect, 0, 2 * pi, false, trackPaint);
+    canvas.drawArc(rect, -pi / 2, sweep, false, activePaint);
 
-    path.moveTo(p1.dx, p1.dy);
-    path.lineTo(p2.dx, p2.dy);
-    path.lineTo(p3.dx, p3.dy);
+    final dotAngle = (-pi / 2) + sweep;
+    final dotOffset = Offset(
+      center.dx + cos(dotAngle) * ringRadius,
+      center.dy + sin(dotAngle) * ringRadius,
+    );
+    canvas.drawCircle(dotOffset, stroke * 0.70, dotPaint);
+  }
 
-    // Animated Path drawing?
-    // Simples: desenhar path completo com opacidade, ou usar path metric.
-    // Para MVP bonito e rápido: Desenhar path completo mas com scale/opacity.
-    // Ou cortar o path (PathMetrics).
+  void _drawCheckmark(
+    Canvas canvas,
+    Offset center,
+    double radius,
+    double progress,
+  ) {
+    final path = Path();
+    final r = radius * 0.62;
+    final p1 = Offset(center.dx - r * 0.72, center.dy + r * 0.06);
+    final p2 = Offset(center.dx - r * 0.24, center.dy + r * 0.54);
+    final p3 = Offset(center.dx + r * 0.82, center.dy - r * 0.52);
 
-    // Vamos desenhar completo com scale (elasticOut do controller já dá o pop).
+    path
+      ..moveTo(p1.dx, p1.dy)
+      ..lineTo(p2.dx, p2.dy)
+      ..lineTo(p3.dx, p3.dy);
 
-    final Paint checkPaint = Paint()
-      ..color = KeroseneBrandTokens.textPrimary
+    final checkPaint = Paint()
+      ..color = CupertinoColors.white
       ..style = PaintingStyle.stroke
       ..strokeWidth = 4.0
       ..strokeCap = StrokeCap.round
-      ..shader = ui.Gradient.linear(
-        Offset(0, 0),
-        Offset(size.width, size.height),
-        [KeroseneBrandTokens.textPrimary, KeroseneBrandTokens.info],
-      );
+      ..strokeJoin = StrokeJoin.round;
 
-    // Scale transformation for pop effect
     canvas.save();
     canvas.translate(center.dx, center.dy);
-    final double scale = progress; // 0 to 1 (elastic)
-    canvas.scale(scale);
+    canvas.scale(progress.clamp(0.0, 1.0));
     canvas.translate(-center.dx, -center.dy);
-
     canvas.drawPath(path, checkPaint);
-
     canvas.restore();
   }
 
   @override
-  bool shouldRepaint(BitcoinPainter oldDelegate) {
+  bool shouldRepaint(PullLoadingPainter oldDelegate) {
     return oldDelegate.rotation != rotation ||
+        oldDelegate.pullProgress != pullProgress ||
         oldDelegate.checkProgress != checkProgress ||
         oldDelegate.isDone != isDone;
   }

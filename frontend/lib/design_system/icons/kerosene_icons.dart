@@ -10,10 +10,10 @@ class KeroseneIcons {
   const KeroseneIcons._();
 
   // Navigation
-  static const IconData home = LucideIcons.home;
+  static const IconData home = LucideIcons.layoutDashboard;
   static const IconData wallet = LucideIcons.walletCards;
-  static const IconData history = LucideIcons.receipt;
-  static const IconData settings = LucideIcons.settings;
+  static const IconData history = LucideIcons.scrollText;
+  static const IconData settings = LucideIcons.slidersHorizontal;
   static const IconData menu = LucideIcons.menu;
 
   // Core financial actions

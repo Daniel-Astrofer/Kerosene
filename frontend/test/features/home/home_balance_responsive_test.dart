@@ -5,9 +5,9 @@ import 'package:shared_preferences/shared_preferences.dart';
 import 'package:kerosene/core/providers/shader_provider.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 import 'package:kerosene/features/home/presentation/widgets/animated_balance_display.dart';
-import 'package:kerosene/features/wallet/domain/entities/wallet.dart';
-import 'package:kerosene/features/wallet/presentation/providers/balance_settings_provider.dart';
-import 'package:kerosene/features/wallet/presentation/widgets/wallet_credit_card.dart';
+import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_settings_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_credit_card.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
@@ -228,67 +228,70 @@ class _HomeBalanceHarness extends ConsumerWidget {
 
     return Scaffold(
       backgroundColor: const Color(0xFF02050C),
-      body: Center(
-        child: ConstrainedBox(
-          constraints: const BoxConstraints(maxWidth: 500),
-          child: Padding(
-            padding: const EdgeInsets.all(20),
-            child: Column(
-              mainAxisSize: MainAxisSize.min,
-              children: [
-                SizedBox(
-                  width: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: AnimatedBalanceDisplay(
-                      balance: wallet.balance,
-                      prefix: 'BTC ',
-                      decimalPlaces: balanceSettings.decimalPlaces,
-                      isHidden: balanceSettings.isHidden,
-                      decimalScaleFactor: 0.65,
-                      separatorScaleFactor: 0.65,
-                      style: theme.textTheme.displayLarge!.copyWith(
-                        color: colorScheme.onPrimary.withValues(alpha: 0.86),
-                        fontWeight: FontWeight.w100,
+      body: SingleChildScrollView(
+        physics: const ClampingScrollPhysics(),
+        child: Center(
+          child: ConstrainedBox(
+            constraints: const BoxConstraints(maxWidth: 500),
+            child: Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: AnimatedBalanceDisplay(
+                        balance: wallet.balance,
+                        prefix: 'BTC ',
+                        decimalPlaces: balanceSettings.decimalPlaces,
+                        isHidden: balanceSettings.isHidden,
+                        decimalScaleFactor: 0.65,
+                        separatorScaleFactor: 0.65,
+                        style: theme.textTheme.displayLarge!.copyWith(
+                          color: colorScheme.onPrimary.withValues(alpha: 0.86),
+                          fontWeight: FontWeight.w100,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 10),
-                SizedBox(
-                  width: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: Text(
-                      balanceSettings.isHidden
-                          ? 'BTC ••••••••'
-                          : 'US\$ 999,999,999,999,999.99',
-                      style: theme.textTheme.titleMedium!.copyWith(
-                        color: colorScheme.onPrimary.withValues(alpha: 0.52),
-                        fontWeight: FontWeight.w700,
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: Text(
+                        balanceSettings.isHidden
+                            ? 'BTC ••••••••'
+                            : 'US\$ 999,999,999,999,999.99',
+                        style: theme.textTheme.titleMedium!.copyWith(
+                          color: colorScheme.onPrimary.withValues(alpha: 0.52),
+                          fontWeight: FontWeight.w700,
+                        ),
                       ),
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                SizedBox(
-                  width: double.infinity,
-                  child: FittedBox(
-                    fit: BoxFit.scaleDown,
-                    child: SizedBox(
-                      width: 303,
-                      height: 191,
-                      child: WalletCreditCard(
-                        wallet: wallet,
-                        colorIndex: 0,
-                        isSelected: true,
-                        showDetails: true,
-                        onLongPress: () {},
+                  const SizedBox(height: 14),
+                  SizedBox(
+                    width: double.infinity,
+                    child: FittedBox(
+                      fit: BoxFit.scaleDown,
+                      child: SizedBox(
+                        width: 303,
+                        height: 191,
+                        child: WalletCreditCard(
+                          wallet: wallet,
+                          colorIndex: 0,
+                          isSelected: true,
+                          showDetails: true,
+                          onLongPress: () {},
+                        ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),

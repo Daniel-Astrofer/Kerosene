@@ -15,7 +15,8 @@ void main() {
       'credentialId': 'PLgXnnKy4uLf-5HloFqIqTOTkE41AY1uQaBevvikXCg',
       'counter': 1,
       'challengeId': '11111111-2222-3333-4444-555555555555',
-      'challenge': 'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
+      'challenge':
+          'aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa',
       'algorithm': 'Ed25519',
     });
 

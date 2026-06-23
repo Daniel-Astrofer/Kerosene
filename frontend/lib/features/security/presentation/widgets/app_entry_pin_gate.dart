@@ -3,7 +3,6 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_screen_background.dart';
 import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
@@ -37,22 +36,8 @@ class AppEntryPinGate extends ConsumerWidget {
         }
         return _AppEntryPinLockScreen(status: status);
       },
-      loading: () => const _PinGateLoadingState(),
-      error: (_, __) => const _PinGateLoadingState(),
-    );
-  }
-}
-
-class _PinGateLoadingState extends StatelessWidget {
-  const _PinGateLoadingState();
-
-  @override
-  Widget build(BuildContext context) {
-    return const KeroseneScreenBackground(
-      useScroll: false,
-      child: Center(
-        child: TorLoadingDots(),
-      ),
+      loading: () => child,
+      error: (_, __) => child,
     );
   }
 }

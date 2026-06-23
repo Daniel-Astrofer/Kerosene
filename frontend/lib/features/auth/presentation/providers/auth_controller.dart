@@ -1,6 +1,5 @@
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/auth/data/datasources/auth_remote_datasource.dart'
-    show LoginResult;
+import 'package:kerosene/features/auth/domain/entities/login_result.dart';
 import 'package:kerosene/features/auth/domain/usecases/login_usecase.dart';
 
 extension AuthControllerDirectRequests on AuthController {

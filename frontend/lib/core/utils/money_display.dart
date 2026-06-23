@@ -8,6 +8,7 @@ class MoneyDisplay {
   static const List<Currency> pickerCurrencies = [
     Currency.btc,
     Currency.usd,
+    Currency.eur,
     Currency.brl,
   ];
 
@@ -238,6 +239,7 @@ class MoneyDisplay {
     required double? btcBrl,
     bool withSymbol = true,
     bool signed = false,
+    int? decimalPlaces,
   }) {
     final value = convertFromBtcAmount(
       btcAmount: btcAmount,
@@ -250,6 +252,7 @@ class MoneyDisplay {
       amount: value.abs(),
       currency: currency,
       withSymbol: withSymbol,
+      decimalPlaces: decimalPlaces,
     );
 
     if (!signed) {
@@ -258,6 +261,101 @@ class MoneyDisplay {
 
     final prefix = btcAmount >= 0 ? '+' : '-';
     return '$prefix$formatted';
+  }
+
+  static String formatFrozenAmountFromBtc({
+    required double btcAmount,
+    required Currency currency,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    double? displayAmountUsd,
+    double? displayAmountEur,
+    double? displayAmountBrl,
+    double? displayBtcUsd,
+    double? displayBtcEur,
+    double? displayBtcBrl,
+    bool withSymbol = true,
+    bool signed = false,
+  }) {
+    final amount = _historicalAmount(
+      btcAmount: btcAmount.abs(),
+      currency: currency,
+      btcUsd: btcUsd,
+      btcEur: btcEur,
+      btcBrl: btcBrl,
+      displayAmountUsd: displayAmountUsd,
+      displayAmountEur: displayAmountEur,
+      displayAmountBrl: displayAmountBrl,
+      displayBtcUsd: displayBtcUsd,
+      displayBtcEur: displayBtcEur,
+      displayBtcBrl: displayBtcBrl,
+    );
+
+    final formatted = format(
+      amount: amount,
+      currency: currency,
+      withSymbol: withSymbol,
+    );
+
+    if (!signed) {
+      return formatted;
+    }
+
+    final prefix = btcAmount >= 0 ? '+' : '-';
+    return '$prefix$formatted';
+  }
+
+  static double _historicalAmount({
+    required double btcAmount,
+    required Currency currency,
+    required double? btcUsd,
+    required double? btcEur,
+    required double? btcBrl,
+    double? displayAmountUsd,
+    double? displayAmountEur,
+    double? displayAmountBrl,
+    double? displayBtcUsd,
+    double? displayBtcEur,
+    double? displayBtcBrl,
+  }) {
+    switch (currency) {
+      case Currency.btc:
+        return btcAmount;
+      case Currency.usd:
+        return displayAmountUsd?.abs() ??
+            (displayBtcUsd != null && displayBtcUsd > 0
+                ? btcAmount * displayBtcUsd
+                : convertFromBtcAmount(
+                    btcAmount: btcAmount,
+                    currency: currency,
+                    btcUsd: btcUsd,
+                    btcEur: btcEur,
+                    btcBrl: btcBrl,
+                  ));
+      case Currency.eur:
+        return displayAmountEur?.abs() ??
+            (displayBtcEur != null && displayBtcEur > 0
+                ? btcAmount * displayBtcEur
+                : convertFromBtcAmount(
+                    btcAmount: btcAmount,
+                    currency: currency,
+                    btcUsd: btcUsd,
+                    btcEur: btcEur,
+                    btcBrl: btcBrl,
+                  ));
+      case Currency.brl:
+        return displayAmountBrl?.abs() ??
+            (displayBtcBrl != null && displayBtcBrl > 0
+                ? btcAmount * displayBtcBrl
+                : convertFromBtcAmount(
+                    btcAmount: btcAmount,
+                    currency: currency,
+                    btcUsd: btcUsd,
+                    btcEur: btcEur,
+                    btcBrl: btcBrl,
+                  ));
+    }
   }
 
   static String formatQuote({

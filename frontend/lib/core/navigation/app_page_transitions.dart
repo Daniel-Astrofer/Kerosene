@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 
-const Duration kKerosenePageTransitionDuration = KeroseneMotion.pageIn;
-const Duration kKerosenePageReverseTransitionDuration = KeroseneMotion.pageOut;
+const Duration kKerosenePageTransitionDuration = KeroseneMotion.medium;
+const Duration kKerosenePageReverseTransitionDuration = KeroseneMotion.short;
 
 const PageTransitionsTheme kerosenePageTransitionsTheme = PageTransitionsTheme(
   builders: <TargetPlatform, PageTransitionsBuilder>{
@@ -50,6 +50,7 @@ class KerosenePageTransitionsBuilder extends PageTransitionsBuilder {
     return buildKeroseneRouteTransition(
       context: context,
       animation: animation,
+      secondaryAnimation: secondaryAnimation,
       child: child,
     );
   }
@@ -60,22 +61,43 @@ Widget buildKeroseneHorizontalTransition({
   required Animation<double> secondaryAnimation,
   required Widget child,
 }) {
-  final curved = CurvedAnimation(
+  final incoming = CurvedAnimation(
     parent: animation,
     curve: KeroseneMotion.entrance,
     reverseCurve: KeroseneMotion.exit,
   );
+  final outgoing = CurvedAnimation(
+    parent: secondaryAnimation,
+    curve: KeroseneMotion.standard,
+    reverseCurve: KeroseneMotion.exit,
+  );
 
   return RepaintBoundary(
-    child: FadeTransition(
-      opacity: Tween<double>(begin: 0.96, end: 1).animate(curved),
-      child: SlideTransition(
-        position: Tween<Offset>(
-          begin: const Offset(0.045, 0),
-          end: Offset.zero,
-        ).animate(curved),
-        transformHitTests: false,
-        child: child,
+    child: SlideTransition(
+      position: Tween<Offset>(
+        begin: Offset.zero,
+        end: const Offset(-0.025, 0),
+      ).animate(outgoing),
+      transformHitTests: false,
+      child: ScaleTransition(
+        scale: Tween<double>(begin: 1, end: 0.992).animate(outgoing),
+        child: FadeTransition(
+          opacity: Tween<double>(begin: 1, end: 0.82).animate(outgoing),
+          child: FadeTransition(
+            opacity: Tween<double>(begin: 0, end: 1).animate(incoming),
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0.075, 0),
+                end: Offset.zero,
+              ).animate(incoming),
+              transformHitTests: false,
+              child: ScaleTransition(
+                scale: Tween<double>(begin: 0.985, end: 1).animate(incoming),
+                child: child,
+              ),
+            ),
+          ),
+        ),
       ),
     ),
   );
@@ -84,6 +106,7 @@ Widget buildKeroseneHorizontalTransition({
 Widget buildKeroseneRouteTransition({
   required BuildContext context,
   required Animation<double> animation,
+  required Animation<double> secondaryAnimation,
   required Widget child,
 }) {
   if (KeroseneMotion.reduceMotion(context)) {
@@ -92,7 +115,7 @@ Widget buildKeroseneRouteTransition({
 
   return buildKeroseneHorizontalTransition(
     animation: animation,
-    secondaryAnimation: const AlwaysStoppedAnimation<double>(0),
+    secondaryAnimation: secondaryAnimation,
     child: child,
   );
 }

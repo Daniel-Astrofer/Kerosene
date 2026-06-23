@@ -14,7 +14,10 @@ void main() {
   testGoldens('settings screen', (tester) async {
     await pumpFullScreenGolden(
       tester,
-      const SettingsScreen(showPrimaryNavigation: true),
+      const TickerMode(
+        enabled: false,
+        child: SettingsScreen(showPrimaryNavigation: true),
+      ),
       size: const Size(430, 8000),
     );
     await screenMatchesGolden(tester, 'settings_screen');

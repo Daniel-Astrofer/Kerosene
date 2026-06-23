@@ -7,6 +7,13 @@ import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:kerosene/design_system/kerosene_design_system.dart';
 
+class _OfflineOverlayCopy {
+  const _OfflineOverlayCopy._();
+
+  static const connectionBody =
+      'Dinheiro privado. Controle sereno. Seguimos reconectando em segundo plano.';
+}
+
 class OfflineOverlay extends ConsumerStatefulWidget {
   final Widget child;
 
@@ -28,11 +35,11 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
     super.initState();
     _pulseController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 1800),
+      duration: KeroseneMotion.loop,
     )..repeat();
     _retryController = AnimationController(
       vsync: this,
-      duration: const Duration(milliseconds: 520),
+      duration: KeroseneMotion.offlineRetryPulse,
     );
     WidgetsBinding.instance.addPostFrameCallback((_) => _syncRetryLoop());
   }
@@ -52,7 +59,7 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
       _retryTimer = null;
       return;
     }
-    _retryTimer ??= Timer.periodic(const Duration(seconds: 4), (_) {
+    _retryTimer ??= Timer.periodic(KeroseneMotion.offlineRetryInterval, (_) {
       if (!mounted) return;
       _performRetry();
     });
@@ -114,7 +121,7 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
                                 ),
                                 const SizedBox(height: 12),
                                 Text(
-                                  'Dinheiro privado. Controle sereno. Seguimos reconectando em segundo plano.',
+                                  _OfflineOverlayCopy.connectionBody,
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: KeroseneBrandTokens.textMuted,
@@ -178,8 +185,9 @@ class _AnimatedConnectionIcon extends StatelessWidget {
       animation: Listenable.merge([pulse, retry]),
       builder: (context, _) {
         final idle = (math.sin(pulse.value * math.pi * 2) + 1) / 2;
-        final hit =
-            retry.isAnimating ? Curves.easeOutBack.transform(retry.value) : 0.0;
+        final hit = retry.isAnimating
+            ? KeroseneMotion.expressiveBack.transform(retry.value)
+            : 0.0;
         final direction = retryCount.isEven ? -1.0 : 1.0;
         final retryGlow = hit * (0.10 + (retryCount % 3) * 0.035);
         return SizedBox(

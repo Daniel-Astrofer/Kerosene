@@ -12,11 +12,11 @@ import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'storybook_mocks.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/bitcoin_accounts/presentation/bitcoin_accounts_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
-import 'package:kerosene/features/transactions/presentation/providers/transaction_provider.dart';
-import 'package:kerosene/features/wallet/presentation/providers/wallet_provider.dart'
+import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart'
     show walletProvider;
 import 'package:kerosene/features/web_admin/providers/admin_providers.dart';
 import 'package:kerosene/features/web_admin/screens/notifications/notifications_screen.dart';

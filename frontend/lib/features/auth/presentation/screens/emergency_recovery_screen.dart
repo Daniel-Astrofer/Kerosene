@@ -11,7 +11,7 @@ import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/features/auth/domain/emergency_recovery_models.dart';
-import 'package:kerosene/features/auth/presentation/providers/emergency_recovery_provider.dart';
+import 'package:kerosene/features/auth/application/providers/emergency_recovery_service_provider.dart';
 
 enum _RecoveryStep { start, verify, complete }
 

@@ -63,16 +63,6 @@ class AppTheme {
     switch (variant) {
       case AppThemeVariant.dark:
         return const AppThemePalette(
-          background: Color(0xFF081019),
-          backgroundTop: Color(0xFF0B1420),
-          backgroundMid: Color(0xFF111B28),
-          backgroundBottom: Color(0xFF070B10),
-          surface: Color(0xFF151F2B),
-          border: Color(0xFF233244),
-          inputFill: Color(0xFF101722),
-        );
-      case AppThemeVariant.amoled:
-        return const AppThemePalette(
           background: Color(0xFF000000),
           backgroundTop: Color(0xFF050608),
           backgroundMid: Color(0xFF0A0C10),
@@ -80,16 +70,6 @@ class AppTheme {
           surface: Color(0xFF13161B),
           border: Color(0xFF20242C),
           inputFill: Color(0xFF0E1014),
-        );
-      case AppThemeVariant.dimmed:
-        return const AppThemePalette(
-          background: Color(0xFF14181E),
-          backgroundTop: Color(0xFF1B2028),
-          backgroundMid: Color(0xFF212733),
-          backgroundBottom: Color(0xFF11151A),
-          surface: Color(0xFF262C36),
-          border: Color(0xFF343C49),
-          inputFill: Color(0xFF20252E),
         );
       case AppThemeVariant.light:
         return const AppThemePalette(
@@ -172,7 +152,7 @@ class AppTheme {
       ),
       // Base TextTheme: Inter for body/labels.
       // Display and hero moments use Newsreader.
-      // Financial and technical values use IBM Plex Mono with tabular figures.
+      // Primary amount input and Home balance use Inter SemiBold tabular; ledger/technical values use IBM Plex Mono.
       textTheme: AppTypography.interTextTheme(baseTextTheme).copyWith(
         displayLarge: AppTypography.displayLarge.copyWith(color: onSurface),
         displayMedium: AppTypography.display.copyWith(color: onSurface),
@@ -187,7 +167,8 @@ class AppTheme {
         bodyMedium: AppTypography.bodyMedium.copyWith(color: onSurface),
         bodySmall: AppTypography.bodySmall.copyWith(color: onSurfaceVariant),
         labelLarge: AppTypography.buttonText.copyWith(color: onSurface),
-        labelMedium: AppTypography.captionLarge.copyWith(color: onSurfaceVariant),
+        labelMedium:
+            AppTypography.captionLarge.copyWith(color: onSurfaceVariant),
         labelSmall: AppTypography.caption.copyWith(color: onSurfaceVariant),
       ),
       inputDecorationTheme: InputDecorationTheme(
@@ -339,7 +320,7 @@ class AppTheme {
     );
   }
 
-  static ThemeData get darkTheme => themeFor(AppThemeVariant.amoled);
+  static ThemeData get darkTheme => themeFor(AppThemeVariant.dark);
 
   // ─── Gradients ─────────────────────────────────
   // Preserving from existing theme.

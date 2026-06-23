@@ -119,8 +119,7 @@ bool _startsWithBech32NetworkPrefix(String value) {
 }
 
 bool _hasMixedCase(String value) {
-  return value.contains(RegExp(r'[a-z]')) &&
-      value.contains(RegExp(r'[A-Z]'));
+  return value.contains(RegExp(r'[a-z]')) && value.contains(RegExp(r'[A-Z]'));
 }
 
 String bitcoinNetworkDisplayName(BitcoinNetworkKind network) {

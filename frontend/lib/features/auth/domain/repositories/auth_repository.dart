@@ -1,6 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/user.dart';
+import '../entities/login_result.dart';
 import '../../../../core/utils/device_helper.dart';
 import '../../data/datasources/auth_remote_datasource.dart'
     show
@@ -9,7 +10,6 @@ import '../../data/datasources/auth_remote_datasource.dart'
         AccountSecurityStatusResult,
         BackupCodesStatusResult,
         AdminLoginResult,
-        LoginResult,
         TotpSetupResult,
         OnboardingPaymentLinkDto;
 

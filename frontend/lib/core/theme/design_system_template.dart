@@ -25,9 +25,11 @@ import 'monochrome_theme.dart';
 ///   H1: 36-44 mobile / 56-72 web, weight 500-600, height 1.02-1.10,
 ///   letter spacing -0.8 to -1.4.
 ///
-/// - IBM Plex Mono: financial values, BTC, sats, balances, fees and hashes.
-///   Use AppTypography.financial/number/amountInput/technicalMono with tabular
-///   figures.
+/// - Inter SemiBold tabular: editable amount input and primary Home balance.
+///   Use AppTypography.amountInput or AppTypography.homeBalance.
+///
+/// - IBM Plex Mono: ledger values, BTC/sats breakdowns, fees and hashes.
+///   Use AppTypography.financial/number/technicalMono with tabular figures.
 ///
 /// Do not call GoogleFonts in features and do not use raw `fontFamily: '...'`.
 /// CI enforces AppTypography/AppTheme usage.
