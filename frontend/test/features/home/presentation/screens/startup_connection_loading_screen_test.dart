@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/config/app_config.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/features/home/presentation/screens/startup_connection_loading_screen.dart';
 
 void main() {
@@ -30,6 +31,13 @@ void main() {
     await tester.pump(const Duration(seconds: 14));
 
     expect(find.text('warmup-child-ready'), findsNothing);
+    expect(find.byType(TorLoadingDots), findsOneWidget);
+    expect(find.text('Carregando Tor'), findsNothing);
+    expect(find.text('carregando tor'), findsNothing);
+    expect(find.text('CONECTANDO TOR'), findsNothing);
+    expect(find.text('SINCRONIZANDO'), findsNothing);
+    expect(find.textContaining('preparando conexao privada'), findsNothing);
+    expect(find.byType(CircularProgressIndicator), findsNothing);
     expect(tester.takeException(), isNull);
 
     await tester.pumpWidget(const SizedBox.shrink());

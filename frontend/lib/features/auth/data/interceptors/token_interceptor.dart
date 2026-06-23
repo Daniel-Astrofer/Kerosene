@@ -51,8 +51,74 @@ class TokenInterceptor extends QueuedInterceptor {
         _matchesPathPrefix(requestPath, '/api/admin/kfe/transactions');
   }
 
+  @visibleForTesting
+  static bool shouldInvalidateSessionForError({
+    required int? statusCode,
+    required String path,
+    required String errorCode,
+    required String responseDataText,
+    required bool requestHadAuthorizationHeader,
+  }) {
+    if (!requestHadAuthorizationHeader || _isAuthRoute(path)) {
+      return false;
+    }
+
+    if (_isExplicitSessionInvalidation(errorCode, responseDataText)) {
+      return true;
+    }
+
+    if (isKfeTransactionStepUpPath(path)) {
+      return false;
+    }
+
+    if (statusCode == 401) {
+      return true;
+    }
+
+    if (statusCode != 403) {
+      return false;
+    }
+
+    return _isSessionAuthError(errorCode, responseDataText);
+  }
+
+  static bool _isAuthRoute(String path) {
+    return path.contains('/auth/login') ||
+        path.contains('/auth/signup') ||
+        path.contains('/auth/passkey/') ||
+        path.contains('/auth/hardware/');
+  }
+
   static bool _matchesPathPrefix(String path, String prefix) {
     return path == prefix || path.startsWith('$prefix/');
+  }
+
+  static bool _isExplicitSessionInvalidation(
+    String errorCode,
+    String responseDataText,
+  ) {
+    final code = errorCode.trim();
+    final lower = responseDataText.toLowerCase();
+    return code == 'AUTH_013' ||
+        code == 'ERR_AUTH_INVALID_SESSION' ||
+        code == 'ERR_AUTH_SESSION_NOT_FOUND' ||
+        lower.contains('invalid session') ||
+        lower.contains('session expired');
+  }
+
+  static bool _isSessionAuthError(String errorCode, String responseDataText) {
+    final code = errorCode.trim();
+    return code.startsWith('ERR_AUTH_') ||
+        code.startsWith('AUTH_') ||
+        responseDataText.contains('JWT');
+  }
+
+  static bool _hasAuthorizationHeader(RequestOptions options) {
+    final authorization = options.headers['Authorization'];
+    if (authorization is String) {
+      return authorization.trim().isNotEmpty;
+    }
+    return authorization != null;
   }
 
   @override
@@ -144,33 +210,20 @@ class TokenInterceptor extends QueuedInterceptor {
     final errorCode = err.response?.data is Map
         ? (err.response!.data['errorCode'] as String? ?? '')
         : '';
-    final isAuthRoute = path.contains('/auth/login') ||
-        path.contains('/auth/signup') ||
-        path.contains('/auth/passkey/');
-    final isTransactionRoute = isKfeTransactionStepUpPath(path);
-    final isTransactionFactorError = isTransactionRoute &&
-        (errorCode == 'ERR_AUTH_INCORRECT_TOTP' ||
-            errorCode == 'ERR_AUTH_GENERIC' ||
-            responseDataText.contains('PASSKEY_CHALLENGE_REQUIRED'));
-    final isExplicitInvalidSession = errorCode == 'ERR_AUTH_INVALID_SESSION' ||
-        responseDataText.toLowerCase().contains('invalid session');
+    // Detecta sessão inválida apenas quando a própria sessão JWT foi rejeitada.
+    // Erros de transação protegida (PIN/TOTP/passkey/payload ausente) continuam
+    // bloqueando a operação no backend, mas não limpam a sessão do app.
+    final isInvalidSession = shouldInvalidateSessionForError(
+      statusCode: statusCode,
+      path: path,
+      errorCode: errorCode,
+      responseDataText: responseDataText,
+      requestHadAuthorizationHeader: _hasAuthorizationHeader(
+        err.requestOptions,
+      ),
+    );
 
-    // Detecta sessão inválida:
-    // • 401 — token expirado, ausente ou rejeitado pelo servidor.
-    // • 403 com ERR_AUTH_* — ex: token revogado explicitamente.
-    //
-    // NÃO limpamos sessão em 500: esses erros são falhas do servidor
-    // (bugs, DB indisponível, etc.) e não indicam que o JWT é inválido.
-    // Tratar 500 como sessão inválida derrubava o usuário por erros temporários.
-    final isInvalidSession = isExplicitInvalidSession ||
-        (!isTransactionFactorError &&
-            (statusCode == 401 ||
-                (statusCode == 403 &&
-                    (errorCode.startsWith('ERR_AUTH_') ||
-                        errorCode == 'ERR_AUTH_UNRECOGNIZED_DEVICE' ||
-                        responseDataText.contains('JWT')))));
-
-    if (isInvalidSession && !isAuthRoute && !_redirecting) {
+    if (isInvalidSession && !_redirecting) {
       _redirecting = true;
       debugPrint(
         'TokenInterceptor: session invalidated [$statusCode/$errorCode].',
