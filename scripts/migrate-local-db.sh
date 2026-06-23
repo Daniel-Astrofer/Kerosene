@@ -140,7 +140,7 @@ restore_pg_hba() {
 discover_repair_users() {
   local service="$1"
   {
-    printf '%s\n' postgres kerosene_admin api_system
+    printf '%s\n' "${POSTGRES_USER:-}" api_system kerosene_admin
     compose exec -T -u root "$service" sh -lc \
       'grep -aEo "[A-Za-z_][A-Za-z0-9_]{2,}" "$PGDATA/global/1260" 2>/dev/null | grep -Ev "^(pg_|SCRAM$|SHA$)" | sort -u' \
       2>/dev/null || true
