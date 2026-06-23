@@ -270,6 +270,46 @@ checksum_file() {
   fi
 }
 
+legacy_financial_migration() {
+  local name="$1"
+  case "$name" in
+    migration.sql|\
+    V3__wallet_destination_hash_index.sql|\
+    V4__payment_intent_external_states.sql|\
+    V5__payment_execution_reconciliation_states.sql|\
+    V6__payment_execution_claims.sql|\
+    V7__external_provider_outbox_claims.sql|\
+    V8__financial_reconciliation_resolution_fields.sql|\
+    V9__treasury_payout_requests.sql|\
+    V10__lightning_invoice_inbound_guards.sql|\
+    V11__internal_card_surface_metadata.sql|\
+    V16__add_performance_indexes.sql|\
+    V17__financial_integrity_constraints.sql)
+      return 0
+      ;;
+    *)
+      return 1
+      ;;
+  esac
+}
+
+kfe_only_without_legacy_financial_schema() {
+  local service="$1"
+  local legacy_wallets kfe_wallets
+  legacy_wallets="$(query_scalar "$service" "SELECT to_regclass('financial.wallets') IS NOT NULL;")"
+  kfe_wallets="$(query_scalar "$service" "SELECT to_regclass('financial.wallets_core') IS NOT NULL;")"
+
+  [[ "$legacy_wallets" == "f" && "$kfe_wallets" == "t" ]]
+}
+
+should_skip_legacy_financial_migration() {
+  local service="$1"
+  local name="$2"
+
+  legacy_financial_migration "$name" || return 1
+  kfe_only_without_legacy_financial_schema "$service"
+}
+
 ensure_migration_state_table() {
   local service="$1"
   run_sql "$service" "
@@ -321,6 +361,12 @@ apply_migrations() {
     name="$(basename "$migration")"
     checksum="$(checksum_file "$migration")"
     if [[ "$FORCE_MIGRATIONS" -ne 1 ]] && migration_is_current "$service" "$name" "$checksum"; then
+      skipped=$((skipped + 1))
+      continue
+    fi
+    if should_skip_legacy_financial_migration "$service" "$name"; then
+      warn "Skipping legacy financial migration $name for KFE-only schema on $service."
+      mark_migration_current "$service" "$name" "$checksum"
       skipped=$((skipped + 1))
       continue
     fi
