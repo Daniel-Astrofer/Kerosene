@@ -96,7 +96,7 @@ class _InternalAccountCreationFlowState
       AppNotice.showSuccess(
         context,
         title: context.tr.bitcoinAccountsCreateCardTitle,
-        message: 'Carteira interna criada com sucesso.',
+        message: 'Carteira criada com sucesso.',
       );
       Navigator.of(context).pop();
     } catch (_) {
@@ -224,7 +224,7 @@ class _InternalAccountCreationFlowState
   BitcoinAccountCustody get _selectedCustody {
     return switch (_selectedCustodyIndex) {
       1 => BitcoinAccountCustody.custodialOnchain,
-      _ => BitcoinAccountCustody.internal,
+      _ => BitcoinAccountCustody.custodialOnchain,
     };
   }
 
@@ -238,13 +238,6 @@ class _InternalAccountCreationFlowState
           };
 
     return [
-      if (!unavailableCustodies.contains(BitcoinAccountCustody.internal))
-        _CustodyCreationOption(
-          index: 0,
-          icon: KeroseneIcons.wallet,
-          title: context.tr.bitcoinAccountsCustodyInternalTitle,
-          subtitle: context.tr.bitcoinAccountsCustodyInternalSubtitle,
-        ),
       if (!unavailableCustodies
           .contains(BitcoinAccountCustody.custodialOnchain))
         _CustodyCreationOption(
@@ -259,7 +252,7 @@ class _InternalAccountCreationFlowState
   String get _selectedCustodyLabel {
     return switch (_selectedCustodyIndex) {
       1 => context.tr.bitcoinAccountsCustodyOnchainTitle,
-      _ => context.tr.bitcoinAccountsCustodyInternalTitle,
+      _ => context.tr.bitcoinAccountsCustodyOnchainTitle,
     };
   }
 

@@ -53,8 +53,10 @@ class _ColdWalletCreationScreenState
     return typed.isEmpty ? 'Cold Wallet' : typed;
   }
 
-  bool _hasActiveColdWalletFrom(List<BitcoinAccount> accounts) {
-    return accounts.any((account) => account.isActive && account.isWatchOnly);
+  int _activeColdWalletCountFrom(List<BitcoinAccount> accounts) {
+    return accounts
+        .where((account) => account.isActive && account.isWatchOnly)
+        .length;
   }
 
   List<String> get _words =>
@@ -94,11 +96,11 @@ class _ColdWalletCreationScreenState
     if (_busy) return;
     final accounts = ref.read(bitcoinAccountsProvider).asData?.value ??
         const <BitcoinAccount>[];
-    if (_hasActiveColdWalletFrom(accounts)) {
+    if (_activeColdWalletCountFrom(accounts) >= maxActiveColdWallets) {
       AppNotice.showWarning(
         context,
         title: 'Carteira fria indisponivel',
-        message: 'Ja existe uma carteira ativa para este metodo de custodia.',
+        message: 'Voce pode criar no maximo duas carteiras frias.',
       );
       return;
     }
@@ -313,7 +315,8 @@ class _ColdWalletCreationScreenState
     final colors = _BitcoinAccountsColors.of(context);
     final accounts = ref.watch(bitcoinAccountsProvider).asData?.value ??
         const <BitcoinAccount>[];
-    final hasActiveColdWallet = _hasActiveColdWalletFrom(accounts);
+    final coldWalletLimitReached =
+        _activeColdWalletCountFrom(accounts) >= maxActiveColdWallets;
     const introLabel =
         'A Kerosene guardara apenas o material publico para acompanhar saldo e UTXOs.';
     const title = 'Nomeie sua carteira fria';
@@ -359,6 +362,13 @@ class _ColdWalletCreationScreenState
                         letterSpacing: 0,
                       ),
                     ),
+                    if (coldWalletLimitReached) ...[
+                      const SizedBox(height: 16),
+                      const _MutedPanel(
+                        text:
+                            'Voce ja possui duas carteiras frias ativas. Arquive uma delas para criar outra.',
+                      ),
+                    ],
                     const SizedBox(height: 32),
                     TextField(
                       controller: _walletNameController,
@@ -415,7 +425,7 @@ class _ColdWalletCreationScreenState
               ),
               child: _CreationPrimaryButton(
                 label: 'Continuar',
-                onPressed: hasActiveColdWallet ? null : _continueFromPurpose,
+                onPressed: coldWalletLimitReached ? null : _continueFromPurpose,
               ),
             ),
           ],

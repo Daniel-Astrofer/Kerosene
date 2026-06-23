@@ -129,7 +129,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Nova Carteira'), findsOneWidget);
-    expect(find.text('Carteira Interna'), findsOneWidget);
+    expect(find.text('Carteira Interna'), findsNothing);
     expect(find.text('Custodial On-chain'), findsOneWidget);
     expect(find.text('Kerosene Watch-Only'), findsNothing);
     expect(find.text('Continuar'), findsOneWidget);
@@ -182,7 +182,7 @@ void main() {
 
     expect(service.createWalletCalls, 0);
 
-    await tester.tap(find.text('Carteira Interna'));
+    await tester.tap(find.text('Custodial On-chain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
@@ -201,7 +201,7 @@ void main() {
 
     expect(service.createWalletCalls, 1);
     expect(service.lastCreatedLabel, 'Reserva familiar');
-    expect(service.lastCreatedCustody, BitcoinAccountCustody.internal);
+    expect(service.lastCreatedCustody, BitcoinAccountCustody.custodialOnchain);
     expect(find.text('Reserva familiar'), findsWidgets);
 
     await tester.pump(const Duration(seconds: 3));
@@ -218,7 +218,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Novo cartão Kerosene'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Carteira Interna'));
+    await tester.tap(find.text('Custodial On-chain'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();

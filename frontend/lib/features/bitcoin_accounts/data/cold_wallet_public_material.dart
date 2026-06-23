@@ -1,7 +1,5 @@
-import 'dart:convert';
-
 import 'package:bip39/bip39.dart' as bip39;
-import 'package:crypto/crypto.dart';
+import 'package:blockchain_utils/blockchain_utils.dart';
 
 const defaultColdWalletDerivationPath = "m/84'/0'/0'";
 const defaultColdWalletScriptPolicy = 'wpkh';
@@ -44,16 +42,32 @@ class ColdWalletPublicMaterialDeriver {
       normalizedMnemonic,
       passphrase: extraWord.trim(),
     );
-    final digest = sha256.convert(seed).bytes;
-    final xpubBody = base64UrlEncode(digest).replaceAll('=', '');
-    final fingerprint =
-        sha256.convert(utf8.encode(xpubBody)).toString().substring(0, 8);
+    try {
+      final root = Bip32Slip10Secp256k1.fromSeed(seed);
+      final account = root.derivePath(defaultColdWalletDerivationPath);
+      final xpub = account.publicKey.toExtended;
+      final fingerprint = root.fingerPrint.toHex();
 
-    seed.fillRange(0, seed.length, 0);
+      return ColdWalletPublicMaterial(
+        xpub: xpub,
+        fingerprint: fingerprint,
+        scriptPolicy: _watchOnlyDescriptor(
+          fingerprint: fingerprint,
+          xpub: xpub,
+        ),
+      );
+    } finally {
+      seed.fillRange(0, seed.length, 0);
+    }
+  }
 
-    return ColdWalletPublicMaterial(
-      xpub: 'xpub$xpubBody',
-      fingerprint: fingerprint,
-    );
+  String _watchOnlyDescriptor({
+    required String fingerprint,
+    required String xpub,
+  }) {
+    final accountPath = defaultColdWalletDerivationPath
+        .replaceFirst(RegExp(r'^m/'), '')
+        .replaceAll("'", 'h');
+    return '$defaultColdWalletScriptPolicy([$fingerprint/$accountPath]$xpub/0/*)';
   }
 }

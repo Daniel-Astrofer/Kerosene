@@ -4,6 +4,8 @@ import '../../../core/errors/exceptions.dart';
 import '../../../core/network/api_client_provider.dart';
 import '../data/bitcoin_accounts_service.dart';
 
+const int maxActiveColdWallets = 2;
+
 final bitcoinAccountsServiceProvider = Provider<BitcoinAccountsService>((ref) {
   return RemoteBitcoinAccountsService(ref.watch(apiClientProvider));
 });
@@ -107,15 +109,17 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
 
   void _ensureCustodyAvailable(BitcoinAccountCustody custody) {
     final accounts = state.asData?.value ?? const <BitcoinAccount>[];
-    final exists = accounts.any((account) {
-      if (!account.isActive) {
-        return false;
-      }
-      return _accountMatchesCustody(account, custody);
-    });
-    if (exists) {
+    final activeWallets = accounts
+        .where((account) =>
+            account.isActive && _accountMatchesCustody(account, custody))
+        .length;
+    final maxWallets =
+        custody == BitcoinAccountCustody.watchOnly ? maxActiveColdWallets : 1;
+    if (activeWallets >= maxWallets) {
       throw ValidationException(
-        message: 'Ja existe uma carteira ativa para este metodo de custodia.',
+        message: custody == BitcoinAccountCustody.watchOnly
+            ? 'Voce pode criar no maximo duas carteiras frias.'
+            : 'Ja existe uma carteira ativa para este metodo de custodia.',
         statusCode: 409,
         errorCode: 'ERR_WALLET_CUSTODY_ALREADY_EXISTS',
       );
