@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:bip39_mnemonic/bip39_mnemonic.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
