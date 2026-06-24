@@ -16,6 +16,8 @@ Expected targets:
   kerosene/web-page:local
 
 Options:
+  --skip-kfe-service-build
+                         Do not build/rebuild kerosene/kfe-service:local.
   --skip-web-page-build  Do not build/rebuild kerosene/web-page:local from frontend/build/web.
 USAGE
 }
@@ -24,9 +26,11 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 BACKEND_COMMON="$REPO_ROOT/scripts/backend-common.sh"
 SKIP_WEB_PAGE_BUILD=0
+SKIP_KFE_SERVICE_BUILD=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
+    --skip-kfe-service-build) SKIP_KFE_SERVICE_BUILD=1 ;;
     --skip-web-page-build) SKIP_WEB_PAGE_BUILD=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unsupported option: $1" >&2; usage; exit 2 ;;
@@ -85,13 +89,19 @@ build_kfe_service_image() {
   local dockerfile="$REPO_ROOT/backend/kerosene-infrastructure/images/kfe/Dockerfile"
   local context="$REPO_ROOT/backend/kerosene"
 
-  if docker image inspect "$target" >/dev/null 2>&1; then
-    info "Docker image already exists: $target"
+  if [[ "$SKIP_KFE_SERVICE_BUILD" -eq 1 ]]; then
+    info "Skipping kfe-service image build by request."
+    if try_tag_from_compose_service "$target" kfe-service-wvo kfe-service-iw5 kfe-service-ltv; then
+      return 0
+    fi
+    docker image inspect "$target" >/dev/null 2>&1 || fail "Docker image not found: $target"
     return 0
   fi
 
-  if try_tag_from_compose_service "$target" kfe-service-wvo kfe-service-iw5 kfe-service-ltv; then
-    return 0
+  if docker image inspect "$target" >/dev/null 2>&1; then
+    info "Rebuilding existing Docker image: $target"
+  elif try_tag_from_compose_service "$target" kfe-service-wvo kfe-service-iw5 kfe-service-ltv; then
+    info "Rebuilding Compose-tagged Docker image: $target"
   fi
 
   if [[ ! -f "$dockerfile" ]]; then
