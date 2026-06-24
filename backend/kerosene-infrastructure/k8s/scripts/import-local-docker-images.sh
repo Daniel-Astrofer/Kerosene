@@ -16,7 +16,7 @@ Expected targets:
   kerosene/web-page:local
 
 Options:
-  --skip-web-page-build  Do not build kerosene/web-page:local from frontend/build/web.
+  --skip-web-page-build  Do not build/rebuild kerosene/web-page:local from frontend/build/web.
 USAGE
 }
 
@@ -113,11 +113,6 @@ build_web_page_image() {
     return 0
   fi
 
-  if docker image inspect "$target" >/dev/null 2>&1; then
-    info "Docker image already exists: $target"
-    return 0
-  fi
-
   if [[ ! -f "$web_build/index.html" ]]; then
     fail "frontend/build/web/index.html not found. Run scripts/start-local.sh or scripts/build-web-page-backend.sh first."
   fi
@@ -134,7 +129,7 @@ RUN mkdir -p /release && printf '{"version":"local"}\n' > /release/release-manif
 EXPOSE 8080
 EOF
 
-  info "Building $target from frontend/build/web"
+  info "Building $target from frontend/build/web with Kubernetes Nginx routing"
   docker build -t "$target" -f "$tmp_dockerfile" "$REPO_ROOT"
   rm -f "$tmp_dockerfile"
 }
