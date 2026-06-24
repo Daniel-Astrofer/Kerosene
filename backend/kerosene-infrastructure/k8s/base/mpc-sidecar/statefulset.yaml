@@ -50,10 +50,12 @@ spec:
               value: "false"
             - name: MPC_REQUIRE_MASTER_KEY
               value: "true"
-            - name: MPC_TLS_CERT_PATH
+            - name: MPC_TLS_CERT_FILE
               value: /tls/tls.crt
-            - name: MPC_TLS_KEY_PATH
+            - name: MPC_TLS_KEY_FILE
               value: /tls/tls.key
+            - name: MPC_TLS_CA_FILE
+              value: /tls/ca.crt
             - name: MPC_MASTER_KEY
               valueFrom:
                 secretKeyRef:

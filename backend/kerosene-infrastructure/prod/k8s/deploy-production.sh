@@ -32,7 +32,7 @@ kubectl apply -f lnd.yaml
 
 # 4. Apply Kerosene Application
 echo "[*] Deploying Kerosene Application..."
-kubectl apply -f kerosene-app.yaml
+kubectl apply -f server.yaml
 
 echo "[+] Deployment manifests submitted."
 echo "[!] IMPORTANT: Pods will remain Pending if LUKS storage classes or Secrets are missing."

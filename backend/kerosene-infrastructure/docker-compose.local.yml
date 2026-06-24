@@ -1,7 +1,7 @@
 # ═══════════════════════════════════════════════════════════════════════════════
 # docker-compose.local.yml — Kerosene Full-Cluster Local Simulation
 # ─────────────────────────────────────────────────────────────────────────────
-# Simulates the full Hydra (IS + CH + SG + Vault) on a single machine.
+# Simulates the full Infra (IS + CH + SG + Vault) on a single machine.
 # Uses production images (Debian Bookworm builder + Distroless runtime).
 #
 # BEFORE RUNNING:
@@ -360,11 +360,11 @@ services:
       vault-raft-3: { condition: service_healthy }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # ICELAND shard (IS)
+  # WVO shard (Tor prefix wvo; former IS)
   # ════════════════════════════════════════════════════════════════════════════
-  db-is:
+  db-wvo:
     image: postgres:17-bookworm
-    container_name: kerosene_db_is_local
+    container_name: db-wvo-local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
@@ -377,31 +377,31 @@ services:
     volumes:
       - pg_data_is:/var/lib/postgresql/data
       - ../kerosene/deploy/postgres/initdb:/docker-entrypoint-initdb.d:z
-    networks: [net_db_is]
+    networks: [net_db_wvo]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d kerosene"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  redis-is:
+  redis-wvo:
     image: redis:7-alpine
-    container_name: kerosene_redis_is_local
+    container_name: redis-wvo-local
     env_file: ../kerosene/.env
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes: [redis_data_is:/data]
-    networks: [net_db_is]
+    networks: [net_db_wvo]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 5s
       timeout: 5s
       retries: 12
 
-  mpc-sidecar-is:
+  mpc-sidecar-wvo:
     build:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
-    container_name: mpc-sidecar-is-local
+    container_name: mpc-sidecar-wvo-local
     restart: "no"
     env_file: ../kerosene/.env
     environment:
@@ -422,11 +422,11 @@ services:
       timeout: 5s
       retries: 12
 
-  kerosene-tor-is:
+  tor-wvo:
     build:
       context: ../kerosene/deploy/tor
       dockerfile: Dockerfile
-    container_name: kerosene-tor-is-local
+    container_name: tor-wvo-local
     environment:
       - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
@@ -444,23 +444,23 @@ services:
       timeout: 5s
       retries: 120
 
-  shard-identity-init-is:
+  shard-identity-init-wvo:
     image: alpine:3.20
-    container_name: kerosene-shard-identity-init-is-local
+    container_name: kerosene-shard-identity-init-wvo-local
     command: ["sh", "-c", "mkdir -p /identity && chown -R 65532:65532 /identity && chmod 700 /identity"]
     restart: "no"
     network_mode: none
     volumes:
       - shard_identity_is:/identity
 
-  kerosene-app-is:
+  server-wvo:
     build:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
-    container_name: kerosene-app-is-local
+    container_name: server-wvo-local
     restart: "no"
     ports:
-      - "${APP_IS_PORT:-8080}:8080"
+      - "${APP_WVO_PORT:-8080}:8080"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
     security_opt:
@@ -487,12 +487,12 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_is_local:5432/kerosene?ssl=false
-      - REGION=IS
-      - MPC_SIDECAR_HOST=mpc-sidecar-is
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-wvo-local:5432/kerosene?ssl=false
+      - REGION=WVO
+      - MPC_SIDECAR_HOST=mpc-sidecar-wvo
       - MPC_SIDECAR_TLS_ENABLED=false
       - AUDIT_SOLVENCY_ENFORCED=false
-      - SPRING_DATA_REDIS_HOST=redis-is
+      - SPRING_DATA_REDIS_HOST=redis-wvo
       - VAULT_ENABLED=${VAULT_ENABLED:-false}
       - VAULT_URL=http://kerosene-vault:8090
       - VAULT_ONION_FILE=/vault-onion/hostname
@@ -537,29 +537,29 @@ services:
       - TOR_HEALTH_VANGUARDS_STATE_FILE=/var/run/tor/vanguards/vanguards.state
     networks:
       net_ingress:
-      net_db_is:
+      net_db_wvo:
       net_mpc:
       net_tor:
         ipv4_address: 10.241.0.10
       net_vault:
       net_bitcoin:
     depends_on:
-      db-is: { condition: service_healthy }
-      redis-is: { condition: service_healthy }
-      mpc-sidecar-is: { condition: service_healthy }
+      db-wvo: { condition: service_healthy }
+      redis-wvo: { condition: service_healthy }
+      mpc-sidecar-wvo: { condition: service_healthy }
       kerosene-vault-arm: { condition: service_completed_successfully }
       vault-raft-bootstrap: { condition: service_completed_successfully }
-      kerosene-tor-is: { condition: service_healthy }
-      kerosene-vanguards-is: { condition: service_healthy }
-      shard-identity-init-is: { condition: service_completed_successfully }
+      tor-wvo: { condition: service_healthy }
+      vanguards-wvo: { condition: service_healthy }
+      shard-identity-init-wvo: { condition: service_completed_successfully }
       lnd-bootstrap: { condition: service_completed_successfully }
       lnd-neutrino: { condition: service_healthy }
 
-  kerosene-vanguards-is:
+  vanguards-wvo:
     build:
       context: ../kerosene/deploy/tor/vanguards
       dockerfile: Dockerfile
-    container_name: kerosene-vanguards-is-local
+    container_name: vanguards-wvo-local
     restart: "no"
     cap_drop: [ALL]
     security_opt:
@@ -578,14 +578,14 @@ services:
       timeout: 5s
       retries: 120
     depends_on:
-      kerosene-tor-is: { condition: service_healthy }
+      tor-wvo: { condition: service_healthy }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # SWITZERLAND shard (CH)
+  # IW5 shard (Tor prefix iw5; former CH)
   # ════════════════════════════════════════════════════════════════════════════
-  db-ch:
+  db-iw5:
     image: postgres:17-bookworm
-    container_name: kerosene_db_ch_local
+    container_name: db-iw5-local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
@@ -598,31 +598,31 @@ services:
     volumes:
       - pg_data_ch:/var/lib/postgresql/data
       - ../kerosene/deploy/postgres/initdb:/docker-entrypoint-initdb.d:z
-    networks: [net_db_ch]
+    networks: [net_db_iw5]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d kerosene"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  redis-ch:
+  redis-iw5:
     image: redis:7-alpine
-    container_name: kerosene_redis_ch_local
+    container_name: redis-iw5-local
     env_file: ../kerosene/.env
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes: [redis_data_ch:/data]
-    networks: [net_db_ch]
+    networks: [net_db_iw5]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 5s
       timeout: 5s
       retries: 12
 
-  mpc-sidecar-ch:
+  mpc-sidecar-iw5:
     build:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
-    container_name: mpc-sidecar-ch-local
+    container_name: mpc-sidecar-iw5-local
     restart: "no"
     env_file: ../kerosene/.env
     environment:
@@ -643,11 +643,11 @@ services:
       timeout: 5s
       retries: 12
 
-  kerosene-tor-ch:
+  tor-iw5:
     build:
       context: ../kerosene/deploy/tor
       dockerfile: Dockerfile
-    container_name: kerosene-tor-ch-local
+    container_name: tor-iw5-local
     environment:
       - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
@@ -665,20 +665,20 @@ services:
       timeout: 5s
       retries: 120
 
-  shard-identity-init-ch:
+  shard-identity-init-iw5:
     image: alpine:3.20
-    container_name: kerosene-shard-identity-init-ch-local
+    container_name: kerosene-shard-identity-init-iw5-local
     command: ["sh", "-c", "mkdir -p /identity && chown -R 65532:65532 /identity && chmod 700 /identity"]
     restart: "no"
     network_mode: none
     volumes:
       - shard_identity_ch:/identity
 
-  kerosene-app-ch:
+  server-iw5:
     build:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
-    container_name: kerosene-app-ch-local
+    container_name: server-iw5-local
     restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
@@ -706,12 +706,12 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_ch_local:5432/kerosene?ssl=false
-      - REGION=CH
-      - MPC_SIDECAR_HOST=mpc-sidecar-ch
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-iw5-local:5432/kerosene?ssl=false
+      - REGION=IW5
+      - MPC_SIDECAR_HOST=mpc-sidecar-iw5
       - MPC_SIDECAR_TLS_ENABLED=false
       - AUDIT_SOLVENCY_ENFORCED=false
-      - SPRING_DATA_REDIS_HOST=redis-ch
+      - SPRING_DATA_REDIS_HOST=redis-iw5
       - VAULT_ENABLED=${VAULT_ENABLED:-false}
       - VAULT_URL=http://kerosene-vault:8090
       - VAULT_ONION_FILE=/vault-onion/hostname
@@ -756,29 +756,29 @@ services:
       - TOR_HEALTH_VANGUARDS_STATE_FILE=/var/run/tor/vanguards/vanguards.state
     networks:
       net_ingress:
-      net_db_ch:
+      net_db_iw5:
       net_mpc:
       net_tor:
         ipv4_address: 10.241.0.11
       net_vault:
       net_bitcoin:
     depends_on:
-      db-ch: { condition: service_healthy }
-      redis-ch: { condition: service_healthy }
-      mpc-sidecar-ch: { condition: service_healthy }
+      db-iw5: { condition: service_healthy }
+      redis-iw5: { condition: service_healthy }
+      mpc-sidecar-iw5: { condition: service_healthy }
       kerosene-vault-arm: { condition: service_completed_successfully }
       vault-raft-bootstrap: { condition: service_completed_successfully }
-      kerosene-tor-ch: { condition: service_healthy }
-      kerosene-vanguards-ch: { condition: service_healthy }
-      shard-identity-init-ch: { condition: service_completed_successfully }
+      tor-iw5: { condition: service_healthy }
+      vanguards-iw5: { condition: service_healthy }
+      shard-identity-init-iw5: { condition: service_completed_successfully }
       lnd-bootstrap: { condition: service_completed_successfully }
       lnd-neutrino: { condition: service_healthy }
 
-  kerosene-vanguards-ch:
+  vanguards-iw5:
     build:
       context: ../kerosene/deploy/tor/vanguards
       dockerfile: Dockerfile
-    container_name: kerosene-vanguards-ch-local
+    container_name: vanguards-iw5-local
     restart: "no"
     cap_drop: [ALL]
     security_opt:
@@ -797,14 +797,14 @@ services:
       timeout: 5s
       retries: 120
     depends_on:
-      kerosene-tor-ch: { condition: service_healthy }
+      tor-iw5: { condition: service_healthy }
 
   # ════════════════════════════════════════════════════════════════════════════
-  # SINGAPORE shard (SG)
+  # LTV shard (Tor prefix ltv; former SG)
   # ════════════════════════════════════════════════════════════════════════════
-  db-sg:
+  db-ltv:
     image: postgres:17-bookworm
-    container_name: kerosene_db_sg_local
+    container_name: db-ltv-local
     env_file: ../kerosene/.env
     environment:
       - POSTGRES_DB=kerosene
@@ -817,31 +817,31 @@ services:
     volumes:
       - pg_data_sg:/var/lib/postgresql/data
       - ../kerosene/deploy/postgres/initdb:/docker-entrypoint-initdb.d:z
-    networks: [net_db_sg]
+    networks: [net_db_ltv]
     healthcheck:
       test: ["CMD-SHELL", "pg_isready -U $$POSTGRES_USER -d kerosene"]
       interval: 5s
       timeout: 5s
       retries: 5
 
-  redis-sg:
+  redis-ltv:
     image: redis:7-alpine
-    container_name: kerosene_redis_sg_local
+    container_name: redis-ltv-local
     env_file: ../kerosene/.env
     command: redis-server --requirepass ${REDIS_PASSWORD} --appendonly yes
     volumes: [redis_data_sg:/data]
-    networks: [net_db_sg]
+    networks: [net_db_ltv]
     healthcheck:
       test: ["CMD-SHELL", "redis-cli -a \"$$REDIS_PASSWORD\" ping | grep PONG"]
       interval: 5s
       timeout: 5s
       retries: 12
 
-  mpc-sidecar-sg:
+  mpc-sidecar-ltv:
     build:
       context: ../mpc-sidecar
       dockerfile: Dockerfile
-    container_name: mpc-sidecar-sg-local
+    container_name: mpc-sidecar-ltv-local
     restart: "no"
     env_file: ../kerosene/.env
     environment:
@@ -862,11 +862,11 @@ services:
       timeout: 5s
       retries: 12
 
-  kerosene-tor-sg:
+  tor-ltv:
     build:
       context: ../kerosene/deploy/tor
       dockerfile: Dockerfile
-    container_name: kerosene-tor-sg-local
+    container_name: tor-ltv-local
     environment:
       - EXPECTED_TOR_HASH=${EXPECTED_TOR_HASH:-}
     volumes:
@@ -884,20 +884,20 @@ services:
       timeout: 5s
       retries: 120
 
-  shard-identity-init-sg:
+  shard-identity-init-ltv:
     image: alpine:3.20
-    container_name: kerosene-shard-identity-init-sg-local
+    container_name: kerosene-shard-identity-init-ltv-local
     command: ["sh", "-c", "mkdir -p /identity && chown -R 65532:65532 /identity && chmod 700 /identity"]
     restart: "no"
     network_mode: none
     volumes:
       - shard_identity_sg:/identity
 
-  kerosene-app-sg:
+  server-ltv:
     build:
       context: ../kerosene
       dockerfile: ../kerosene-infrastructure/images/app/Dockerfile
-    container_name: kerosene-app-sg-local
+    container_name: server-ltv-local
     restart: "no"
     cap_drop: [ALL]
     cap_add: [IPC_LOCK]
@@ -925,12 +925,12 @@ services:
     environment:
       - SPRING_PROFILES_ACTIVE=docker
       - FLYWAY_ENABLED=${FLYWAY_ENABLED:-true}
-      - SPRING_DATASOURCE_URL=jdbc:postgresql://kerosene_db_sg_local:5432/kerosene?ssl=false
-      - REGION=SG
-      - MPC_SIDECAR_HOST=mpc-sidecar-sg
+      - SPRING_DATASOURCE_URL=jdbc:postgresql://db-ltv-local:5432/kerosene?ssl=false
+      - REGION=LTV
+      - MPC_SIDECAR_HOST=mpc-sidecar-ltv
       - MPC_SIDECAR_TLS_ENABLED=false
       - AUDIT_SOLVENCY_ENFORCED=false
-      - SPRING_DATA_REDIS_HOST=redis-sg
+      - SPRING_DATA_REDIS_HOST=redis-ltv
       - VAULT_ENABLED=${VAULT_ENABLED:-false}
       - VAULT_URL=http://kerosene-vault:8090
       - VAULT_ONION_FILE=/vault-onion/hostname
@@ -975,29 +975,29 @@ services:
       - TOR_HEALTH_VANGUARDS_STATE_FILE=/var/run/tor/vanguards/vanguards.state
     networks:
       net_ingress:
-      net_db_sg:
+      net_db_ltv:
       net_mpc:
       net_tor:
         ipv4_address: 10.241.0.12
       net_vault:
       net_bitcoin:
     depends_on:
-      db-sg: { condition: service_healthy }
-      redis-sg: { condition: service_healthy }
-      mpc-sidecar-sg: { condition: service_healthy }
+      db-ltv: { condition: service_healthy }
+      redis-ltv: { condition: service_healthy }
+      mpc-sidecar-ltv: { condition: service_healthy }
       kerosene-vault-arm: { condition: service_completed_successfully }
       vault-raft-bootstrap: { condition: service_completed_successfully }
-      kerosene-tor-sg: { condition: service_healthy }
-      kerosene-vanguards-sg: { condition: service_healthy }
-      shard-identity-init-sg: { condition: service_completed_successfully }
+      tor-ltv: { condition: service_healthy }
+      vanguards-ltv: { condition: service_healthy }
+      shard-identity-init-ltv: { condition: service_completed_successfully }
       lnd-bootstrap: { condition: service_completed_successfully }
       lnd-neutrino: { condition: service_healthy }
 
-  kerosene-vanguards-sg:
+  vanguards-ltv:
     build:
       context: ../kerosene/deploy/tor/vanguards
       dockerfile: Dockerfile
-    container_name: kerosene-vanguards-sg-local
+    container_name: vanguards-ltv-local
     restart: "no"
     cap_drop: [ALL]
     security_opt:
@@ -1016,7 +1016,7 @@ services:
       timeout: 5s
       retries: 120
     depends_on:
-      kerosene-tor-sg: { condition: service_healthy }
+      tor-ltv: { condition: service_healthy }
 
   web-admin:
     image: nginx:1.27-alpine
@@ -1030,7 +1030,7 @@ services:
       - ../../release:/release:ro,z
     networks: [net_ingress]
     depends_on:
-      kerosene-app-is: { condition: service_healthy }
+      server-wvo: { condition: service_healthy }
     healthcheck:
       test: ["CMD-SHELL", "test -s /usr/share/nginx/html/index.html"]
       interval: 10s
@@ -1048,9 +1048,9 @@ services:
       - prometheus_data:/prometheus
     networks: [net_ingress, net_tor]
     depends_on:
-      kerosene-app-is: { condition: service_healthy }
-      kerosene-app-ch: { condition: service_healthy }
-      kerosene-app-sg: { condition: service_healthy }
+      server-wvo: { condition: service_healthy }
+      server-iw5: { condition: service_healthy }
+      server-ltv: { condition: service_healthy }
 
 # ════════════════════════════════════════════════════════════════════════════
 # Volumes
@@ -1105,13 +1105,13 @@ networks:
     ipam:
       config:
         - subnet: 10.242.0.0/24
-  net_db_is:
+  net_db_wvo:
     driver: bridge
     internal: true
-  net_db_ch:
+  net_db_iw5:
     driver: bridge
     internal: true
-  net_db_sg:
+  net_db_ltv:
     driver: bridge
     internal: true
   net_mpc:

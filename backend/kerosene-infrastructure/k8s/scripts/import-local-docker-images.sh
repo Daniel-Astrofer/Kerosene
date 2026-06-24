@@ -3,30 +3,31 @@ set -euo pipefail
 
 usage() {
   cat <<'USAGE'
-Usage: backend/kerosene-infrastructure/k8s/scripts/import-local-docker-images.sh [--skip-web-admin-build]
+Usage: backend/kerosene-infrastructure/k8s/scripts/import-local-docker-images.sh [--skip-web-page-build]
 
 Copies local Docker/Compose-built Kerosene images into the Kubernetes containerd
 namespace used by kubelet. This is needed when Kubernetes uses containerd and the
 local development stack was built with Docker Compose.
 
 Expected targets:
-  kerosene/kerosene-app:local
+  kerosene/server:local
+  kerosene/kfe-service:local
   kerosene/mpc-sidecar:local
-  kerosene/web-admin:local
+  kerosene/web-page:local
 
 Options:
-  --skip-web-admin-build  Do not build kerosene/web-admin:local from frontend/build/web.
+  --skip-web-page-build  Do not build kerosene/web-page:local from frontend/build/web.
 USAGE
 }
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 REPO_ROOT="$(cd "$SCRIPT_DIR/../../../.." && pwd)"
 BACKEND_COMMON="$REPO_ROOT/scripts/backend-common.sh"
-SKIP_WEB_ADMIN_BUILD=0
+SKIP_WEB_PAGE_BUILD=0
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    --skip-web-admin-build) SKIP_WEB_ADMIN_BUILD=1 ;;
+    --skip-web-page-build) SKIP_WEB_PAGE_BUILD=1 ;;
     -h|--help) usage; exit 0 ;;
     *) echo "Unsupported option: $1" >&2; usage; exit 2 ;;
   esac
@@ -45,7 +46,7 @@ if ! command -v ctr >/dev/null 2>&1; then
   fail "ctr not found. Install containerd tools first."
 fi
 
-ensure_tag_from_compose_service() {
+try_tag_from_compose_service() {
   local target="$1"
   shift
   local services=("$@")
@@ -65,17 +66,50 @@ ensure_tag_from_compose_service() {
     fi
   done
 
+  return 1
+}
+
+ensure_tag_from_compose_service() {
+  local target="$1"
+  shift
+
+  if try_tag_from_compose_service "$target" "$@"; then
+    return 0
+  fi
+
   fail "Could not find Docker image for $target. Run scripts/start-local.sh once so Compose builds the services."
 }
 
-build_web_admin_image() {
-  local target="kerosene/web-admin:local"
+build_kfe_service_image() {
+  local target="kerosene/kfe-service:local"
+  local dockerfile="$REPO_ROOT/backend/kerosene-infrastructure/images/kfe/Dockerfile"
+  local context="$REPO_ROOT/backend/kerosene"
+
+  if docker image inspect "$target" >/dev/null 2>&1; then
+    info "Docker image already exists: $target"
+    return 0
+  fi
+
+  if try_tag_from_compose_service "$target" kfe-service-wvo kfe-service-iw5 kfe-service-ltv; then
+    return 0
+  fi
+
+  if [[ ! -f "$dockerfile" ]]; then
+    fail "KFE Dockerfile not found: $dockerfile"
+  fi
+
+  info "Building $target from $dockerfile"
+  docker build -t "$target" -f "$dockerfile" "$context"
+}
+
+build_web_page_image() {
+  local target="kerosene/web-page:local"
   local web_build="$REPO_ROOT/frontend/build/web"
-  local nginx_conf="$REPO_ROOT/backend/kerosene-infrastructure/web/nginx.conf"
+  local nginx_conf="$REPO_ROOT/backend/kerosene-infrastructure/web/nginx.k8s.conf"
   local tmp_dockerfile
 
-  if [[ "$SKIP_WEB_ADMIN_BUILD" -eq 1 ]]; then
-    info "Skipping web-admin image build by request."
+  if [[ "$SKIP_WEB_PAGE_BUILD" -eq 1 ]]; then
+    info "Skipping web-page image build by request."
     return 0
   fi
 
@@ -85,17 +119,17 @@ build_web_admin_image() {
   fi
 
   if [[ ! -f "$web_build/index.html" ]]; then
-    fail "frontend/build/web/index.html not found. Run scripts/start-local.sh or scripts/build-web-admin-backend.sh first."
+    fail "frontend/build/web/index.html not found. Run scripts/start-local.sh or scripts/build-web-page-backend.sh first."
   fi
   if [[ ! -f "$nginx_conf" ]]; then
     fail "nginx config not found: $nginx_conf"
   fi
 
-  tmp_dockerfile="$(mktemp "${TMPDIR:-/tmp}/kerosene-web-admin.Dockerfile.XXXXXX")"
+  tmp_dockerfile="$(mktemp "${TMPDIR:-/tmp}/kerosene-web-page.Dockerfile.XXXXXX")"
   cat > "$tmp_dockerfile" <<'EOF'
 FROM nginx:1.27-alpine
 COPY frontend/build/web /usr/share/nginx/html
-COPY backend/kerosene-infrastructure/web/nginx.conf /etc/nginx/conf.d/default.conf
+COPY backend/kerosene-infrastructure/web/nginx.k8s.conf /etc/nginx/conf.d/default.conf
 RUN mkdir -p /release && printf '{"version":"local"}\n' > /release/release-manifest.json
 EXPOSE 8080
 EOF
@@ -112,22 +146,25 @@ import_to_k8s_containerd() {
 }
 
 ensure_tag_from_compose_service \
-  "kerosene/kerosene-app:local" \
-  kerosene-app-is kerosene-app-ch kerosene-app-sg
+  "kerosene/server:local" \
+  server-wvo server-iw5 server-ltv kerosene-app-is kerosene-app-ch kerosene-app-sg
+
+build_kfe_service_image
 
 ensure_tag_from_compose_service \
   "kerosene/mpc-sidecar:local" \
-  mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg
+  mpc-sidecar-wvo mpc-sidecar-iw5 mpc-sidecar-ltv mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg
 
-build_web_admin_image
+build_web_page_image
 
-import_to_k8s_containerd "kerosene/kerosene-app:local"
+import_to_k8s_containerd "kerosene/server:local"
+import_to_k8s_containerd "kerosene/kfe-service:local"
 import_to_k8s_containerd "kerosene/mpc-sidecar:local"
-if docker image inspect "kerosene/web-admin:local" >/dev/null 2>&1; then
-  import_to_k8s_containerd "kerosene/web-admin:local"
+if docker image inspect "kerosene/web-page:local" >/dev/null 2>&1; then
+  import_to_k8s_containerd "kerosene/web-page:local"
 fi
 
 info "Imported images visible to Kubernetes:"
-sudo ctr -n k8s.io images ls | grep -E 'kerosene/(kerosene-app|mpc-sidecar|web-admin)' || true
+sudo ctr -n k8s.io images ls | grep -E 'kerosene/(server|kfe-service|mpc-sidecar|web-page)' || true
 
 info "Done. You can now run: backend/kerosene-infrastructure/k8s/scripts/deploy.sh local"

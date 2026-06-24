@@ -8,11 +8,13 @@ labels:
   - pairs:
       app.kubernetes.io/environment: staging
 images:
-  - name: kerosene/kerosene-app
+  - name: kerosene/kfe-service
+    newTag: staging
+  - name: kerosene/server
     newTag: staging
   - name: kerosene/mpc-sidecar
     newTag: staging
-  - name: kerosene/web-admin
+  - name: kerosene/web-page
     newTag: staging
 patches:
   - path: patch-staging.yaml

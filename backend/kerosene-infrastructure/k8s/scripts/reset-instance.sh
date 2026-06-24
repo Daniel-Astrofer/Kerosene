@@ -6,7 +6,7 @@ usage() {
 Usage: $0 <namespace> <component> [mode]
 
 component:
-  kerosene-app | web-admin | mpc-sidecar
+  server | web-page | mpc-sidecar
 
 mode:
   rollout      Restart controller safely. Default.
@@ -14,8 +14,8 @@ mode:
   one-pod      Delete a single Pod selected interactively/first match.
 
 Examples:
-  $0 kerosene-production kerosene-app rollout
-  $0 kerosene-production kerosene-app pods
+  $0 kerosene-production server rollout
+  $0 kerosene-production server pods
   $0 kerosene-production mpc-sidecar one-pod
 USAGE
 }
@@ -31,7 +31,7 @@ if [[ -z "$NAMESPACE" || -z "$COMPONENT" ]]; then
 fi
 
 case "$COMPONENT" in
-  kerosene-app|web-admin) KIND="deployment" ;;
+  server|web-page) KIND="deployment" ;;
   mpc-sidecar) KIND="statefulset" ;;
   *) echo "Unsupported component: $COMPONENT" >&2; usage; exit 2 ;;
 esac

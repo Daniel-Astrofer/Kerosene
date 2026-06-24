@@ -13,7 +13,7 @@ spec:
     - from:
         - podSelector:
             matchLabels:
-              app.kubernetes.io/name: kerosene-app
+              app.kubernetes.io/name: server
       ports:
         - protocol: TCP
           port: 50051

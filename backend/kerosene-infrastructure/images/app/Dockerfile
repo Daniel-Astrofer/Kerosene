@@ -26,6 +26,9 @@ RUN chmod +x gradlew
 # ── Layer 2: Dependency resolution (cache until build.gradle.kts changes) ─────
 COPY build.gradle.kts settings.gradle.kts ./
 COPY gradle.properties ./
+COPY kerosene-contracts kerosene-contracts/
+COPY kerosene-shared kerosene-shared/
+COPY kfe-service kfe-service/
 ARG GRADLE_MAX_WORKERS=2
 RUN ./gradlew dependencies --no-daemon --max-workers=${GRADLE_MAX_WORKERS} --quiet || true
 

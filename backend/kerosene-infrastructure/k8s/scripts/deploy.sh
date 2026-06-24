@@ -6,9 +6,10 @@ usage() {
 Usage: $0 <local|staging|production> [--dry-run]
 
 Required for production unless the overlay was already edited:
-  KEROSENE_APP_IMAGE=registry/kerosene-app@sha256:...
+  SERVER_IMAGE=registry/server@sha256:...
+  KFE_SERVICE_IMAGE=registry/kfe-service@sha256:...
   MPC_SIDECAR_IMAGE=registry/mpc-sidecar@sha256:...
-  WEB_ADMIN_IMAGE=registry/web-admin@sha256:...
+  WEB_PAGE_IMAGE=registry/web-page@sha256:...
 
 Optional:
   KUBECTL=kubectl
@@ -48,7 +49,7 @@ if ! command -v "$KUBECTL" >/dev/null 2>&1; then
   exit 127
 fi
 
-if [[ -n "${KEROSENE_APP_IMAGE:-}" || -n "${MPC_SIDECAR_IMAGE:-}" || -n "${WEB_ADMIN_IMAGE:-}" ]]; then
+if [[ -n "${SERVER_IMAGE:-}" || -n "${KFE_SERVICE_IMAGE:-}" || -n "${MPC_SIDECAR_IMAGE:-}" || -n "${WEB_PAGE_IMAGE:-}" ]]; then
   if ! command -v "$KUSTOMIZE_BIN" >/dev/null 2>&1; then
     echo "kustomize not found. It is required when setting images through environment variables." >&2
     echo "Install kustomize or edit the overlay image tags manually and run with no image env vars." >&2
@@ -68,14 +69,17 @@ trap cleanup EXIT
 cp -R "$K8S_ROOT" "$TMP_DIR/k8s"
 WORK_OVERLAY="$TMP_DIR/k8s/overlays/$ENVIRONMENT"
 
-if [[ -n "${KEROSENE_APP_IMAGE:-}" ]]; then
-  (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/kerosene-app=${KEROSENE_APP_IMAGE}")
+if [[ -n "${SERVER_IMAGE:-}" ]]; then
+  (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/server=${SERVER_IMAGE}")
+fi
+if [[ -n "${KFE_SERVICE_IMAGE:-}" ]]; then
+  (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/kfe-service=${KFE_SERVICE_IMAGE}")
 fi
 if [[ -n "${MPC_SIDECAR_IMAGE:-}" ]]; then
   (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/mpc-sidecar=${MPC_SIDECAR_IMAGE}")
 fi
-if [[ -n "${WEB_ADMIN_IMAGE:-}" ]]; then
-  (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/web-admin=${WEB_ADMIN_IMAGE}")
+if [[ -n "${WEB_PAGE_IMAGE:-}" ]]; then
+  (cd "$WORK_OVERLAY" && "$KUSTOMIZE_BIN" edit set image "kerosene/web-page=${WEB_PAGE_IMAGE}")
 fi
 
 MANIFEST="$TMP_DIR/manifest.yaml"
@@ -83,7 +87,7 @@ MANIFEST="$TMP_DIR/manifest.yaml"
 
 if [[ "$ENVIRONMENT" == "production" ]] && grep -q 'replace-me' "$MANIFEST"; then
   echo "Refusing production deploy with replace-me image tags." >&2
-  echo "Set KEROSENE_APP_IMAGE, MPC_SIDECAR_IMAGE and WEB_ADMIN_IMAGE to immutable tags or digests." >&2
+  echo "Set SERVER_IMAGE, KFE_SERVICE_IMAGE, MPC_SIDECAR_IMAGE and WEB_PAGE_IMAGE to immutable tags or digests." >&2
   exit 3
 fi
 
@@ -110,8 +114,9 @@ echo "[*] Applying manifest..."
 "$KUBECTL" apply --server-side -f "$MANIFEST"
 
 echo "[*] Waiting for core workloads..."
-"$KUBECTL" -n "$NAMESPACE" rollout status deployment/kerosene-app --timeout=10m
-"$KUBECTL" -n "$NAMESPACE" rollout status deployment/web-admin --timeout=5m
+"$KUBECTL" -n "$NAMESPACE" rollout status deployment/server --timeout=10m
+"$KUBECTL" -n "$NAMESPACE" rollout status deployment/kfe-service --timeout=10m
+"$KUBECTL" -n "$NAMESPACE" rollout status deployment/web-page --timeout=5m
 "$KUBECTL" -n "$NAMESPACE" rollout status statefulset/mpc-sidecar --timeout=10m
 
 echo "[+] $ENVIRONMENT deploy completed."

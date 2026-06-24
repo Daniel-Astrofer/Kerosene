@@ -2,12 +2,12 @@
 set -euo pipefail
 
 NAMESPACE="${1:-kerosene-production}"
-COMPONENT="${2:-kerosene-app}"
+COMPONENT="${2:-server}"
 REVISION="${3:-}"
 KUBECTL="${KUBECTL:-kubectl}"
 
 case "$COMPONENT" in
-  kerosene-app|web-admin) KIND="deployment" ;;
+  server|web-page) KIND="deployment" ;;
   mpc-sidecar) KIND="statefulset" ;;
   *) echo "Unsupported component: $COMPONENT" >&2; exit 2 ;;
 esac

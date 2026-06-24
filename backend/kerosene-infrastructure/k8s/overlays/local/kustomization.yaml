@@ -8,11 +8,13 @@ labels:
   - pairs:
       app.kubernetes.io/environment: local
 images:
-  - name: kerosene/kerosene-app
+  - name: kerosene/kfe-service
+    newTag: local
+  - name: kerosene/server
     newTag: local
   - name: kerosene/mpc-sidecar
     newTag: local
-  - name: kerosene/web-admin
+  - name: kerosene/web-page
     newTag: local
 patches:
   - path: patch-local.yaml

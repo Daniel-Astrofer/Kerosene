@@ -5,23 +5,30 @@ resources:
   - policies/allow-dns-egress.yaml
   - policies/allow-observability-scrape.yaml
   - dependency-services/services.yaml
-  - kerosene-app/service-account.yaml
-  - kerosene-app/configmap.yaml
-  - kerosene-app/deployment.yaml
-  - kerosene-app/service.yaml
-  - kerosene-app/pdb.yaml
-  - kerosene-app/hpa.yaml
-  - kerosene-app/network-policy.yaml
+  - server/service-account.yaml
+  - server/configmap.yaml
+  - server/deployment.yaml
+  - server/service.yaml
+  - server/pdb.yaml
+  - server/hpa.yaml
+  - server/network-policy.yaml
+  - kfe-service/service-account.yaml
+  - kfe-service/configmap.yaml
+  - kfe-service/deployment.yaml
+  - kfe-service/service.yaml
+  - kfe-service/pdb.yaml
+  - kfe-service/hpa.yaml
+  - kfe-service/network-policy.yaml
   - mpc-sidecar/service-account.yaml
   - mpc-sidecar/statefulset.yaml
   - mpc-sidecar/service.yaml
   - mpc-sidecar/pdb.yaml
   - mpc-sidecar/network-policy.yaml
-  - web-admin/service-account.yaml
-  - web-admin/deployment.yaml
-  - web-admin/service.yaml
-  - web-admin/pdb.yaml
-  - web-admin/network-policy.yaml
+  - web-page/service-account.yaml
+  - web-page/deployment.yaml
+  - web-page/service.yaml
+  - web-page/pdb.yaml
+  - web-page/network-policy.yaml
 labels:
   - pairs:
       app.kubernetes.io/part-of: kerosene

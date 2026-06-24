@@ -8,11 +8,13 @@ labels:
   - pairs:
       app.kubernetes.io/environment: production
 images:
-  - name: kerosene/kerosene-app
+  - name: kerosene/kfe-service
+    newTag: replace-me
+  - name: kerosene/server
     newTag: replace-me
   - name: kerosene/mpc-sidecar
     newTag: replace-me
-  - name: kerosene/web-admin
+  - name: kerosene/web-page
     newTag: replace-me
 patches:
   - path: patch-production-resources.yaml

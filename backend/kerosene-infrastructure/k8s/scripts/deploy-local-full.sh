@@ -1,0 +1,77 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+usage() {
+  cat <<'USAGE'
+Usage: backend/kerosene-infrastructure/k8s/scripts/deploy-local-full.sh [--dry-run] [--skip-image-import] [--wait]
+
+Deploys the complete local Kubernetes runtime into namespace kerosene-local:
+  - server
+  - kfe-service
+  - web-page
+  - mpc-sidecar
+  - PostgreSQL
+  - Redis
+  - Vault dev
+  - Bitcoin Core regtest
+  - LND local placeholder
+
+Options:
+  --dry-run            Validate against the Kubernetes API without persisting resources.
+  --skip-image-import  Do not import kerosene/*:local images into containerd first.
+  --wait               Wait for workloads after apply.
+USAGE
+}
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+K8S_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
+OVERLAY="$K8S_DIR/overlays/local-full"
+KUBECTL="${KUBECTL:-kubectl}"
+DRY_RUN=0
+SKIP_IMAGE_IMPORT=0
+WAIT=0
+
+while [[ $# -gt 0 ]]; do
+  case "$1" in
+    --dry-run) DRY_RUN=1 ;;
+    --skip-image-import) SKIP_IMAGE_IMPORT=1 ;;
+    --wait) WAIT=1 ;;
+    -h|--help) usage; exit 0 ;;
+    *) echo "Unsupported option: $1" >&2; usage; exit 2 ;;
+  esac
+  shift
+done
+
+bash "$SCRIPT_DIR/validate-local-full.sh"
+
+if [[ "$DRY_RUN" -eq 1 ]]; then
+  echo "[*] Server-side dry-run for local-full overlay"
+  "$KUBECTL" apply -k "$OVERLAY" --dry-run=server
+  exit 0
+fi
+
+if [[ "$SKIP_IMAGE_IMPORT" -eq 0 ]]; then
+  echo "[*] Importing local application images into Kubernetes containerd namespace"
+  if ! bash "$SCRIPT_DIR/import-local-docker-images.sh"; then
+    echo "[!] Image import failed. Continue only if the cluster can already pull kerosene/*:local images." >&2
+    exit 1
+  fi
+else
+  echo "[*] Skipping image import by request"
+fi
+
+echo "[*] Applying local-full overlay"
+"$KUBECTL" apply -k "$OVERLAY"
+
+echo "[*] Current local-full objects"
+"$KUBECTL" -n kerosene-local get deploy,sts,pod,svc,hpa,pdb,networkpolicy
+
+if [[ "$WAIT" -eq 1 ]]; then
+  bash "$SCRIPT_DIR/wait-local-full.sh"
+fi
+
+echo "[+] local-full deployment submitted."
+echo "[+] server:   http://127.0.0.1:30080"
+echo "[+] mpc:      http://127.0.0.1:30081/version"
+echo "[+] web-page: http://127.0.0.1:30082"
+echo "[+] KFE routes: use web-page NodePort 30082 for /kfe, /api/public/kfe and /api/admin/kfe."

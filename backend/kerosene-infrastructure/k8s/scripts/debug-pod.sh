@@ -6,7 +6,7 @@ usage() {
 Usage: $0 <namespace> <component> [--shell|--logs|--describe|--port-forward]
 
 component:
-  kerosene-app | web-admin | mpc-sidecar
+  server | web-page | mpc-sidecar
 
 Modes:
   --logs          Current and previous logs. Default.
@@ -15,9 +15,9 @@ Modes:
   --port-forward  Port-forward the component Service locally.
 
 Examples:
-  $0 kerosene-production kerosene-app --logs
-  $0 kerosene-production kerosene-app --shell
-  $0 kerosene-production kerosene-app --port-forward
+  $0 kerosene-production server --logs
+  $0 kerosene-production server --shell
+  $0 kerosene-production server --port-forward
 USAGE
 }
 
@@ -39,8 +39,8 @@ if [[ -z "$POD" ]]; then
 fi
 
 case "$COMPONENT" in
-  kerosene-app) CONTAINER="kerosene-app"; LOCAL_PORT=18080; REMOTE_PORT=8080 ;;
-  web-admin) CONTAINER="web-admin"; LOCAL_PORT=18081; REMOTE_PORT=8080 ;;
+  server) CONTAINER="server"; LOCAL_PORT=18080; REMOTE_PORT=8080 ;;
+  web-page) CONTAINER="web-page"; LOCAL_PORT=18081; REMOTE_PORT=8080 ;;
   mpc-sidecar) CONTAINER="mpc-sidecar"; LOCAL_PORT=18082; REMOTE_PORT=8081 ;;
   *) echo "Unsupported component: $COMPONENT" >&2; usage; exit 2 ;;
 esac
