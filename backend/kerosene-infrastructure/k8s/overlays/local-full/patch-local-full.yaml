@@ -120,6 +120,7 @@ data:
   MPC_SIDECAR_HOST: "mpc-sidecar"
   MPC_SIDECAR_PORT: "50051"
   MPC_SIDECAR_TLS_ENABLED: "false"
+  TOR_HEALTH_REQUIRED: "false"
   VAULT_RAFT_ENABLED: "false"
   VAULT_RAFT_REQUIRED: "false"
   VAULT_RAFT_URL: "http://kerosene-vault-raft-headless:8200"
