@@ -211,6 +211,10 @@ spec:
               value: local-root-token
             - name: VAULT_ADDR
               value: http://127.0.0.1:8200
+            - name: SKIP_SETCAP
+              value: "true"
+            - name: VAULT_DISABLE_MLOCK
+              value: "true"
           ports:
             - name: vault-api
               containerPort: 8200
@@ -272,8 +276,10 @@ spec:
         - name: bitcoind
           image: bitcoin/bitcoin:27.0
           imagePullPolicy: IfNotPresent
+          command: ["bitcoind"]
           args:
             - -regtest
+            - -datadir=/home/bitcoin/.bitcoin
             - -server=1
             - -printtoconsole
             - -rpcbind=0.0.0.0
@@ -321,6 +327,10 @@ spec:
             limits:
               cpu: 1000m
               memory: 1Gi
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
           volumeMounts:
             - name: bitcoin-data
               mountPath: /home/bitcoin/.bitcoin
