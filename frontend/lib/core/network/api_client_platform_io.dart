@@ -14,6 +14,12 @@ import 'package:kerosene/core/providers/tor_providers.dart';
 import 'package:kerosene/core/services/tor_network_bootstrap.dart';
 import 'package:kerosene/core/services/tor_service.dart';
 
+bool _isLoopbackUrl(String baseUrl) {
+  final uri = Uri.tryParse(baseUrl);
+  final host = uri?.host.toLowerCase();
+  return host == '127.0.0.1' || host == 'localhost' || host == '::1';
+}
+
 Future<void> initializeCookieSupport(Dio dio) async {
   dio.interceptors.add(CookieManager(CookieJar()));
 }
@@ -67,7 +73,11 @@ void configureProxyRouting({
   dio.options.extra['_keroseneRoutingMode'] = routingMode;
 
   if (!shouldProxy) {
-    debugPrint('🌐 ApiClient: Using clearnet for $baseUrl');
+    if (AppConfig.isTorEnabled && _isLoopbackUrl(baseUrl)) {
+      debugPrint('🧅 ApiClient: Using local Tor relay for $baseUrl');
+    } else {
+      debugPrint('🌐 ApiClient: Using direct route for $baseUrl');
+    }
     return;
   }
 

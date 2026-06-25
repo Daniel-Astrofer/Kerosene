@@ -14,6 +14,7 @@ Expected targets:
   kerosene/kfe-service:local
   localhost:5000/kerosene/kfe-service:local
   kerosene/mpc-sidecar:local
+  kerosene/tor:local
   kerosene/web-page:local
 
 Options:
@@ -174,6 +175,27 @@ EOF
   rm -f "$tmp_dockerfile"
 }
 
+build_tor_image() {
+  local target="kerosene/tor:local"
+  local dockerfile="$REPO_ROOT/infra/docker/images/tor/Dockerfile"
+  local context="$REPO_ROOT/infra/runtime/tor"
+
+  if [[ ! -f "$dockerfile" ]]; then
+    fail "Tor Dockerfile not found: $dockerfile"
+  fi
+  if [[ ! -d "$context" ]]; then
+    fail "Tor runtime context not found: $context"
+  fi
+
+  if docker image inspect "$target" >/dev/null 2>&1; then
+    info "Docker image already exists: $target"
+    return 0
+  fi
+
+  info "Building $target from $dockerfile"
+  docker build -t "$target" -f "$dockerfile" "$context"
+}
+
 ensure_local_registry_alias() {
   local source="$1"
   local alias="$2"
@@ -204,6 +226,7 @@ ensure_tag_from_compose_service \
   mpc-sidecar-wvo mpc-sidecar-iw5 mpc-sidecar-ltv mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg
 
 build_web_page_image
+build_tor_image
 
 ensure_local_registry_alias "kerosene/kfe-service:local" "localhost:5000/kerosene/kfe-service:local"
 
@@ -211,11 +234,12 @@ import_to_k8s_containerd "kerosene/server:local"
 import_to_k8s_containerd "kerosene/kfe-service:local"
 import_to_k8s_containerd "localhost:5000/kerosene/kfe-service:local"
 import_to_k8s_containerd "kerosene/mpc-sidecar:local"
+import_to_k8s_containerd "kerosene/tor:local"
 if docker image inspect "kerosene/web-page:local" >/dev/null 2>&1; then
   import_to_k8s_containerd "kerosene/web-page:local"
 fi
 
 info "Imported images visible to Kubernetes:"
-sudo ctr -n k8s.io images ls | grep -E 'kerosene/(server|kfe-service|mpc-sidecar|web-page)' || true
+sudo ctr -n k8s.io images ls | grep -E 'kerosene/(server|kfe-service|mpc-sidecar|tor|web-page)' || true
 
 info "Done. You can now run: backend/kerosene-infrastructure/k8s/scripts/deploy.sh local"
