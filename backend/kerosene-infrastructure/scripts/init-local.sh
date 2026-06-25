@@ -249,14 +249,39 @@ ensure_local_env() {
     set_env_value DIRECTOR_3_ARM_SIGNATURE "$(hmac_signature director-3 "$director_3_secret" "$aes_secret")"
   fi
 
-  ensure_env_value APP_CORS_ALLOWED_ORIGINS "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082" && changed=1 || true
+  local local_browser_origins=(
+    "http://localhost:3000"
+    "http://localhost:3001"
+    "http://localhost:8080"
+    "http://localhost:8081"
+    "http://localhost:8082"
+    "http://localhost:30080"
+    "http://localhost:30082"
+    "http://127.0.0.1:3000"
+    "http://127.0.0.1:3001"
+    "http://127.0.0.1:8080"
+    "http://127.0.0.1:8081"
+    "http://127.0.0.1:8082"
+    "http://127.0.0.1:30080"
+    "http://127.0.0.1:30082"
+  )
+  local local_browser_origin_defaults
+  local_browser_origin_defaults="$(IFS=,; printf '%s' "${local_browser_origins[*]}")"
+
+  ensure_env_value APP_CORS_ALLOWED_ORIGINS "$local_browser_origin_defaults" && changed=1 || true
+  for origin in "${local_browser_origins[@]}"; do
+    ensure_env_csv_contains APP_CORS_ALLOWED_ORIGINS "$origin" && changed=1 || true
+  done
   webauthn_rp_id="$(env_value WEBAUTHN_RP_ID || true)"
   if [[ -z "$webauthn_rp_id" || "$webauthn_rp_id" == CHANGE_ME* || "$webauthn_rp_id" == "localhost" ]]; then
     set_env_value WEBAUTHN_RP_ID "kerosene-device"
     changed=1
   fi
   ensure_env_value WEBAUTHN_RP_NAME "Kerosene Local" && changed=1 || true
-  ensure_env_value WEBAUTHN_ORIGINS "http://localhost:3000,http://localhost:8080,http://localhost:8081,http://localhost:8082" && changed=1 || true
+  ensure_env_value WEBAUTHN_ORIGINS "$local_browser_origin_defaults" && changed=1 || true
+  for origin in "${local_browser_origins[@]}"; do
+    ensure_env_csv_contains WEBAUTHN_ORIGINS "$origin" && changed=1 || true
+  done
   ensure_env_csv_contains WEBAUTHN_ORIGINS "android:apk-key-hash:kerosene" && changed=1 || true
   ensure_env_value WEB_ADMIN_PORT "3000" && changed=1 || true
   ensure_env_value PROMETHEUS_PORT "19090" && changed=1 || true

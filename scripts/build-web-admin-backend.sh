@@ -74,6 +74,7 @@ fi
 }
 
 [[ -f "$FRONTEND_BUILD_DIR/index.html" ]] || fail "Flutter build did not produce $FRONTEND_BUILD_DIR/index.html"
+rm -f "$FRONTEND_BUILD_DIR/kerosene-runtime-config.json"
 
 rm -rf -- "$BACKEND_WEB_ADMIN_BUILD_DIR"
 mkdir -p "$BACKEND_WEB_ADMIN_BUILD_DIR"

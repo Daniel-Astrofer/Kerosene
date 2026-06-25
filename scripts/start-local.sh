@@ -24,6 +24,9 @@ FRONTEND_LOG_DIR="$FRONTEND_DIR/logs"
 FRONTEND_BUILD_LOG_FILE="$FRONTEND_LOG_DIR/local-web-build.log"
 FRONTEND_LOG_FILE="$FRONTEND_LOG_DIR/local-web-server.log"
 FRONTEND_PID_FILE="$FRONTEND_DIR/.dart_tool/kerosene-local-web.pid"
+FRONTEND_RUNTIME_CONFIG_FILE="$FRONTEND_BUILD_DIR/kerosene-runtime-config.json"
+FRONTEND_WEB_PORT_EXPLICIT="${FRONTEND_WEB_PORT+x}"
+FRONTEND_PUBLIC_URL_EXPLICIT="${FRONTEND_PUBLIC_URL+x}"
 FRONTEND_WEB_HOST="${FRONTEND_WEB_HOST:-127.0.0.1}"
 FRONTEND_WEB_PORT="${FRONTEND_WEB_PORT:-3000}"
 FRONTEND_PUBLIC_URL="${FRONTEND_PUBLIC_URL:-http://localhost:${FRONTEND_WEB_PORT}}"
@@ -254,10 +257,50 @@ frontend_http_is_ready() {
   curl -fsS "$FRONTEND_PUBLIC_URL" >/dev/null 2>&1
 }
 
+configure_frontend_runtime() {
+  if [[ -z "$FRONTEND_API_URL" ]]; then
+    FRONTEND_API_URL="http://localhost:${APP_WVO_PORT:-8080}"
+  fi
+
+  local web_admin_port="${WEB_ADMIN_PORT:-3000}"
+  if [[ -z "$FRONTEND_WEB_PORT_EXPLICIT" &&
+        -z "$FRONTEND_PUBLIC_URL_EXPLICIT" &&
+        "$FRONTEND_WEB_PORT" =~ ^[0-9]+$ &&
+        "$web_admin_port" =~ ^[0-9]+$ &&
+        "$FRONTEND_WEB_PORT" == "$web_admin_port" ]]; then
+    FRONTEND_WEB_PORT="$((web_admin_port + 1))"
+    FRONTEND_PUBLIC_URL="http://localhost:${FRONTEND_WEB_PORT}"
+    info "Frontend dev server port ${web_admin_port} is reserved by web-admin; using ${FRONTEND_WEB_PORT}."
+  fi
+}
+
+write_frontend_runtime_config() {
+  mkdir -p "$FRONTEND_BUILD_DIR"
+  python3 - "$FRONTEND_RUNTIME_CONFIG_FILE" "$FRONTEND_API_URL" "$FRONTEND_PUBLIC_URL" <<'PY'
+import json
+import sys
+from pathlib import Path
+
+path = Path(sys.argv[1])
+api_url = sys.argv[2].rstrip("/")
+frontend_url = sys.argv[3].rstrip("/")
+
+payload = {
+    "apiUrl": api_url,
+    "frontendUrl": frontend_url,
+    "source": "scripts/start-local.sh",
+}
+path.write_text(json.dumps(payload, separators=(",", ":")) + "\n", encoding="utf-8")
+PY
+  info "Wrote frontend runtime API config: $FRONTEND_RUNTIME_CONFIG_FILE -> $FRONTEND_API_URL"
+}
+
 start_frontend() {
   if [[ "$START_FRONTEND" -ne 1 ]]; then
     return
   fi
+
+  configure_frontend_runtime
 
   if [[ "$DETACH" -ne 1 ]]; then
     warn "Foreground mode skips automatic Flutter web startup."
@@ -272,10 +315,6 @@ start_frontend() {
   if [[ ! -f "$FRONTEND_DIR/pubspec.yaml" ]]; then
     warn "Frontend pubspec not found at $FRONTEND_DIR/pubspec.yaml; backend is up, but frontend was not started."
     return
-  fi
-
-  if [[ -z "$FRONTEND_API_URL" ]]; then
-    FRONTEND_API_URL="http://localhost:${APP_IS_PORT:-8080}"
   fi
 
   local flutter_bin
@@ -323,6 +362,7 @@ start_frontend() {
     info "Using existing Flutter web build at $FRONTEND_BUILD_DIR."
   fi
   kerosene_chown_sudo_user "$FRONTEND_DIR/.dart_tool" "$FRONTEND_DIR/build" "$FRONTEND_LOG_DIR" "$(dirname "$FRONTEND_PID_FILE")"
+  write_frontend_runtime_config
 
   info "Serving Flutter web frontend at $FRONTEND_PUBLIC_URL."
   if command -v setsid >/dev/null 2>&1; then

@@ -5,6 +5,62 @@ import 'package:kerosene/core/config/app_config.dart';
 import 'package:kerosene/core/providers/tor_providers.dart';
 
 void main() {
+  test('resolveApiUrlForWeb reads trusted runtime config on loopback',
+      () async {
+    final resolved = await resolveApiUrlForWeb(
+      browserUri: Uri.parse('http://localhost:3001/admin'),
+      runtimeConfigReader: (configUri) async {
+        expect(
+          configUri.toString(),
+          'http://localhost:3001/kerosene-runtime-config.json',
+        );
+        return {'apiUrl': 'http://localhost:8080/'};
+      },
+      apiHealthProbe: (_) async => false,
+    );
+
+    expect(resolved, 'http://localhost:8080');
+  });
+
+  test('resolveApiUrlForWeb ignores untrusted runtime config host', () async {
+    final resolved = await resolveApiUrlForWeb(
+      browserUri: Uri.parse('http://localhost:3001/admin'),
+      runtimeConfigReader: (_) async => {'apiUrl': 'https://api.example.com'},
+      apiHealthProbe: (_) async => false,
+    );
+
+    expect(resolved, 'http://localhost:3001');
+  });
+
+  test('resolveApiUrlForWeb probes known local backend ports', () async {
+    final probes = <String>[];
+    final resolved = await resolveApiUrlForWeb(
+      browserUri: Uri.parse('http://localhost:3001/admin'),
+      runtimeConfigReader: (_) async => null,
+      apiHealthProbe: (healthUri) async {
+        probes.add(healthUri.toString());
+        return healthUri.toString() == 'http://localhost:8080/health/ready';
+      },
+    );
+
+    expect(resolved, 'http://localhost:8080');
+    expect(probes.first, 'http://localhost:3001/health/ready');
+    expect(probes, contains('http://localhost:8080/health/ready'));
+  });
+
+  test('localApiCandidateOrigins stays on loopback hosts', () {
+    final origins =
+        localApiCandidateOrigins(Uri.parse('http://localhost:3001/admin'));
+
+    expect(origins, contains('http://localhost:3001'));
+    expect(origins, contains('http://localhost:8080'));
+    expect(origins, contains('http://127.0.0.1:8080'));
+    expect(
+        origins.every((origin) =>
+            origin.contains('localhost') || origin.contains('127.0.0.1')),
+        isTrue);
+  });
+
   test('configureResolvedApiUrl aligns apiUrl, activeNodeUrl and provider', () {
     final previousApiUrl = AppConfig.apiUrl;
     final previousActiveNodeUrl = AppConfig.activeNodeUrl;

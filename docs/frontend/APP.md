@@ -88,8 +88,17 @@ Ordem de resolução de origem da API:
 
 1. Variável de ambiente de tempo de compilação `WEB_API_URL`.
 2. Variável de ambiente de tempo de compilação `WEB_ONION_GATEWAY`.
-3. Origem atual do navegador quando servido de um host `.onion`.
-4. `Uri.base.origin` para implantações de mesma origem.
+3. Arquivo runtime same-origin `kerosene-runtime-config.json`, gerado pelos
+   scripts locais quando o frontend roda em servidor separado.
+4. Origem atual do navegador quando servido de um host `.onion`.
+5. Probes de saúde em portas locais conhecidas do Kerosene, somente quando o
+   navegador também está em loopback (`localhost`, `127.0.0.1` ou `::1`).
+6. `Uri.base.origin` para implantações de mesma origem.
+
+O arquivo runtime só é aceito quando aponta para a mesma origem, para um host
+`.onion`, ou para loopback quando a própria página também está em loopback.
+Isso mantém a descoberta local útil sem permitir troca automática para hosts
+arbitrários.
 
 `configureResolvedApiUrl` escreve a origem selecionada em `AppConfig.apiUrl`,
 `AppConfig.activeNodeUrl` e `torApiUrlProvider`, mantendo a validação de RP
