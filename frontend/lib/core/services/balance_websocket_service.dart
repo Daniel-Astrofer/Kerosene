@@ -1,6 +1,44 @@
+import 'dart:async';
 import 'dart:convert';
 import 'package:flutter/foundation.dart';
 import 'package:stomp_dart_client/stomp_dart_client.dart';
+
+typedef BalanceStompClientFactory = StompClient Function(StompConfig config);
+
+class BalanceWebSocketReconnectPolicy {
+  BalanceWebSocketReconnectPolicy({
+    this.maxAttempts = 5,
+    this.baseDelay = const Duration(seconds: 5),
+    this.maxDelay = const Duration(minutes: 1),
+  })  : assert(maxAttempts >= 0),
+        assert(baseDelay >= Duration.zero),
+        assert(maxDelay >= Duration.zero);
+
+  final int maxAttempts;
+  final Duration baseDelay;
+  final Duration maxDelay;
+  int _attemptCount = 0;
+
+  int get attemptCount => _attemptCount;
+
+  Duration? nextDelay() {
+    if (_attemptCount >= maxAttempts) {
+      return null;
+    }
+
+    final multiplier = 1 << _attemptCount;
+    final delay = Duration(
+      milliseconds: baseDelay.inMilliseconds * multiplier,
+    );
+    _attemptCount += 1;
+
+    return delay > maxDelay ? maxDelay : delay;
+  }
+
+  void reset() {
+    _attemptCount = 0;
+  }
+}
 
 /// Serviço para WebSocket de atualizações de saldo em tempo real
 class BalanceWebSocketService {
@@ -11,7 +49,14 @@ class BalanceWebSocketService {
   final String? deviceHash;
   final Function(BalanceUpdate) onBalanceUpdate;
   final Function(RealtimeNotificationEvent)? onNotification;
+  final VoidCallback? onSessionInvalidated;
+  final BalanceWebSocketReconnectPolicy _reconnectPolicy;
+  final BalanceStompClientFactory _stompClientFactory;
+  Timer? _reconnectTimer;
   bool _isConnected = false;
+  bool _manualDisconnect = false;
+  bool _sessionInvalidated = false;
+  bool _reconnectExhausted = false;
 
   BalanceWebSocketService({
     required this.baseUrl,
@@ -20,14 +65,42 @@ class BalanceWebSocketService {
     this.deviceHash,
     required this.onBalanceUpdate,
     this.onNotification,
-  });
+    this.onSessionInvalidated,
+    BalanceWebSocketReconnectPolicy? reconnectPolicy,
+    BalanceStompClientFactory? stompClientFactory,
+  })  : _reconnectPolicy = reconnectPolicy ?? BalanceWebSocketReconnectPolicy(),
+        _stompClientFactory =
+            stompClientFactory ?? ((config) => StompClient(config: config));
 
   bool get isConnected => _isConnected;
+  bool get stoppedReconnecting => _sessionInvalidated || _reconnectExhausted;
 
   /// Conecta ao WebSocket do backend via ponte local SOCKS5 (Tor)
   Future<void> connect() async {
-    if (_stompClient != null && _isConnected) {
+    if (_sessionInvalidated) {
+      debugPrint('BalanceWebSocketService: session already invalidated.');
+      return;
+    }
+
+    if (_stompClient != null && (_isConnected || _stompClient!.isActive)) {
       debugPrint('BalanceWebSocketService: already connected.');
+      return;
+    }
+
+    _manualDisconnect = false;
+    _reconnectExhausted = false;
+    _reconnectPolicy.reset();
+    await _connectOnce();
+  }
+
+  Future<void> _connectOnce() async {
+    if (_manualDisconnect || _sessionInvalidated) {
+      return;
+    }
+
+    final token = _normalizedAuthToken;
+    if (token == null) {
+      _stopForInvalidSession('session credential missing');
       return;
     }
 
@@ -35,45 +108,36 @@ class BalanceWebSocketService {
 
     debugPrint('BalanceWebSocketService: connecting.');
 
-    _stompClient = StompClient(
-      config: StompConfig.sockJS(
-        url: fullUrl,
-        onConnect: _onConnect,
-        onWebSocketError: (dynamic error) {
-          debugPrint('BalanceWebSocketService: socket error.');
-          _isConnected = false;
-        },
-        onStompError: (StompFrame frame) {
-          debugPrint('BalanceWebSocketService: protocol error.');
-          _isConnected = false;
-        },
-        onDisconnect: (_) {
-          debugPrint('BalanceWebSocketService: disconnected.');
-          _isConnected = false;
-        },
-        beforeConnect: () async {
-          debugPrint('BalanceWebSocketService: starting handshake.');
-          if (authToken == null) {
-            debugPrint('BalanceWebSocketService: session credential missing.');
-          } else {
+    _stompClient = _stompClientFactory(
+      StompConfig.sockJS(
+          url: fullUrl,
+          onConnect: _onConnect,
+          onWebSocketError: _handleWebSocketError,
+          onStompError: _handleStompError,
+          onDisconnect: (_) {
+            debugPrint('BalanceWebSocketService: disconnected.');
+            _handleConnectionClosed('stomp disconnect');
+          },
+          beforeConnect: () async {
+            debugPrint('BalanceWebSocketService: starting handshake.');
             debugPrint(
-                'BalanceWebSocketService: session credential available.');
-          }
-        },
-        onWebSocketDone: () {
-          debugPrint('BalanceWebSocketService: socket closed.');
-        },
-        webSocketConnectHeaders: {
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-          if (deviceHash != null) 'X-Device-Hash': deviceHash!,
-        },
-        stompConnectHeaders: {
-          if (authToken != null) 'Authorization': 'Bearer $authToken',
-        },
-        reconnectDelay: const Duration(seconds: 5),
-        heartbeatIncoming: const Duration(seconds: 10),
-        heartbeatOutgoing: const Duration(seconds: 10),
-      ),
+              'BalanceWebSocketService: session credential available.',
+            );
+          },
+          onWebSocketDone: () {
+            debugPrint('BalanceWebSocketService: socket closed.');
+            _handleConnectionClosed('socket closed');
+          },
+          webSocketConnectHeaders: {
+            'Authorization': 'Bearer $token',
+            if (deviceHash != null) 'X-Device-Hash': deviceHash!,
+          },
+          stompConnectHeaders: {
+            'Authorization': 'Bearer $token',
+          },
+          reconnectDelay: Duration.zero,
+          heartbeatIncoming: const Duration(seconds: 10),
+          heartbeatOutgoing: const Duration(seconds: 10)),
     );
 
     _stompClient?.activate();
@@ -82,6 +146,9 @@ class BalanceWebSocketService {
   /// Callback quando conectado ao WebSocket
   void _onConnect(StompFrame frame) {
     _isConnected = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectPolicy.reset();
     debugPrint('BalanceWebSocketService: connected.');
     debugPrint('BalanceWebSocketService: subscribing to balance feed.');
 
@@ -131,12 +198,141 @@ class BalanceWebSocketService {
 
   /// Desconecta do WebSocket
   void disconnect() {
-    if (_stompClient != null) {
-      debugPrint('BalanceWebSocketService: disconnecting.');
-      _stompClient?.deactivate();
-      _stompClient = null;
+    _manualDisconnect = true;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _reconnectPolicy.reset();
+
+    if (_stompClient == null) {
       _isConnected = false;
+      return;
     }
+
+    debugPrint('BalanceWebSocketService: disconnecting.');
+    _stompClient?.deactivate();
+    _stompClient = null;
+    _isConnected = false;
+  }
+
+  void _handleWebSocketError(dynamic error) {
+    debugPrint('BalanceWebSocketService: socket error.');
+    _isConnected = false;
+
+    if (isSessionFailureSignal(error)) {
+      _stopForInvalidSession('socket rejected session');
+      return;
+    }
+
+    _scheduleReconnect('socket error');
+  }
+
+  void _handleStompError(StompFrame frame) {
+    debugPrint('BalanceWebSocketService: protocol error.');
+    _isConnected = false;
+
+    if (isSessionFailureSignal(frame.body) ||
+        isSessionFailureSignal(frame.command) ||
+        frame.headers.values.any(isSessionFailureSignal)) {
+      _stopForInvalidSession('protocol rejected session');
+      return;
+    }
+
+    _scheduleReconnect('protocol error');
+  }
+
+  void _handleConnectionClosed(String reason) {
+    _isConnected = false;
+    _scheduleReconnect(reason);
+  }
+
+  void _scheduleReconnect(String reason) {
+    if (_manualDisconnect || _sessionInvalidated || _reconnectExhausted) {
+      return;
+    }
+    if (_reconnectTimer?.isActive ?? false) {
+      return;
+    }
+
+    final token = _normalizedAuthToken;
+    if (token == null) {
+      _stopForInvalidSession('session credential missing');
+      return;
+    }
+
+    final delay = _reconnectPolicy.nextDelay();
+    if (delay == null) {
+      _reconnectExhausted = true;
+      _closeCurrentClient();
+      debugPrint(
+        'BalanceWebSocketService: max reconnect attempts reached after '
+        '$reason. Stopping.',
+      );
+      return;
+    }
+
+    debugPrint(
+      'BalanceWebSocketService: reconnecting in ${delay.inSeconds}s '
+      'after $reason (attempt ${_reconnectPolicy.attemptCount}/'
+      '${_reconnectPolicy.maxAttempts}).',
+    );
+
+    _reconnectTimer = Timer(delay, () {
+      _reconnectTimer = null;
+      if (!_manualDisconnect && !_sessionInvalidated && !_reconnectExhausted) {
+        unawaited(_connectOnce());
+      }
+    });
+    _closeCurrentClient();
+  }
+
+  void _stopForInvalidSession(String reason) {
+    if (_sessionInvalidated) {
+      return;
+    }
+
+    _sessionInvalidated = true;
+    _manualDisconnect = true;
+    _isConnected = false;
+    _reconnectTimer?.cancel();
+    _reconnectTimer = null;
+    _closeCurrentClient();
+    debugPrint('BalanceWebSocketService: $reason. Stopping reconnects.');
+    onSessionInvalidated?.call();
+  }
+
+  void _closeCurrentClient() {
+    final client = _stompClient;
+    _stompClient = null;
+    client?.deactivate();
+  }
+
+  String? get _normalizedAuthToken {
+    final token = authToken?.trim();
+    if (token == null || token.isEmpty) {
+      return null;
+    }
+    return token;
+  }
+
+  @visibleForTesting
+  static bool isSessionFailureSignal(Object? value) {
+    final text = value?.toString().toLowerCase() ?? '';
+    if (text.isEmpty) {
+      return false;
+    }
+
+    return text.contains('401') ||
+        text.contains('403') ||
+        text.contains('unauthor') ||
+        text.contains('forbidden') ||
+        text.contains('authentication') ||
+        text.contains('invalid session') ||
+        text.contains('session invalid') ||
+        text.contains('session expired') ||
+        text.contains('invalid token') ||
+        text.contains('token expired') ||
+        text.contains('jwt expired') ||
+        text.contains('jwt invalid');
   }
 }
 

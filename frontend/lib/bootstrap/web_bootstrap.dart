@@ -7,6 +7,7 @@ import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
 import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/performance/kerosene_performance_boundary.dart';
+import 'package:kerosene/core/providers/session_invalidation_provider.dart';
 import 'package:kerosene/core/providers/tor_providers.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
@@ -117,6 +118,13 @@ class _AdminWebApp extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    ref.listen<int>(sessionInvalidationProvider, (previous, next) {
+      if (previous == next) {
+        return;
+      }
+      ref.read(authControllerProvider.notifier).markSessionInvalidated();
+    });
+
     return MaterialApp(
       title: 'Kerosene',
       debugShowCheckedModeBanner: false,

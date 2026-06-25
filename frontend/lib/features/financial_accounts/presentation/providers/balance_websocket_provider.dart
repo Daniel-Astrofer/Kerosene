@@ -6,6 +6,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/providers/alert_preferences_provider.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/providers/session_invalidation_provider.dart';
 import 'package:kerosene/core/services/notification_service.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/features/auth/controller/auth_local_provider.dart';
@@ -120,6 +121,10 @@ final balanceWebSocketServiceProvider =
     userId: userId.toString(),
     authToken: token,
     deviceHash: deviceHash,
+    onSessionInvalidated: () {
+      debugPrint('BalanceWebSocket: session invalidated by realtime channel.');
+      ref.read(sessionInvalidationProvider.notifier).emit();
+    },
     onBalanceUpdate: (update) {
       debugPrint('BalanceWebSocket: balance update received.');
 

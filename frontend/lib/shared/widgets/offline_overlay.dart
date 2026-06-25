@@ -11,7 +11,7 @@ class _OfflineOverlayCopy {
   const _OfflineOverlayCopy._();
 
   static const connectionBody =
-      'Dinheiro privado. Controle sereno. Seguimos reconectando em segundo plano.';
+      'A conexão com o backend caiu. Tentaremos reconectar por tempo limitado.';
 }
 
 class OfflineOverlay extends ConsumerStatefulWidget {
@@ -25,6 +25,8 @@ class OfflineOverlay extends ConsumerStatefulWidget {
 
 class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
     with TickerProviderStateMixin {
+  static const int _maxAutomaticRetries = 5;
+
   late final AnimationController _pulseController;
   late final AnimationController _retryController;
   Timer? _retryTimer;
@@ -55,8 +57,14 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
   void _syncRetryLoop() {
     final isOnline = ref.read(networkStatusProvider);
     if (isOnline) {
-      _retryTimer?.cancel();
-      _retryTimer = null;
+      _stopRetryLoop();
+      if (_retryCount != 0 && mounted) {
+        setState(() => _retryCount = 0);
+      }
+      return;
+    }
+    if (_retryCount >= _maxAutomaticRetries) {
+      _stopRetryLoop();
       return;
     }
     _retryTimer ??= Timer.periodic(KeroseneMotion.offlineRetryInterval, (_) {
@@ -65,11 +73,25 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
     });
   }
 
-  Future<void> _performRetry() async {
+  Future<void> _performRetry({bool manual = false}) async {
     if (!mounted) return;
+    if (!manual && _retryCount >= _maxAutomaticRetries) {
+      _stopRetryLoop();
+      return;
+    }
+
     setState(() => _retryCount += 1);
     _retryController.forward(from: 0);
     await ref.read(networkStatusProvider.notifier).checkConnection();
+    if (!mounted) return;
+    if (!manual && _retryCount >= _maxAutomaticRetries) {
+      _stopRetryLoop();
+    }
+  }
+
+  void _stopRetryLoop() {
+    _retryTimer?.cancel();
+    _retryTimer = null;
   }
 
   @override
@@ -134,13 +156,15 @@ class _OfflineOverlayState extends ConsumerState<OfflineOverlay>
                                 const SizedBox(height: 24),
                                 AppButton(
                                   label: 'Tentar agora',
-                                  onPressed: _performRetry,
+                                  onPressed: () => _performRetry(manual: true),
                                 ),
                                 const SizedBox(height: 14),
                                 Text(
                                   _retryCount == 0
-                                      ? 'A tentativa continua automaticamente enquanto esta tela estiver aberta.'
-                                      : 'Tentativa $_retryCount enviada. Continuaremos tentando.',
+                                      ? 'Tentaremos automaticamente até $_maxAutomaticRetries vezes.'
+                                      : _retryCount >= _maxAutomaticRetries
+                                          ? 'Tentativas automáticas pausadas. Use Tentar agora para verificar novamente.'
+                                          : 'Tentativa $_retryCount de $_maxAutomaticRetries enviada.',
                                   textAlign: TextAlign.center,
                                   style: TextStyle(
                                     color: KeroseneBrandTokens.textMuted
