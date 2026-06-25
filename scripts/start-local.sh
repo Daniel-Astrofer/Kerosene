@@ -131,11 +131,11 @@ print_compose_start_diagnostics() {
   for service in \
     bitcoin-core lnd-neutrino lnd-bootstrap lnd-unlocker \
     vault-raft-1 vault-raft-2 vault-raft-3 vault-raft-bootstrap \
-    kerosene-app-is kerosene-app-ch kerosene-app-sg \
-    kerosene-vanguards-is kerosene-vanguards-ch kerosene-vanguards-sg \
-    kerosene-tor-is kerosene-tor-ch kerosene-tor-sg \
-    kerosene-vault mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg \
-    db-is db-ch db-sg redis-is redis-ch redis-sg; do
+    server-wvo server-iw5 server-ltv \
+    vanguards-wvo vanguards-iw5 vanguards-ltv \
+    tor-wvo tor-iw5 tor-ltv \
+    kerosene-vault mpc-sidecar-wvo mpc-sidecar-iw5 mpc-sidecar-ltv \
+    db-wvo db-iw5 db-ltv redis-wvo redis-iw5 redis-ltv; do
     print_container_health_summary "$service"
   done
 
@@ -143,9 +143,9 @@ print_compose_start_diagnostics() {
   compose logs --no-color --tail 80 \
     bitcoin-core lnd-neutrino lnd-bootstrap lnd-unlocker \
     vault-raft-1 vault-raft-2 vault-raft-3 vault-raft-bootstrap \
-    kerosene-app-is kerosene-app-ch kerosene-app-sg \
-    kerosene-vanguards-is kerosene-vanguards-ch kerosene-vanguards-sg \
-    kerosene-vault mpc-sidecar-is mpc-sidecar-ch mpc-sidecar-sg >&2 || true
+    server-wvo server-iw5 server-ltv \
+    vanguards-wvo vanguards-iw5 vanguards-ltv \
+    kerosene-vault mpc-sidecar-wvo mpc-sidecar-iw5 mpc-sidecar-ltv >&2 || true
 }
 
 refresh_vault_raft_bootstrap() {
@@ -204,9 +204,9 @@ read_onion_hostname() {
 print_onion_addresses() {
   local vault_onion is_onion ch_onion sg_onion
   vault_onion="$(read_onion_hostname kerosene-tor-vault)"
-  is_onion="$(read_onion_hostname kerosene-tor-is)"
-  ch_onion="$(read_onion_hostname kerosene-tor-ch)"
-  sg_onion="$(read_onion_hostname kerosene-tor-sg)"
+  is_onion="$(read_onion_hostname tor-wvo)"
+  ch_onion="$(read_onion_hostname tor-iw5)"
+  sg_onion="$(read_onion_hostname tor-ltv)"
 
   info "Onion addresses:"
   info "  Vault: ${vault_onion:-unavailable}"
@@ -221,9 +221,9 @@ wait_for_master_keys_and_print_onions() {
 
   info "Waiting for IS, CH, and SG shards to provision the master key..."
   while true; do
-    if service_has_master_key kerosene-app-is &&
-       service_has_master_key kerosene-app-ch &&
-       service_has_master_key kerosene-app-sg; then
+    if service_has_master_key server-wvo &&
+       service_has_master_key server-iw5 &&
+       service_has_master_key server-ltv; then
       info "All shards provisioned the master key."
       print_onion_addresses
       return 0

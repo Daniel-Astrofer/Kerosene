@@ -19,7 +19,7 @@ Usage: scripts/migrate-local-db.sh [options] [db-service...]
 
 Applies backend/kerosene/src/main/resources/db/migration.sql and incremental
 versioned migrations to running local PostgreSQL services. If no services are
-provided, it targets db-is, db-ch, db-sg.
+provided, it targets db-wvo, db-iw5, db-ltv.
 
 Options:
   --force       Re-run every migration and update the local checksum cache.
@@ -48,7 +48,7 @@ while [[ $# -gt 0 ]]; do
 done
 
 if [[ ${#DB_SERVICES[@]} -eq 0 ]]; then
-  DB_SERVICES=(db-is db-ch db-sg)
+  DB_SERVICES=(db-wvo db-iw5 db-ltv)
 fi
 
 require_file "$MIGRATION_FILE"

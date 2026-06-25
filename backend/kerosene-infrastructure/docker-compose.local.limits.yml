@@ -124,49 +124,49 @@ services:
   vault-raft-bootstrap:
     <<: *small-job-limits
 
-  db-is:
+  db-wvo:
     <<: *db-limits
-  redis-is:
+  redis-wvo:
     <<: *redis-limits
-  mpc-sidecar-is:
+  mpc-sidecar-wvo:
     <<: *mpc-limits
-  kerosene-tor-is:
+  tor-wvo:
     <<: *tor-limits
-  shard-identity-init-is:
+  shard-identity-init-wvo:
     <<: *small-job-limits
-  kerosene-app-is:
+  server-wvo:
     <<: *app-limits
-  kerosene-vanguards-is:
+  vanguards-wvo:
     <<: *vanguards-limits
 
-  db-ch:
+  db-iw5:
     <<: *db-limits
-  redis-ch:
+  redis-iw5:
     <<: *redis-limits
-  mpc-sidecar-ch:
+  mpc-sidecar-iw5:
     <<: *mpc-limits
-  kerosene-tor-ch:
+  tor-iw5:
     <<: *tor-limits
-  shard-identity-init-ch:
+  shard-identity-init-iw5:
     <<: *small-job-limits
-  kerosene-app-ch:
+  server-iw5:
     <<: *app-limits
-  kerosene-vanguards-ch:
+  vanguards-iw5:
     <<: *vanguards-limits
 
-  db-sg:
+  db-ltv:
     <<: *db-limits
-  redis-sg:
+  redis-ltv:
     <<: *redis-limits
-  mpc-sidecar-sg:
+  mpc-sidecar-ltv:
     <<: *mpc-limits
-  kerosene-tor-sg:
+  tor-ltv:
     <<: *tor-limits
-  shard-identity-init-sg:
+  shard-identity-init-ltv:
     <<: *small-job-limits
-  kerosene-app-sg:
+  server-ltv:
     <<: *app-limits
-  kerosene-vanguards-sg:
+  vanguards-ltv:
     <<: *vanguards-limits
 
   web-admin:
