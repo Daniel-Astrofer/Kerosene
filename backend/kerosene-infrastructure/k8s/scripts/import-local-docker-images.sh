@@ -12,6 +12,7 @@ local development stack was built with Docker Compose.
 Expected targets:
   kerosene/server:local
   kerosene/kfe-service:local
+  localhost:5000/kerosene/kfe-service:local
   kerosene/mpc-sidecar:local
   kerosene/web-page:local
 
@@ -144,6 +145,19 @@ EOF
   rm -f "$tmp_dockerfile"
 }
 
+ensure_local_registry_alias() {
+  local source="$1"
+  local alias="$2"
+
+  if docker image inspect "$alias" >/dev/null 2>&1; then
+    info "Docker image already exists: $alias"
+    return 0
+  fi
+
+  info "Tagging $source as $alias"
+  docker tag "$source" "$alias"
+}
+
 import_to_k8s_containerd() {
   local image="$1"
   info "Importing $image into containerd namespace k8s.io"
@@ -162,8 +176,11 @@ ensure_tag_from_compose_service \
 
 build_web_page_image
 
+ensure_local_registry_alias "kerosene/kfe-service:local" "localhost:5000/kerosene/kfe-service:local"
+
 import_to_k8s_containerd "kerosene/server:local"
 import_to_k8s_containerd "kerosene/kfe-service:local"
+import_to_k8s_containerd "localhost:5000/kerosene/kfe-service:local"
 import_to_k8s_containerd "kerosene/mpc-sidecar:local"
 if docker image inspect "kerosene/web-page:local" >/dev/null 2>&1; then
   import_to_k8s_containerd "kerosene/web-page:local"

@@ -27,9 +27,17 @@ SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 K8S_DIR="$(cd "$SCRIPT_DIR/.." && pwd)"
 OVERLAY="$K8S_DIR/overlays/local-full"
 KUBECTL="${KUBECTL:-kubectl}"
+KUBECTL_ARGS=()
+if [[ -n "${KUBECONFIG:-}" ]]; then
+  KUBECTL_ARGS+=(--kubeconfig "$KUBECONFIG")
+fi
 DRY_RUN=0
 SKIP_IMAGE_IMPORT=0
 WAIT=0
+
+kubectl_cmd() {
+  "$KUBECTL" "${KUBECTL_ARGS[@]}" "$@"
+}
 
 while [[ $# -gt 0 ]]; do
   case "$1" in
@@ -46,7 +54,7 @@ bash "$SCRIPT_DIR/validate-local-full.sh"
 
 if [[ "$DRY_RUN" -eq 1 ]]; then
   echo "[*] Server-side dry-run for local-full overlay"
-  "$KUBECTL" apply -k "$OVERLAY" --dry-run=server
+  kubectl_cmd apply -k "$OVERLAY" --dry-run=server
   exit 0
 fi
 
@@ -61,13 +69,13 @@ else
 fi
 
 echo "[*] Applying local-full overlay"
-"$KUBECTL" apply -k "$OVERLAY"
+kubectl_cmd apply -k "$OVERLAY"
 
 echo "[*] Current local-full objects"
-"$KUBECTL" -n kerosene-local get deploy,sts,pod,svc,hpa,pdb,networkpolicy
+kubectl_cmd -n kerosene-local get deploy,sts,pod,svc,hpa,pdb,networkpolicy
 
 if [[ "$WAIT" -eq 1 ]]; then
-  bash "$SCRIPT_DIR/wait-local-full.sh"
+  KUBECONFIG="${KUBECONFIG:-}" KUBECTL="$KUBECTL" bash "$SCRIPT_DIR/wait-local-full.sh"
 fi
 
 echo "[+] local-full deployment submitted."

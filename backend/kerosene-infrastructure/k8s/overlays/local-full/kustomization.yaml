@@ -12,6 +12,7 @@ labels:
       app.kubernetes.io/environment: local-full
 images:
   - name: kerosene/kfe-service
+    newName: localhost:5000/kerosene/kfe-service
     newTag: local
   - name: kerosene/server
     newTag: local
