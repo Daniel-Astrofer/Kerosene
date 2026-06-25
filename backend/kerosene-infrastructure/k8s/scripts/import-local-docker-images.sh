@@ -91,7 +91,7 @@ ensure_tag_from_compose_service() {
 
 build_kfe_service_image() {
   local target="kerosene/kfe-service:local"
-  local dockerfile="$REPO_ROOT/backend/kerosene-infrastructure/images/kfe/Dockerfile"
+  local dockerfile="$REPO_ROOT/infra/docker/images/kfe-service/Dockerfile"
   local context="$REPO_ROOT/backend/kerosene"
 
   if [[ "$SKIP_KFE_SERVICE_BUILD" -eq 1 ]]; then

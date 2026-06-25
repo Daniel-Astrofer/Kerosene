@@ -47,7 +47,7 @@ x-kfe-env: &kfe-env
 x-kfe-service-common: &kfe-service-common
   build:
     context: ../kerosene
-    dockerfile: ../kerosene-infrastructure/images/kfe/Dockerfile
+    dockerfile: ../../infra/docker/images/kfe-service/Dockerfile
   restart: "no"
   cap_drop: [ALL]
   cap_add: [IPC_LOCK]
