@@ -8,6 +8,8 @@
 !/backend/**
 !/frontend/
 !/frontend/**
+!/infra/
+!/infra/**
 !/docs/
 !/docs/**
 !/docs-final/
@@ -125,6 +127,7 @@
 !/STORYBOOK_SCREEN_INVENTORY.md
 !/docs/**/*.md
 !/docs-final/**/*.md
+!/infra/**/*.md
 !/backend/**/docs/**/*.md
 !/backend/adapters/**/*.md
 !/backend/kerosene/*.md
