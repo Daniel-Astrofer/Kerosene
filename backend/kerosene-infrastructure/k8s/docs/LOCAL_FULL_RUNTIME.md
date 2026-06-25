@@ -45,6 +45,12 @@ Use `web-page` for financial routes. The Kubernetes web proxy sends `/kfe/**`,
 `/api/public/kfe/**` and `/api/admin/kfe/**` to `Service/kfe-service`; the
 direct `server` NodePort is Core-only.
 
+The `web-page` deployment mounts `web-page-runtime-config` at
+`/usr/share/nginx/html/kerosene-runtime-config.json`, pointing the Flutter web
+runtime at `http://127.0.0.1:30082`. The image import script rebuilds the web
+bundle for Kubernetes same-origin routing, so a stale `WEB_API_URL` from
+another local build does not leak into the Kubernetes frontend.
+
 ## Validate only
 
 ```bash
