@@ -6078,6 +6078,45 @@ class AppLocalizationsEn extends AppLocalizations {
   String get financialStatementClearFilters => 'Clear filters';
 
   @override
+  String get financialStatementReportTitle => 'Movement report';
+
+  @override
+  String get financialStatementMovementVolume => 'Movement Volume';
+
+  @override
+  String get financialStatementFundDistribution => 'Fund Distribution';
+
+  @override
+  String get financialStatementMonthlyMovement => 'Monthly movement';
+
+  @override
+  String get financialStatementOutflows => 'Outflows';
+
+  @override
+  String get financialStatementInflows => 'Inflows';
+
+  @override
+  String get financialStatementPeriodTooltip => 'Period';
+
+  @override
+  String get financialStatementPeriodLastSixMonths => 'Last 6 Months';
+
+  @override
+  String get financialStatementPeriodYearToDate => 'YTD';
+
+  @override
+  String get financialStatementPeriodOneYear => '1 Year';
+
+  @override
+  String get financialStatementPeriodMonthly => 'Monthly';
+
+  @override
+  String get financialStatementPeriodWeekly => 'Weekly';
+
+  @override
+  String get financialStatementPeriodAnnual => 'Annual';
+
+  @override
   String get receiveScreenQrEyebrow => 'QR Code';
 
   @override

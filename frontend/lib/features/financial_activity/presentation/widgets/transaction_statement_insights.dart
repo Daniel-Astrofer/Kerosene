@@ -1,39 +1,64 @@
 import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
+import 'package:flutter/services.dart';
+import 'package:intl/intl.dart';
+import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/design_system/icons.dart';
+import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
 import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
 
 enum StatementInsightPeriod { monthly, weekly, annual }
 
-const _background = Colors.black;
-const _primary = Colors.white;
+const _background = AppColors.hexFF000000;
+const _primary = AppColors.hexFFFFFFFF;
 const _onSurfaceVariant = AppColors.hexFFC4C7C8;
 const _surfaceVariant = AppColors.hexFF353534;
-const _outlineVariant = AppColors.hexFF444748;
 const _surfaceContainerLow = AppColors.hexFF1C1B1B;
+const _singleWalletColor = AppColors.hexFF444748;
 const _chartMinimumFraction = 0.055;
 
-class TransactionStatementInsights extends StatelessWidget {
+class TransactionStatementInsights extends StatefulWidget {
   final List<Transaction> transactions;
-  final StatementInsightPeriod period;
-  final ValueChanged<StatementInsightPeriod> onPeriodChanged;
+  final List<Wallet> wallets;
 
   const TransactionStatementInsights({
     super.key,
     required this.transactions,
-    required this.period,
-    required this.onPeriodChanged,
+    required this.wallets,
   });
 
   @override
+  State<TransactionStatementInsights> createState() =>
+      _TransactionStatementInsightsState();
+}
+
+class _TransactionStatementInsightsState
+    extends State<TransactionStatementInsights> {
+  StatementInsightPeriod _period = StatementInsightPeriod.monthly;
+
+  void _setPeriod(StatementInsightPeriod period) {
+    if (_period == period) return;
+    HapticFeedback.selectionClick();
+    setState(() => _period = period);
+  }
+
+  @override
   Widget build(BuildContext context) {
-    final report = _StatementReport.from(transactions, period);
+    final report = _StatementReport.from(
+      context: context,
+      transactions: widget.transactions,
+      wallets: widget.wallets,
+      period: _period,
+    );
+
     return TweenAnimationBuilder<double>(
-      key: ValueKey('statement-report-${period.name}-${transactions.length}'),
+      key: ValueKey(
+        'statement-report-${widget.wallets.length}-${widget.transactions.length}',
+      ),
       tween: Tween(begin: 0, end: 1),
       duration: KeroseneMotion.slow,
       curve: KeroseneMotion.standard,
@@ -52,13 +77,13 @@ class TransactionStatementInsights extends StatelessWidget {
             final wide = constraints.maxWidth >= 760;
             final volume = _MovementVolumePanel(
               report: report,
-              period: period,
-              onPeriodChanged: onPeriodChanged,
+              period: _period,
+              onPeriodChanged: _setPeriod,
             );
             final monthly = _MonthlyMovementPanel(
               report: report,
-              selected: period,
-              onChanged: onPeriodChanged,
+              selected: _period,
+              onChanged: _setPeriod,
             );
             final distribution = _FundDistributionPanel(report: report);
 
@@ -120,7 +145,7 @@ class _MovementVolumePanel extends StatelessWidget {
             children: [
               Expanded(
                 child: Text(
-                  'Movement Volume',
+                  context.tr.financialStatementMovementVolume,
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
                   style: AppTypography.inter(
@@ -154,7 +179,7 @@ class _RangeSelector extends StatelessWidget {
       initialValue: selected,
       color: _surfaceContainerLow,
       elevation: 10,
-      tooltip: 'Periodo',
+      tooltip: context.tr.financialStatementPeriodTooltip,
       onSelected: onChanged,
       itemBuilder: (context) {
         return StatementInsightPeriod.values
@@ -162,7 +187,7 @@ class _RangeSelector extends StatelessWidget {
               (value) => PopupMenuItem(
                 value: value,
                 child: Text(
-                  _rangeLabel(value),
+                  _rangeLabel(context, value),
                   style: AppTypography.inter(
                     color: value == selected ? _primary : _onSurfaceVariant,
                     fontSize: 13,
@@ -173,21 +198,34 @@ class _RangeSelector extends StatelessWidget {
             )
             .toList();
       },
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Text(
-            _rangeLabel(selected),
-            style: AppTypography.inter(
-              color: _onSurfaceVariant,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: Colors.white.withValues(alpha: 0.04),
+          borderRadius: BorderRadius.circular(999),
+          border: Border.all(color: Colors.white.withValues(alpha: 0.11)),
+        ),
+        child: Padding(
+          padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                _rangeLabel(context, selected),
+                style: AppTypography.inter(
+                  color: _primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(width: 6),
+              const Icon(
+                KeroseneIcons.chevronDown,
+                color: _onSurfaceVariant,
+                size: 14,
+              ),
+            ],
           ),
-          const SizedBox(width: 4),
-          const Icon(KeroseneIcons.chevronDown,
-              color: _onSurfaceVariant, size: 14),
-        ],
+        ),
       ),
     );
   }
@@ -203,113 +241,138 @@ class _MovementBarChart extends StatelessWidget {
     final axisValues = _axisValues(report.axisMaxSats);
     return TweenAnimationBuilder<double>(
       key: ValueKey(
-        'movement-volume-${report.buckets.map((bucket) => '${bucket.incomingSats}:${bucket.outgoingSats}').join('|')}',
+        'movement-volume-${report.buckets.map((bucket) => bucket.values.map((value) => value.sats).join(':')).join('|')}',
       ),
       tween: Tween(begin: 0, end: 1),
       duration: KeroseneMotion.slow,
       curve: KeroseneMotion.standard,
       builder: (context, progress, _) {
-        return Stack(
-          children: [
-            Positioned.fill(
-              bottom: 28,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  SizedBox(
-                    width: 48,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: axisValues
-                          .map(
-                            (value) => Text(
-                              _formatCompactSats(value),
-                              maxLines: 1,
-                              overflow: TextOverflow.ellipsis,
-                              style: AppTypography.financial(
-                                color: _onSurfaceVariant,
-                                fontSize: 11,
-                                fontWeight: FontWeight.w400,
+        return LayoutBuilder(
+          builder: (context, constraints) {
+            final chartWidth = math.max<double>(
+              constraints.maxWidth - 48,
+              report.buckets.length *
+                  math.max(44.0, report.wallets.length * 18),
+            );
+            return Stack(
+              children: [
+                Positioned.fill(
+                  right: 0,
+                  bottom: 28,
+                  child: Row(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      Expanded(
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          children: List.generate(
+                            axisValues.length,
+                            (_) => Container(
+                              height: 1,
+                              color: _surfaceVariant.withValues(alpha: 0.3),
+                            ),
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      SizedBox(
+                        width: 40,
+                        child: Column(
+                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                          crossAxisAlignment: CrossAxisAlignment.end,
+                          children: axisValues
+                              .map(
+                                (value) => Text(
+                                  _formatCompactSats(value),
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.financial(
+                                    color: _onSurfaceVariant,
+                                    fontSize: 10,
+                                    fontWeight: FontWeight.w400,
+                                  ),
+                                ),
+                              )
+                              .toList(),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                Positioned.fill(
+                  right: 48,
+                  bottom: 28,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: SizedBox(
+                      width: chartWidth,
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.end,
+                        children: [
+                          for (final bucket in report.buckets)
+                            Expanded(
+                              child: Padding(
+                                padding:
+                                    const EdgeInsets.symmetric(horizontal: 4),
+                                child: _WalletBarGroup(
+                                  bucket: bucket,
+                                  axisMaxSats: report.axisMaxSats,
+                                  progress: progress,
+                                ),
                               ),
                             ),
-                          )
-                          .toList(),
-                    ),
-                  ),
-                  const SizedBox(width: 4),
-                  Expanded(
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                      children: List.generate(
-                        axisValues.length,
-                        (_) => Container(
-                          height: 1,
-                          color: _surfaceVariant.withValues(alpha: 0.3),
-                        ),
+                        ],
                       ),
                     ),
                   ),
-                ],
-              ),
-            ),
-            Positioned.fill(
-              left: 52,
-              bottom: 28,
-              child: Row(
-                crossAxisAlignment: CrossAxisAlignment.end,
-                children: [
-                  for (final bucket in report.buckets)
-                    Expanded(
-                      child: Padding(
-                        padding: const EdgeInsets.symmetric(horizontal: 3),
-                        child: _MovementBarPair(
-                          bucket: bucket,
-                          axisMaxSats: report.axisMaxSats,
-                          progress: progress,
-                        ),
+                ),
+                Positioned(
+                  left: 0,
+                  right: 48,
+                  bottom: 0,
+                  height: 22,
+                  child: SingleChildScrollView(
+                    scrollDirection: Axis.horizontal,
+                    physics: const BouncingScrollPhysics(),
+                    child: SizedBox(
+                      width: chartWidth,
+                      child: Row(
+                        children: [
+                          for (final bucket in report.buckets)
+                            Expanded(
+                              child: Text(
+                                bucket.label,
+                                textAlign: TextAlign.center,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.financial(
+                                  color: _onSurfaceVariant,
+                                  fontSize: 10,
+                                  fontWeight: FontWeight.w400,
+                                ),
+                              ),
+                            ),
+                        ],
                       ),
                     ),
-                ],
-              ),
-            ),
-            Positioned(
-              left: 52,
-              right: 0,
-              bottom: 0,
-              height: 22,
-              child: Row(
-                children: [
-                  for (final bucket in report.buckets)
-                    Expanded(
-                      child: Text(
-                        bucket.label,
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.financial(
-                          color: _onSurfaceVariant,
-                          fontSize: 11,
-                          fontWeight: FontWeight.w400,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-            ),
-          ],
+                  ),
+                ),
+              ],
+            );
+          },
         );
       },
     );
   }
 }
 
-class _MovementBarPair extends StatelessWidget {
+class _WalletBarGroup extends StatelessWidget {
   final _MovementBucket bucket;
   final int axisMaxSats;
   final double progress;
 
-  const _MovementBarPair({
+  const _WalletBarGroup({
     required this.bucket,
     required this.axisMaxSats,
     required this.progress,
@@ -317,32 +380,27 @@ class _MovementBarPair extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final incoming = _barFraction(bucket.incomingSats, axisMaxSats) * progress;
-    final outgoing = _barFraction(bucket.outgoingSats, axisMaxSats) * progress;
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
+      mainAxisAlignment: MainAxisAlignment.center,
       children: [
-        Expanded(
-          child: FractionallySizedBox(
-            heightFactor: incoming.clamp(0.0, 1.0),
-            alignment: Alignment.bottomCenter,
-            child: _GradientBar(
-              topColor: _primary,
-              bottomColor: _primary.withValues(alpha: 0.10),
+        for (var index = 0; index < bucket.values.length; index++) ...[
+          if (index > 0) const SizedBox(width: 3),
+          Expanded(
+            child: FractionallySizedBox(
+              heightFactor: _barFraction(
+                    bucket.values[index].sats,
+                    axisMaxSats,
+                  ) *
+                  progress,
+              alignment: Alignment.bottomCenter,
+              child: _GradientBar(
+                topColor: bucket.values[index].color,
+                bottomColor: bucket.values[index].color.withValues(alpha: 0.10),
+              ),
             ),
           ),
-        ),
-        const SizedBox(width: 3),
-        Expanded(
-          child: FractionallySizedBox(
-            heightFactor: outgoing.clamp(0.0, 1.0),
-            alignment: Alignment.bottomCenter,
-            child: _GradientBar(
-              topColor: _outlineVariant,
-              bottomColor: _outlineVariant.withValues(alpha: 0.10),
-            ),
-          ),
-        ),
+        ],
       ],
     );
   }
@@ -387,7 +445,7 @@ class _MonthlyMovementPanel extends StatelessWidget {
       child: Column(
         children: [
           Text(
-            'Movimentação mensal',
+            context.tr.financialStatementMonthlyMovement,
             textAlign: TextAlign.center,
             style: AppTypography.newsreader(
               color: _primary,
@@ -406,12 +464,12 @@ class _MonthlyMovementPanel extends StatelessWidget {
             children: [
               _MonthlyMetric(
                 icon: KeroseneIcons.up,
-                label: 'Saídas',
+                label: context.tr.financialStatementOutflows,
                 value: _formatBtc(report.outgoingSats),
               ),
               _MonthlyMetric(
                 icon: KeroseneIcons.down,
-                label: 'Entradas',
+                label: context.tr.financialStatementInflows,
                 value: _formatBtc(report.incomingSats),
               ),
             ],
@@ -443,7 +501,7 @@ class _PeriodTabs extends StatelessWidget {
             opacity: active ? 1 : 0.5,
             duration: KeroseneMotion.short,
             child: Text(
-              _periodTabLabel(period),
+              _periodTabLabel(context, period).toUpperCase(),
               style: AppTypography.inter(
                 color: active ? _primary : _onSurfaceVariant,
                 fontSize: 11,
@@ -522,7 +580,7 @@ class _FundDistributionPanel extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           Text(
-            'Fund Distribution',
+            context.tr.financialStatementFundDistribution,
             maxLines: 1,
             overflow: TextOverflow.ellipsis,
             style: AppTypography.inter(
@@ -575,27 +633,33 @@ class _DistributionDonut extends StatelessWidget {
                   progress: progress,
                 ),
               ),
-              Column(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    report.hasMovements ? '100%' : '0%',
-                    style: AppTypography.financial(
-                      color: _primary,
-                      fontSize: 24,
-                      fontWeight: FontWeight.w500,
+              SizedBox(
+                width: 132,
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Text(
+                      report.totalBalanceSats > 0 ? '100%' : '0%',
+                      style: AppTypography.financial(
+                        color: _primary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w500,
+                      ),
                     ),
-                  ),
-                  Text(
-                    'ALLOCATED',
-                    style: AppTypography.inter(
-                      color: _onSurfaceVariant,
-                      fontSize: 11,
-                      fontWeight: FontWeight.w700,
-                      height: 1.2,
+                    Text(
+                      report.dominantWalletName,
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.inter(
+                        color: _onSurfaceVariant,
+                        fontSize: 11,
+                        fontWeight: FontWeight.w700,
+                        height: 1.2,
+                      ),
                     ),
-                  ),
-                ],
+                  ],
+                ),
               ),
             ],
           ),
@@ -727,110 +791,160 @@ class _SoftPanel extends StatelessWidget {
 }
 
 class _StatementReport {
+  final List<_WalletInsight> wallets;
   final List<_MovementBucket> buckets;
   final List<_DistributionSegment> distribution;
   final int incomingSats;
   final int outgoingSats;
   final int axisMaxSats;
-  final bool hasMovements;
+  final int totalBalanceSats;
+  final String dominantWalletName;
 
   const _StatementReport({
+    required this.wallets,
     required this.buckets,
     required this.distribution,
     required this.incomingSats,
     required this.outgoingSats,
     required this.axisMaxSats,
-    required this.hasMovements,
+    required this.totalBalanceSats,
+    required this.dominantWalletName,
   });
 
-  factory _StatementReport.from(
-    List<Transaction> transactions,
-    StatementInsightPeriod period,
-  ) {
-    final buckets = _buildMovementBuckets(transactions, period);
-    final incoming = transactions.where((tx) => tx.isCredit).fold<int>(
-          0,
-          (sum, tx) => sum + tx.amountSatoshis.abs(),
-        );
-    final outgoing = transactions.where((tx) => tx.isDebit).fold<int>(
-          0,
-          (sum, tx) => sum + tx.amountSatoshis.abs(),
-        );
-    final onChain = _sumWhere(
-      transactions,
-      (tx) => !tx.isInternal && !tx.isLightning,
+  factory _StatementReport.from({
+    required BuildContext context,
+    required List<Transaction> transactions,
+    required List<Wallet> wallets,
+    required StatementInsightPeriod period,
+  }) {
+    final insights = _walletInsights(context, wallets);
+    final ranges = _bucketRanges(
+      context: context,
+      wallets: wallets,
+      period: period,
     );
-    final internal = _sumWhere(transactions, (tx) => tx.isInternal);
-    final exchange = _sumWhere(
+    final fallbackToOnlyWallet = wallets.length == 1;
+    final buckets = ranges.map((range) {
+      return _MovementBucket(
+        label: range.label,
+        values: [
+          for (final wallet in insights)
+            _WalletBucketValue(
+              color: wallet.color,
+              sats: _walletBalanceAt(
+                wallet,
+                transactions,
+                range.end,
+                fallbackToOnlyWallet: fallbackToOnlyWallet,
+              ),
+            ),
+        ],
+      );
+    }).toList();
+    final incoming = _periodDeltaTotal(
+      insights,
       transactions,
-      (tx) => tx.isLightning && !tx.isInternal,
+      ranges.first.start,
+      ranges.last.end,
+      positive: true,
+      fallbackToOnlyWallet: fallbackToOnlyWallet,
     );
-    final movementTotal = incoming + outgoing;
-    final distributionTotal = onChain + internal + exchange;
-    final axisMax = _niceAxisMax(
-      buckets.fold<int>(
-        0,
-        (maxValue, bucket) => math.max(
-          maxValue,
-          math.max(bucket.incomingSats, bucket.outgoingSats),
+    final outgoing = _periodDeltaTotal(
+      insights,
+      transactions,
+      ranges.first.start,
+      ranges.last.end,
+      positive: false,
+      fallbackToOnlyWallet: fallbackToOnlyWallet,
+    );
+    final totalBalance = insights.fold<int>(
+      0,
+      (sum, wallet) => sum + math.max(0, wallet.balanceSats),
+    );
+    final dominant = insights.reduce((a, b) {
+      if (b.balanceSats != a.balanceSats) {
+        return b.balanceSats > a.balanceSats ? b : a;
+      }
+      return a.name.toLowerCase().compareTo(b.name.toLowerCase()) <= 0 ? a : b;
+    });
+    final distribution = [
+      for (final wallet in insights)
+        _DistributionSegment.fromActual(
+          label: wallet.name,
+          sats: wallet.balanceSats,
+          visualSats: totalBalance > 0 ? wallet.balanceSats : 1,
+          totalSats: totalBalance,
+          color: wallet.color,
+        ),
+    ];
+    final rawAxisMax = buckets.fold<int>(
+      totalBalance,
+      (maxValue, bucket) => math.max(
+        maxValue,
+        bucket.values.fold<int>(
+          0,
+          (bucketMax, value) => math.max(bucketMax, value.sats),
         ),
       ),
     );
 
-    final hasMovements = movementTotal > 0 || distributionTotal > 0;
-    final distribution = [
-      _DistributionSegment.fromActual(
-        label: 'On-chain',
-        sats: onChain,
-        visualSats: hasMovements ? onChain : 654,
-        totalSats: distributionTotal,
-        color: _primary,
-      ),
-      _DistributionSegment.fromActual(
-        label: 'Internal',
-        sats: internal,
-        visualSats: hasMovements ? internal : 221,
-        totalSats: distributionTotal,
-        color: _outlineVariant,
-      ),
-      _DistributionSegment.fromActual(
-        label: 'Exchange',
-        sats: exchange,
-        visualSats: hasMovements ? exchange : 125,
-        totalSats: distributionTotal,
-        color: _surfaceVariant,
-      ),
-    ];
-
     return _StatementReport(
+      wallets: insights,
       buckets: buckets,
       distribution: distribution,
       incomingSats: incoming,
       outgoingSats: outgoing,
-      axisMaxSats: axisMax,
-      hasMovements: hasMovements,
+      axisMaxSats: _niceAxisMax(rawAxisMax),
+      totalBalanceSats: totalBalance,
+      dominantWalletName: dominant.name,
     );
   }
 }
 
+class _WalletInsight {
+  final String id;
+  final String name;
+  final Set<String> matchKeys;
+  final int balanceSats;
+  final Color color;
+
+  const _WalletInsight({
+    required this.id,
+    required this.name,
+    required this.matchKeys,
+    required this.balanceSats,
+    required this.color,
+  });
+}
+
 class _MovementBucket {
   final String label;
-  final int incomingSats;
-  final int outgoingSats;
+  final List<_WalletBucketValue> values;
 
-  const _MovementBucket(this.label, this.incomingSats, this.outgoingSats);
+  const _MovementBucket({
+    required this.label,
+    required this.values,
+  });
+}
+
+class _WalletBucketValue {
+  final int sats;
+  final Color color;
+
+  const _WalletBucketValue({
+    required this.sats,
+    required this.color,
+  });
 }
 
 class _DistributionSegment {
   final String label;
-  final int sats;
   final int visualSats;
   final double percent;
   final Color color;
 
   const _DistributionSegment({
     required this.label,
-    required this.sats,
     required this.visualSats,
     required this.percent,
     required this.color,
@@ -845,7 +959,6 @@ class _DistributionSegment {
   }) {
     return _DistributionSegment(
       label: label,
-      sats: sats,
       visualSats: math.max(1, visualSats),
       percent: totalSats <= 0 ? 0 : sats / totalSats * 100,
       color: color,
@@ -853,63 +966,222 @@ class _DistributionSegment {
   }
 }
 
-List<_MovementBucket> _buildMovementBuckets(
-  List<Transaction> transactions,
-  StatementInsightPeriod period,
-) {
-  final now = DateTime.now();
-  final buckets = <_MovementBucket>[];
-  for (var index = 5; index >= 0; index--) {
-    final range = _bucketRange(now, period, index);
-    var incoming = 0;
-    var outgoing = 0;
-    for (final tx in transactions) {
-      final local = tx.timestamp.toLocal();
-      if (local.isBefore(range.start) || !local.isBefore(range.end)) continue;
-      if (tx.isCredit) incoming += tx.amountSatoshis.abs();
-      if (tx.isDebit) outgoing += tx.amountSatoshis.abs();
-    }
-    buckets.add(_MovementBucket(range.label, incoming, outgoing));
+List<_WalletInsight> _walletInsights(
+    BuildContext context, List<Wallet> source) {
+  final wallets = source.where((wallet) => wallet.isActive).toList();
+  final displayWallets =
+      wallets.isNotEmpty ? wallets : List<Wallet>.from(source);
+  displayWallets.sort((a, b) {
+    final balance = b.balance.compareTo(a.balance);
+    if (balance != 0) return balance;
+    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
+  });
+
+  if (displayWallets.isEmpty) {
+    return [
+      _WalletInsight(
+        id: 'empty',
+        name: context.tr.noWalletsFound,
+        matchKeys: const {},
+        balanceSats: 0,
+        color: _singleWalletColor,
+      ),
+    ];
   }
-  return buckets;
+
+  return [
+    for (var index = 0; index < displayWallets.length; index++)
+      _WalletInsight(
+        id: displayWallets[index].id,
+        name: displayWallets[index].name,
+        matchKeys: _walletMatchKeys(displayWallets[index]),
+        balanceSats: _btcToSats(displayWallets[index].balance),
+        color: displayWallets.length == 1
+            ? _singleWalletColor
+            : _walletColor(index),
+      ),
+  ];
 }
 
-({DateTime start, DateTime end, String label}) _bucketRange(
-  DateTime now,
-  StatementInsightPeriod period,
-  int offset,
+Set<String> _walletMatchKeys(Wallet wallet) {
+  return {
+    wallet.id,
+    wallet.name,
+    wallet.address,
+    wallet.cardHolderName,
+    wallet.cardNumberSuffix,
+  }
+      .map((value) => value.trim().toLowerCase())
+      .where((value) => value.isNotEmpty)
+      .toSet();
+}
+
+List<({DateTime start, DateTime end, String label})> _bucketRanges({
+  required BuildContext context,
+  required List<Wallet> wallets,
+  required StatementInsightPeriod period,
+}) {
+  final locale = Localizations.localeOf(context).toLanguageTag();
+  final now = DateTime.now();
+  final createdAt = wallets.isEmpty
+      ? DateTime(now.year, now.month)
+      : wallets
+          .map((wallet) => wallet.createdAt.toLocal())
+          .reduce((a, b) => a.isBefore(b) ? a : b);
+
+  switch (period) {
+    case StatementInsightPeriod.weekly:
+      final currentWeek = _weekStart(now);
+      final firstWeek = _weekStart(createdAt);
+      final ytdWeek = _weekStart(DateTime(now.year));
+      final start = firstWeek.isAfter(ytdWeek) ? firstWeek : ytdWeek;
+      final ranges = <({DateTime start, DateTime end, String label})>[];
+      for (var week = start;
+          !week.isAfter(currentWeek);
+          week = week.add(const Duration(days: 7))) {
+        ranges.add((
+          start: week,
+          end: week.add(const Duration(days: 7)),
+          label: DateFormat.MMMd(locale).format(week),
+        ));
+      }
+      return ranges.isEmpty
+          ? [
+              (
+                start: currentWeek,
+                end: currentWeek.add(const Duration(days: 7)),
+                label: DateFormat.MMMd(locale).format(currentWeek),
+              )
+            ]
+          : ranges;
+    case StatementInsightPeriod.annual:
+      final currentMonth = DateTime(now.year, now.month);
+      final firstMonth = DateTime(createdAt.year, createdAt.month);
+      final start = _maxDate(
+        firstMonth,
+        DateTime(currentMonth.year, currentMonth.month - 11),
+      );
+      return _monthRanges(start, currentMonth, locale);
+    case StatementInsightPeriod.monthly:
+      final currentMonth = DateTime(now.year, now.month);
+      final firstMonth = DateTime(createdAt.year, createdAt.month);
+      final start = _maxDate(
+        firstMonth,
+        DateTime(currentMonth.year, currentMonth.month - 5),
+      );
+      return _monthRanges(start, currentMonth, locale);
+  }
+}
+
+List<({DateTime start, DateTime end, String label})> _monthRanges(
+  DateTime start,
+  DateTime currentMonth,
+  String locale,
 ) {
-  return switch (period) {
-    StatementInsightPeriod.weekly => () {
-        final currentWeekStart = DateTime(
-          now.year,
-          now.month,
-          now.day - now.weekday + 1,
-        );
-        final start = currentWeekStart.subtract(Duration(days: 7 * offset));
-        return (
-          start: start,
-          end: start.add(const Duration(days: 7)),
-          label: 'S${_weekOfYear(start)}',
-        );
-      }(),
-    StatementInsightPeriod.annual => () {
-        final year = now.year - offset;
-        return (
-          start: DateTime(year),
-          end: DateTime(year + 1),
-          label: year.toString(),
-        );
-      }(),
-    StatementInsightPeriod.monthly => () {
-        final month = DateTime(now.year, now.month - offset);
-        return (
-          start: month,
-          end: DateTime(month.year, month.month + 1),
-          label: _monthLabel(month.month),
-        );
-      }(),
-  };
+  final ranges = <({DateTime start, DateTime end, String label})>[];
+  for (var month = DateTime(start.year, start.month);
+      !month.isAfter(currentMonth);
+      month = DateTime(month.year, month.month + 1)) {
+    ranges.add((
+      start: month,
+      end: DateTime(month.year, month.month + 1),
+      label: DateFormat.MMM(locale).format(month),
+    ));
+  }
+  return ranges;
+}
+
+DateTime _weekStart(DateTime date) {
+  final local = date.toLocal();
+  return DateTime(local.year, local.month, local.day - local.weekday + 1);
+}
+
+DateTime _maxDate(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
+
+int _walletBalanceAt(
+  _WalletInsight wallet,
+  List<Transaction> transactions,
+  DateTime end, {
+  required bool fallbackToOnlyWallet,
+}) {
+  var balance = wallet.balanceSats;
+  for (final tx in transactions) {
+    final local = tx.timestamp.toLocal();
+    if (local.isBefore(end)) continue;
+    balance -= _walletDelta(
+      wallet,
+      tx,
+      fallbackToWallet: fallbackToOnlyWallet,
+    );
+  }
+  return math.max(0, balance);
+}
+
+int _periodDeltaTotal(
+  List<_WalletInsight> wallets,
+  List<Transaction> transactions,
+  DateTime start,
+  DateTime end, {
+  required bool positive,
+  required bool fallbackToOnlyWallet,
+}) {
+  var total = 0;
+  for (final tx in transactions) {
+    final local = tx.timestamp.toLocal();
+    if (local.isBefore(start) || !local.isBefore(end)) continue;
+    for (final wallet in wallets) {
+      final delta = _walletDelta(
+        wallet,
+        tx,
+        fallbackToWallet: fallbackToOnlyWallet,
+      );
+      if (positive && delta > 0) total += delta;
+      if (!positive && delta < 0) total += delta.abs();
+    }
+  }
+  return total;
+}
+
+int _walletDelta(
+  _WalletInsight wallet,
+  Transaction tx, {
+  required bool fallbackToWallet,
+}) {
+  final amount = tx.amountSatoshis.abs();
+  final debitAmount = amount + tx.feeSatoshis.abs();
+  final walletMatches = _matchesWallet(wallet, [tx.walletId]);
+  final sourceMatches = _matchesWallet(wallet, [
+    tx.sourceWalletId,
+    tx.fromAddress,
+  ]);
+  final destinationMatches = _matchesWallet(wallet, [
+    tx.destinationWalletId,
+    tx.toAddress,
+  ]);
+  final matched = walletMatches || sourceMatches || destinationMatches;
+
+  if (!matched && !fallbackToWallet) return 0;
+  if (tx.isInternal) {
+    if (sourceMatches && !destinationMatches) return -debitAmount;
+    if (destinationMatches && !sourceMatches) return amount;
+  }
+  if (tx.isCredit &&
+      (destinationMatches || walletMatches || fallbackToWallet)) {
+    return amount;
+  }
+  if (tx.isDebit && (sourceMatches || walletMatches || fallbackToWallet)) {
+    return -debitAmount;
+  }
+  return 0;
+}
+
+bool _matchesWallet(_WalletInsight wallet, List<String?> candidates) {
+  for (final candidate in candidates) {
+    final normalized = candidate?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) continue;
+    if (wallet.matchKeys.contains(normalized)) return true;
+  }
+  return false;
 }
 
 List<int> _axisValues(int maxSats) {
@@ -936,49 +1208,34 @@ int _niceAxisMax(int rawMax) {
   return nice * magnitude;
 }
 
-int _weekOfYear(DateTime date) {
-  final firstDay = DateTime(date.year);
-  return ((date.difference(firstDay).inDays + firstDay.weekday) / 7).ceil();
-}
-
-String _monthLabel(int month) {
-  const labels = [
-    'Jan',
-    'Fev',
-    'Mar',
-    'Abr',
-    'Mai',
-    'Jun',
-    'Jul',
-    'Ago',
-    'Set',
-    'Out',
-    'Nov',
-    'Dez',
-  ];
-  return labels[(month - 1).clamp(0, 11)];
-}
-
-String _rangeLabel(StatementInsightPeriod period) {
-  return switch (period) {
-    StatementInsightPeriod.monthly => 'Last 6 Months',
-    StatementInsightPeriod.weekly => 'YTD',
-    StatementInsightPeriod.annual => '1 Year',
+Color _walletColor(int index) {
+  return switch (index % 6) {
+    0 => _primary,
+    1 => AppColors.hexFF63FEA7,
+    2 => const Color(0xFFFFB874),
+    3 => const Color(0xFF8E9192),
+    4 => const Color(0xFFC6C6C6),
+    _ => const Color(0xFF454747),
   };
 }
 
-String _periodTabLabel(StatementInsightPeriod period) {
+String _rangeLabel(BuildContext context, StatementInsightPeriod period) {
   return switch (period) {
-    StatementInsightPeriod.monthly => 'MENSAL',
-    StatementInsightPeriod.weekly => 'SEMANAL',
-    StatementInsightPeriod.annual => 'ANUAL',
+    StatementInsightPeriod.monthly =>
+      context.tr.financialStatementPeriodLastSixMonths,
+    StatementInsightPeriod.weekly =>
+      context.tr.financialStatementPeriodYearToDate,
+    StatementInsightPeriod.annual => context.tr.financialStatementPeriodOneYear,
   };
 }
 
-int _sumWhere(List<Transaction> transactions, bool Function(Transaction) test) {
-  return transactions
-      .where(test)
-      .fold<int>(0, (sum, tx) => sum + tx.amountSatoshis.abs());
+String _periodTabLabel(BuildContext context, StatementInsightPeriod period) {
+  return switch (period) {
+    StatementInsightPeriod.monthly =>
+      context.tr.financialStatementPeriodMonthly,
+    StatementInsightPeriod.weekly => context.tr.financialStatementPeriodWeekly,
+    StatementInsightPeriod.annual => context.tr.financialStatementPeriodAnnual,
+  };
 }
 
 String _formatCompactSats(int sats) {
@@ -993,8 +1250,10 @@ String _formatCompactSats(int sats) {
 }
 
 String _formatBtc(int sats) {
-  final btc = sats / 100000000.0;
   if (sats == 0) return '0 BTC';
   if (sats < 10000) return '$sats sats';
+  final btc = sats / 100000000.0;
   return '${btc.toStringAsFixed(btc >= 1 ? 4 : 6)} BTC';
 }
+
+int _btcToSats(double btc) => math.max(0, (btc * 100000000).round());

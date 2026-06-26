@@ -3587,7 +3587,7 @@ class AppLocalizationsPt extends AppLocalizations {
       'Crie uma carteira para receber, enviar e acompanhar seu saldo com segurança.';
 
   @override
-  String get homePrimaryReadyNoBalanceTitle => 'Carteira pronta para uso';
+  String get homePrimaryReadyNoBalanceTitle => 'Carteira pronta';
 
   @override
   String get homePrimaryReadyNoBalanceSubtitle =>
@@ -6121,6 +6121,45 @@ class AppLocalizationsPt extends AppLocalizations {
 
   @override
   String get financialStatementClearFilters => 'Limpar filtros';
+
+  @override
+  String get financialStatementReportTitle => 'Relatório de movimentação';
+
+  @override
+  String get financialStatementMovementVolume => 'Volume de movimentação';
+
+  @override
+  String get financialStatementFundDistribution => 'Distribuição de fundos';
+
+  @override
+  String get financialStatementMonthlyMovement => 'Movimentação mensal';
+
+  @override
+  String get financialStatementOutflows => 'Saídas';
+
+  @override
+  String get financialStatementInflows => 'Entradas';
+
+  @override
+  String get financialStatementPeriodTooltip => 'Período';
+
+  @override
+  String get financialStatementPeriodLastSixMonths => 'Últimos 6 meses';
+
+  @override
+  String get financialStatementPeriodYearToDate => 'Ano atual';
+
+  @override
+  String get financialStatementPeriodOneYear => '1 ano';
+
+  @override
+  String get financialStatementPeriodMonthly => 'Mensal';
+
+  @override
+  String get financialStatementPeriodWeekly => 'Semanal';
+
+  @override
+  String get financialStatementPeriodAnnual => 'Anual';
 
   @override
   String get receiveScreenQrEyebrow => 'QR Code';

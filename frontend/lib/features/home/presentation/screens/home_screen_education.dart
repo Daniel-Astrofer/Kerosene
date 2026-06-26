@@ -231,21 +231,15 @@ List<HomeEducationCardData> homeEducationCards(
 class HomeFundsDistributionSection extends ConsumerWidget {
   final WalletState walletState;
   final VoidCallback onViewStatement;
-  final ValueChanged<Wallet> onOpenWalletDetails;
 
   const HomeFundsDistributionSection({
     required this.walletState,
     required this.onViewStatement,
-    required this.onOpenWalletDetails,
   });
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final theme = Theme.of(context);
-    final selectedCurrency = ref.watch(currencyProvider);
-    final btcUsd = ref.watch(latestBtcPriceProvider);
-    final btcEur = ref.watch(btcEurPriceProvider);
-    final btcBrl = ref.watch(btcBrlPriceProvider);
     final wallets = walletState is WalletLoaded
         ? (walletState as WalletLoaded).wallets
         : const <Wallet>[];
@@ -258,13 +252,14 @@ class HomeFundsDistributionSection extends ConsumerWidget {
       for (var index = 0; index < displayWallets.length; index++)
         HomeWalletDistributionEntry(
           wallet: displayWallets[index],
-          color: _walletDistributionColor(index),
+          color: displayWallets.length == 1
+              ? _singleWalletDistributionColor
+              : _walletDistributionColor(index),
           share: totalBalance > 0
               ? math.max(0, displayWallets[index].balance) / totalBalance
               : 0,
         ),
     ];
-
     return HomeGlassPanel(
       borderRadius: BorderRadius.circular(homeSize(16)),
       padding: EdgeInsets.all(homeSize(20)),
@@ -302,95 +297,35 @@ class HomeFundsDistributionSection extends ConsumerWidget {
             ],
           ),
           SizedBox(height: homeSize(14)),
-          if (entries.isEmpty)
-            const HomeDistributionEmptyState()
-          else
-            LayoutBuilder(
-              builder: (context, constraints) {
-                final compact = constraints.maxWidth < homeSize(330);
-                final chart = SizedBox(
-                  width: homeSize(104),
-                  height: homeSize(104),
-                  child: Stack(
-                    alignment: Alignment.center,
+          Center(
+            child: SizedBox(
+              width: homeSize(126),
+              height: homeSize(126),
+              child: Stack(
+                alignment: Alignment.center,
+                children: [
+                  CustomPaint(
+                    size: Size.square(homeSize(126)),
+                    painter: HomeDistributionChartPainter(entries: entries),
+                  ),
+                  Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      CustomPaint(
-                        size: Size.square(homeSize(104)),
-                        painter: HomeDistributionChartPainter(entries: entries),
-                      ),
-                      Column(
-                        mainAxisSize: MainAxisSize.min,
-                        children: [
-                          Text(
-                            totalBalance > 0 ? '100%' : '0%',
-                            style: theme.textTheme.labelLarge?.copyWith(
-                              color: Colors.white,
-                              fontSize: homeFontSize(12),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                          SizedBox(height: homeSize(2)),
-                          Text(
-                            '${entries.length}',
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: homeMutedTextColor,
-                              fontSize: homeFontSize(10),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ],
+                      Text(
+                        totalBalance > 0 ? '100%' : '0%',
+                        style: theme.textTheme.labelLarge?.copyWith(
+                          color: Colors.white,
+                          fontSize: homeFontSize(13),
+                          fontWeight: FontWeight.w300,
+                          letterSpacing: 0,
+                        ),
                       ),
                     ],
                   ),
-                );
-                final rows = Column(
-                  children: [
-                    for (var index = 0; index < entries.length; index++) ...[
-                      if (index > 0) SizedBox(height: homeSize(10)),
-                      HomeDistributionLegendRow(
-                        entry: entries[index],
-                        balanceLabel: MoneyDisplay.formatAmountFromBtc(
-                          btcAmount: entries[index].wallet.balance,
-                          currency: selectedCurrency,
-                          btcUsd: btcUsd,
-                          btcEur: btcEur,
-                          btcBrl: btcBrl,
-                        ),
-                        btcLabel: MoneyDisplay.format(
-                          amount: entries[index].wallet.balance,
-                          currency: Currency.btc,
-                        ),
-                        onTap: () {
-                          HapticFeedback.selectionClick();
-                          onOpenWalletDetails(entries[index].wallet);
-                        },
-                      ),
-                    ],
-                  ],
-                );
-
-                if (compact) {
-                  return Column(
-                    children: [
-                      Center(child: chart),
-                      SizedBox(height: homeSize(18)),
-                      rows,
-                    ],
-                  );
-                }
-
-                return Row(
-                  crossAxisAlignment: CrossAxisAlignment.center,
-                  children: [
-                    chart,
-                    SizedBox(width: homeSize(22)),
-                    Expanded(child: rows),
-                  ],
-                );
-              },
+                ],
+              ),
             ),
+          ),
         ],
       ),
     );
@@ -473,130 +408,6 @@ class HomeDistributionEmptyState extends StatelessWidget {
   }
 }
 
-class HomeDistributionLegendRow extends StatelessWidget {
-  final HomeWalletDistributionEntry entry;
-  final String balanceLabel;
-  final String btcLabel;
-  final VoidCallback onTap;
-
-  const HomeDistributionLegendRow({
-    required this.entry,
-    required this.balanceLabel,
-    required this.btcLabel,
-    required this.onTap,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final theme = Theme.of(context);
-    final wallet = entry.wallet;
-    final percentLabel = '${(entry.share * 100).toStringAsFixed(1)}%';
-
-    return Material(
-      color: Colors.transparent,
-      child: InkWell(
-        onTap: onTap,
-        borderRadius: BorderRadius.circular(homeSize(14)),
-        child: Ink(
-          padding: EdgeInsets.symmetric(
-            horizontal: homeSize(10),
-            vertical: homeSize(9),
-          ),
-          decoration: BoxDecoration(
-            color: Colors.white.withValues(alpha: 0.025),
-            borderRadius: BorderRadius.circular(homeSize(14)),
-            border: Border.all(color: Colors.white.withValues(alpha: 0.055)),
-          ),
-          child: Row(
-            children: [
-              Container(
-                width: homeSize(10),
-                height: homeSize(10),
-                decoration:
-                    BoxDecoration(color: entry.color, shape: BoxShape.circle),
-              ),
-              SizedBox(width: homeSize(10)),
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            wallet.name,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.bodySmall?.copyWith(
-                              color: Colors.white,
-                              fontSize: homeFontSize(12),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: homeSize(8)),
-                        Text(
-                          percentLabel,
-                          style: theme.textTheme.labelSmall?.copyWith(
-                            color: Colors.white.withValues(alpha: 0.88),
-                            fontSize: homeFontSize(11),
-                            fontWeight: FontWeight.w300,
-                            letterSpacing: 0,
-                          ),
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: homeSize(4)),
-                    Row(
-                      children: [
-                        Expanded(
-                          child: Text(
-                            wallet.custodyDisplayLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: homeMutedTextColor,
-                              fontSize: homeFontSize(10),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                        SizedBox(width: homeSize(8)),
-                        Flexible(
-                          child: Text(
-                            balanceLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            textAlign: TextAlign.right,
-                            style: theme.textTheme.labelSmall?.copyWith(
-                              color: Colors.white.withValues(alpha: 0.72),
-                              fontSize: homeFontSize(10),
-                              fontWeight: FontWeight.w300,
-                              letterSpacing: 0,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ],
-                ),
-              ),
-              SizedBox(width: homeSize(8)),
-              Icon(
-                KeroseneIcons.chevronRight,
-                size: homeSize(14),
-                color: Colors.white.withValues(alpha: 0.35),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class HomeDistributionChartPainter extends CustomPainter {
   final List<HomeWalletDistributionEntry> entries;
 
@@ -668,6 +479,8 @@ Color _walletDistributionColor(int index) {
     _ => Colors.white.withValues(alpha: 0.24),
   };
 }
+
+const Color _singleWalletDistributionColor = AppColors.hexFF444748;
 
 String _distributionCopy(
   BuildContext context, {

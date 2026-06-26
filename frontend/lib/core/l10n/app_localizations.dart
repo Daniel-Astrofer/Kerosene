@@ -11093,6 +11093,84 @@ abstract class AppLocalizations {
   /// **'Clear filters'**
   String get financialStatementClearFilters;
 
+  /// No description provided for @financialStatementReportTitle.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement report'**
+  String get financialStatementReportTitle;
+
+  /// No description provided for @financialStatementMovementVolume.
+  ///
+  /// In en, this message translates to:
+  /// **'Movement Volume'**
+  String get financialStatementMovementVolume;
+
+  /// No description provided for @financialStatementFundDistribution.
+  ///
+  /// In en, this message translates to:
+  /// **'Fund Distribution'**
+  String get financialStatementFundDistribution;
+
+  /// No description provided for @financialStatementMonthlyMovement.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly movement'**
+  String get financialStatementMonthlyMovement;
+
+  /// No description provided for @financialStatementOutflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Outflows'**
+  String get financialStatementOutflows;
+
+  /// No description provided for @financialStatementInflows.
+  ///
+  /// In en, this message translates to:
+  /// **'Inflows'**
+  String get financialStatementInflows;
+
+  /// No description provided for @financialStatementPeriodTooltip.
+  ///
+  /// In en, this message translates to:
+  /// **'Period'**
+  String get financialStatementPeriodTooltip;
+
+  /// No description provided for @financialStatementPeriodLastSixMonths.
+  ///
+  /// In en, this message translates to:
+  /// **'Last 6 Months'**
+  String get financialStatementPeriodLastSixMonths;
+
+  /// No description provided for @financialStatementPeriodYearToDate.
+  ///
+  /// In en, this message translates to:
+  /// **'YTD'**
+  String get financialStatementPeriodYearToDate;
+
+  /// No description provided for @financialStatementPeriodOneYear.
+  ///
+  /// In en, this message translates to:
+  /// **'1 Year'**
+  String get financialStatementPeriodOneYear;
+
+  /// No description provided for @financialStatementPeriodMonthly.
+  ///
+  /// In en, this message translates to:
+  /// **'Monthly'**
+  String get financialStatementPeriodMonthly;
+
+  /// No description provided for @financialStatementPeriodWeekly.
+  ///
+  /// In en, this message translates to:
+  /// **'Weekly'**
+  String get financialStatementPeriodWeekly;
+
+  /// No description provided for @financialStatementPeriodAnnual.
+  ///
+  /// In en, this message translates to:
+  /// **'Annual'**
+  String get financialStatementPeriodAnnual;
+
   /// No description provided for @receiveScreenQrEyebrow.
   ///
   /// In en, this message translates to:

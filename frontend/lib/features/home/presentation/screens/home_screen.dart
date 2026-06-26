@@ -51,6 +51,7 @@ import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accoun
 import 'package:kerosene/features/send/presentation/screens/send_money_screen.dart'
     deferred as send_money;
 import '../widgets/animated_balance_display.dart';
+import '../widgets/home_bitcoin_market_chart_card.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
@@ -64,7 +65,6 @@ import 'home_screen_payment_link.dart';
 import 'home_screen_balance.dart';
 import 'home_screen_navigation.dart';
 import 'home_screen_transactions.dart';
-import 'home_wallet_distribution_detail_screen.dart';
 
 enum HomeLedgerBalanceView { total, platform, onChain }
 
@@ -178,6 +178,10 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
     super.initState();
     homeRouteActiveController = ref.read(homeRouteActiveProvider.notifier);
     homeRouteActiveController.state = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      _refreshHomeData();
+    });
   }
 
   @override
@@ -482,15 +486,6 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
       );
     }
 
-    void openWalletDistributionDetails(Wallet wallet) {
-      HapticFeedback.selectionClick();
-      unawaited(
-        _pushFromBottom<void>(
-          (_) => HomeWalletDistributionDetailScreen(initialWallet: wallet),
-        ),
-      );
-    }
-
     // ── NOME DE USUÁRIO REAL E SEGURO ──
     String userName = '';
 
@@ -569,6 +564,8 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
                                           AppPrimaryDestination.card,
                                         ),
                                       ),
+                                      SizedBox(height: homeSize(18)),
+                                      const HomeBitcoinMarketChartCard(),
                                       if (showPrimaryActionPanel) ...[
                                         SizedBox(height: homeSize(18)),
                                         HomeSetupNotice(
@@ -617,8 +614,6 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
                                       HomeFundsDistributionSection(
                                         walletState: walletState,
                                         onViewStatement: openStatement,
-                                        onOpenWalletDetails:
-                                            openWalletDistributionDetails,
                                       ),
                                       SizedBox(height: homeSize(28)),
                                       HomeSectionHeader(
@@ -629,8 +624,10 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
                                         onAction: openStatement,
                                       ),
                                       SizedBox(height: homeSize(12)),
-                                      const HomeActivityFilterChips(),
-                                      SizedBox(height: homeSize(14)),
+                                      if (hasTransactions) ...[
+                                        const HomeActivityFilterChips(),
+                                        SizedBox(height: homeSize(14)),
+                                      ],
                                       HomeTransactionsList(
                                         onCreateWallet: _openCreateWallet,
                                         onDepositWallet: _openDepositForWallet,
