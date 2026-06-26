@@ -3,6 +3,7 @@ import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_activity/presentation/screens/deposits_screen.dart';
 import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
@@ -55,6 +56,7 @@ void main() {
     List<Transaction> transactions,
   ) async {
     SharedPreferences.setMockInitialValues(const {});
+    final sharedPreferences = await SharedPreferences.getInstance();
     tester.view.physicalSize = const Size(430, 900);
     tester.view.devicePixelRatio = 1.0;
     addTearDown(() {
@@ -65,6 +67,7 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
+          sharedPreferencesProvider.overrideWithValue(sharedPreferences),
           transactionHistoryProvider.overrideWith((ref) async => transactions),
           latestBtcPriceProvider.overrideWith((ref) => 76500),
           btcEurPriceProvider.overrideWith((ref) => 70000),

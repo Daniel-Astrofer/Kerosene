@@ -12,6 +12,7 @@ import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
 import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_activity/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/financial_activity/presentation/widgets/transaction_statement_insights.dart';
 import 'package:kerosene/features/financial_activity/presentation/widgets/transaction_visuals.dart';
 import 'package:kerosene/shared/widgets/bitcoin_refresh_indicator.dart';
 
@@ -36,6 +37,7 @@ class _TransactionStatementScreenState
   final GlobalKey<_StatementTopBarState> _topBarKey =
       GlobalKey<_StatementTopBarState>();
   _StatementFilter _filter = _StatementFilter.all;
+  StatementInsightPeriod _insightPeriod = StatementInsightPeriod.monthly;
   String _query = '';
   String? _expandedTransactionId;
 
@@ -77,6 +79,12 @@ class _TransactionStatementScreenState
     _scrollToTop();
   }
 
+  void _updateInsightPeriod(StatementInsightPeriod value) {
+    if (value == _insightPeriod) return;
+    HapticFeedback.selectionClick();
+    setState(() => _insightPeriod = value);
+  }
+
   void _updateQuery(String value) {
     if (value == _query) return;
     setState(() {
@@ -111,6 +119,8 @@ class _TransactionStatementScreenState
   Widget build(BuildContext context) {
     final historyAsync = ref.watch(transactionHistoryProvider);
     final bottomPadding = MediaQuery.viewPaddingOf(context).bottom + 132.0;
+    final screenWidth = MediaQuery.sizeOf(context).width;
+    final maxWidth = screenWidth >= 900 ? 980.0 : 430.0;
 
     if (historyAsync.isLoading && !historyAsync.hasValue) {
       return const KeroseneLogoLoadingView();
@@ -123,7 +133,7 @@ class _TransactionStatementScreenState
           SafeArea(
             child: Center(
               child: ConstrainedBox(
-                constraints: const BoxConstraints(maxWidth: 430),
+                constraints: BoxConstraints(maxWidth: maxWidth),
                 child: CustomScrollView(
                   controller: _scrollController,
                   physics: const BouncingScrollPhysics(
@@ -145,13 +155,12 @@ class _TransactionStatementScreenState
                       child: Padding(
                         padding: const EdgeInsets.fromLTRB(24, 18, 24, 0),
                         child: Text(
-                          context.tr.financialStatementTitle,
+                          'Relatorio de movimentação',
                           style: AppTypography.newsreader(
                             color: Colors.white,
-                            fontSize: 34,
-                            fontWeight: FontWeight.w400,
-                            height: 1,
-                            letterSpacing: 0,
+                            fontSize: screenWidth >= 720 ? 40 : 34,
+                            fontWeight: FontWeight.w500,
+                            height: 1.1,
                           ),
                         ),
                       ),
@@ -183,10 +192,42 @@ class _TransactionStatementScreenState
                       ),
                       data: (transactions) {
                         final rows = _filtered(context, transactions);
+                        final hasActiveNarrowing = transactions.isNotEmpty &&
+                            (_filter != _StatementFilter.all ||
+                                _query.trim().isNotEmpty);
+
                         if (rows.isEmpty) {
-                          final hasActiveNarrowing = transactions.isNotEmpty &&
-                              (_filter != _StatementFilter.all ||
-                                  _query.trim().isNotEmpty);
+                          if (!hasActiveNarrowing) {
+                            return SliverPadding(
+                              padding: EdgeInsets.fromLTRB(
+                                24,
+                                24,
+                                24,
+                                bottomPadding,
+                              ),
+                              sliver: SliverToBoxAdapter(
+                                child: Column(
+                                  crossAxisAlignment:
+                                      CrossAxisAlignment.stretch,
+                                  children: [
+                                    TransactionStatementInsights(
+                                      transactions: transactions,
+                                      period: _insightPeriod,
+                                      onPeriodChanged: _updateInsightPeriod,
+                                    ),
+                                    const SizedBox(height: 24),
+                                    _StatementMessage(
+                                      icon: KeroseneIcons.history,
+                                      title: context
+                                          .tr.financialStatementEmptyTitle,
+                                      message: context
+                                          .tr.financialStatementEmptyMessage,
+                                    ),
+                                  ],
+                                ),
+                              ),
+                            );
+                          }
                           return SliverFillRemaining(
                             hasScrollBody: false,
                             child: _StatementMessage(
@@ -224,21 +265,32 @@ class _TransactionStatementScreenState
                             bottomPadding,
                           ),
                           sliver: SliverToBoxAdapter(
-                            child: StatementTransactionScrollStack(
-                              key: ValueKey(
-                                'statement-stack-${_filter.name}-${_query.trim()}-${rows.length}',
-                              ),
-                              itemCount: rows.length,
-                              itemExtent: 174,
-                              expandedItemExtent: 376,
-                              expandedIndex:
-                                  expandedIndex >= 0 ? expandedIndex : null,
-                              itemGap: 12,
-                              stackGap: 114,
-                              topAnchorOffset: 12,
-                              collapseStartFraction: 0.75,
-                              itemBuilder: (context, index) =>
-                                  _buildTransactionCard(rows[index]),
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                TransactionStatementInsights(
+                                  transactions: transactions,
+                                  period: _insightPeriod,
+                                  onPeriodChanged: _updateInsightPeriod,
+                                ),
+                                const SizedBox(height: 24),
+                                StatementTransactionScrollStack(
+                                  key: ValueKey(
+                                    'statement-stack-${_filter.name}-${_query.trim()}-${rows.length}',
+                                  ),
+                                  itemCount: rows.length,
+                                  itemExtent: 174,
+                                  expandedItemExtent: 376,
+                                  expandedIndex:
+                                      expandedIndex >= 0 ? expandedIndex : null,
+                                  itemGap: 12,
+                                  stackGap: 114,
+                                  topAnchorOffset: 12,
+                                  collapseStartFraction: 0.75,
+                                  itemBuilder: (context, index) =>
+                                      _buildTransactionCard(rows[index]),
+                                ),
+                              ],
                             ),
                           ),
                         );
@@ -257,18 +309,14 @@ class _TransactionStatementScreenState
     );
   }
 
-  Widget _buildTransactionCard(
-    Transaction tx, {
-    bool forceExpanded = false,
-  }) {
-    final expanded = forceExpanded || tx.id == _expandedTransactionId;
+  Widget _buildTransactionCard(Transaction tx) {
+    final expanded = tx.id == _expandedTransactionId;
     return StatementTransactionCard(
       transaction: tx,
       expanded: expanded,
       mode: StatementTransactionCardMode.stacked,
       onTap: () {
         HapticFeedback.selectionClick();
-        if (forceExpanded) return;
         setState(() {
           _expandedTransactionId = expanded ? null : tx.id;
         });
@@ -289,8 +337,7 @@ class _TransactionStatementScreenState
       };
       if (!directionMatches) return false;
       if (query.isEmpty) return true;
-      final haystack = _statementSearchText(context, tx);
-      return haystack.contains(query);
+      return _statementSearchText(context, tx).contains(query);
     }).toList();
     rows.sort((a, b) => b.timestamp.compareTo(a.timestamp));
     return rows;
@@ -306,18 +353,14 @@ class _TransactionStatementScreenState
       TransactionStatus.pending => l10n.pending,
       TransactionStatus.failed => l10n.failed,
     };
-    final visibleRail = tx.isInternal
-        ? 'Transação Interna Internal transfer Kerosene'
+    final rail = tx.isInternal
+        ? 'Transacao Interna Internal transfer Kerosene'
         : tx.isLightning
             ? 'Lightning'
-            : _statementOnchainTitleMatches(visual)
-                ? 'Onchain On-chain Bitcoin'
-                : visual.localizedLabel(context);
+            : 'Onchain On-chain Bitcoin';
     final directionLabel = tx.isDebit
         ? l10n.financialStatementFilterOutgoing
         : l10n.financialStatementFilterIncoming;
-    final signedBtc = tx.signedAmountBTC.toStringAsFixed(8);
-    final unsignedBtc = tx.amountBTC.toStringAsFixed(8);
     final dateTokens = [
       timestamp.toIso8601String(),
       '${timestamp.day.toString().padLeft(2, '0')}/'
@@ -338,11 +381,11 @@ class _TransactionStatementScreenState
         tx.invoiceId,
         tx.paymentHash,
         visual.localizedLabel(context),
-        visibleRail,
+        rail,
         directionLabel,
         status,
-        signedBtc,
-        unsignedBtc,
+        tx.signedAmountBTC.toStringAsFixed(8),
+        tx.amountBTC.toStringAsFixed(8),
         tx.amountSatoshis.toString(),
         tx.feeSatoshis.toString(),
         '${tx.amountSatoshis} sats',
@@ -350,12 +393,6 @@ class _TransactionStatementScreenState
         ...dateTokens,
       ].whereType<String>().join(' '),
     );
-  }
-
-  bool _statementOnchainTitleMatches(TransactionVisualSpec visual) {
-    return visual.family == TransactionVisualFamily.onChain ||
-        visual.family == TransactionVisualFamily.deposit ||
-        visual.family == TransactionVisualFamily.withdrawal;
   }
 }
 
@@ -551,6 +588,13 @@ class _StatementTabs extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final tabs = [
+      (context.tr.financialStatementFilterAll, _StatementFilter.all),
+      (context.tr.financialStatementFilterIncoming, _StatementFilter.incoming),
+      (context.tr.financialStatementFilterOutgoing, _StatementFilter.outgoing),
+      (context.tr.financialStatementFilterPending, _StatementFilter.pending),
+      (context.tr.financialStatementFilterFailed, _StatementFilter.failed),
+    ];
     return Container(
       padding: const EdgeInsets.all(4),
       decoration: BoxDecoration(
@@ -561,33 +605,13 @@ class _StatementTabs extends StatelessWidget {
         scrollDirection: Axis.horizontal,
         physics: const BouncingScrollPhysics(),
         child: Row(
-          children: [
-            _StatementTab(
-              label: context.tr.financialStatementFilterAll,
-              selected: selected == _StatementFilter.all,
-              onTap: () => onChanged(_StatementFilter.all),
-            ),
-            _StatementTab(
-              label: context.tr.financialStatementFilterIncoming,
-              selected: selected == _StatementFilter.incoming,
-              onTap: () => onChanged(_StatementFilter.incoming),
-            ),
-            _StatementTab(
-              label: context.tr.financialStatementFilterOutgoing,
-              selected: selected == _StatementFilter.outgoing,
-              onTap: () => onChanged(_StatementFilter.outgoing),
-            ),
-            _StatementTab(
-              label: context.tr.financialStatementFilterPending,
-              selected: selected == _StatementFilter.pending,
-              onTap: () => onChanged(_StatementFilter.pending),
-            ),
-            _StatementTab(
-              label: context.tr.financialStatementFilterFailed,
-              selected: selected == _StatementFilter.failed,
-              onTap: () => onChanged(_StatementFilter.failed),
-            ),
-          ],
+          children: tabs
+              .map((tab) => _StatementTab(
+                    label: tab.$1,
+                    selected: selected == tab.$2,
+                    onTap: () => onChanged(tab.$2),
+                  ))
+              .toList(),
         ),
       ),
     );
@@ -627,7 +651,6 @@ class _StatementTab extends StatelessWidget {
             color: selected ? Colors.white : AppColors.hexFF8A8A8E,
             fontSize: 13,
             fontWeight: FontWeight.w600,
-            letterSpacing: 0,
           ),
         ),
       ),
@@ -667,7 +690,6 @@ class _StatementMessage extends StatelessWidget {
                 color: Colors.white,
                 fontSize: 17,
                 fontWeight: FontWeight.w600,
-                letterSpacing: 0,
               ),
             ),
             const SizedBox(height: 6),
@@ -679,7 +701,6 @@ class _StatementMessage extends StatelessWidget {
                 fontSize: 13,
                 fontWeight: FontWeight.w400,
                 height: 1.35,
-                letterSpacing: 0,
               ),
             ),
             if (actionLabel != null && onAction != null) ...[
@@ -703,7 +724,6 @@ class _StatementMessage extends StatelessWidget {
                   textStyle: AppTypography.inter(
                     fontSize: 13,
                     fontWeight: FontWeight.w600,
-                    letterSpacing: 0,
                   ),
                 ),
               ),
