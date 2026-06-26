@@ -1,13 +1,15 @@
+import 'dart:math' as math;
+
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:kerosene/core/motion/app_motion.dart';
-import 'package:kerosene/core/theme/app_colors.dart';
-import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
-import 'package:kerosene/design_system/icons.dart';
-import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 
 enum AppPrimaryDestination { home, card, history, settings }
+
+enum _KeroseneNavIconKind { home, wallet, history, settings }
 
 extension AppPrimaryDestinationX on AppPrimaryDestination {
   String get routeName {
@@ -36,35 +38,35 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
     }
   }
 
-  String supportingLabel(BuildContext context) {
+  String get compactFallbackLabel {
     switch (this) {
       case AppPrimaryDestination.home:
-        return 'Visao geral da conta';
+        return 'Inicio';
       case AppPrimaryDestination.card:
-        return 'Carteiras e cartoes';
+        return 'Carteira';
       case AppPrimaryDestination.history:
-        return 'Extrato e comprovantes';
+        return 'Atividade';
       case AppPrimaryDestination.settings:
-        return 'Preferencias do app';
+        return 'Ajustes';
     }
   }
 
-  IconData get icon {
+  _KeroseneNavIconKind get _iconKind {
     switch (this) {
       case AppPrimaryDestination.home:
-        return KeroseneIcons.home;
+        return _KeroseneNavIconKind.home;
       case AppPrimaryDestination.card:
-        return KeroseneIcons.wallet;
+        return _KeroseneNavIconKind.wallet;
       case AppPrimaryDestination.history:
-        return KeroseneIcons.history;
+        return _KeroseneNavIconKind.history;
       case AppPrimaryDestination.settings:
-        return KeroseneIcons.settings;
+        return _KeroseneNavIconKind.settings;
     }
   }
 }
 
 class AppPrimaryNavigationBar {
-  static const double _buttonSize = 56;
+  static const double _buttonSize = 60;
   static const double _buttonRightSpacing = AppSpacing.xl2;
   static const double _buttonBottomSpacing = 32;
   static const double _contentBuffer = AppSpacing.xl2;
@@ -155,38 +157,93 @@ class AppPrimaryNavigationBar {
     Key? key,
     required AppPrimaryDestination currentDestination,
   }) {
-    return _AppPrimaryCircularNavigationOverlay(
+    return _KerosenePrimaryNavigationOverlay(
       key: key,
       currentDestination: currentDestination,
     );
   }
 }
 
-class _AppPrimaryCircularNavigationOverlay extends StatelessWidget {
+class _KerosenePrimaryNavigationOverlay extends StatefulWidget {
   final AppPrimaryDestination currentDestination;
 
-  const _AppPrimaryCircularNavigationOverlay({
+  const _KerosenePrimaryNavigationOverlay({
     super.key,
     required this.currentDestination,
   });
+
+  @override
+  State<_KerosenePrimaryNavigationOverlay> createState() =>
+      _KerosenePrimaryNavigationOverlayState();
+}
+
+class _KerosenePrimaryNavigationOverlayState
+    extends State<_KerosenePrimaryNavigationOverlay> {
+  bool _expanded = false;
+
+  @override
+  void didUpdateWidget(covariant _KerosenePrimaryNavigationOverlay oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    if (oldWidget.currentDestination != widget.currentDestination && _expanded) {
+      setState(() => _expanded = false);
+    }
+  }
+
+  void _toggleExpanded() {
+    HapticFeedback.selectionClick();
+    setState(() => _expanded = !_expanded);
+  }
+
+  void _closeExpanded() {
+    if (!_expanded) return;
+    setState(() => _expanded = false);
+  }
+
+  Future<void> _selectDestination(AppPrimaryDestination destination) async {
+    HapticFeedback.selectionClick();
+    setState(() => _expanded = false);
+
+    if (!mounted || destination == widget.currentDestination) return;
+
+    await Future<void>.delayed(KeroseneMotion.fast);
+    if (!mounted) return;
+    AppPrimaryNavigationBar.navigateTo(context, destination);
+  }
 
   @override
   Widget build(BuildContext context) {
     return Positioned.fill(
       child: Stack(
         children: [
+          if (_expanded)
+            Positioned.fill(
+              child: Semantics(
+                label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
+                button: true,
+                child: GestureDetector(
+                  behavior: HitTestBehavior.opaque,
+                  onTap: _closeExpanded,
+                  child: ColoredBox(
+                    color: Colors.black.withValues(alpha: 0.16),
+                  ),
+                ),
+              ),
+            ),
           SafeArea(
             top: false,
             minimum: const EdgeInsets.fromLTRB(
-              0,
+              AppSpacing.md,
               0,
               AppPrimaryNavigationBar._buttonRightSpacing,
               AppPrimaryNavigationBar._buttonBottomSpacing,
             ),
             child: Align(
               alignment: Alignment.bottomRight,
-              child: _AppPrimaryFloatingMenuButton(
-                currentDestination: currentDestination,
+              child: _KeroseneExpandableNavigationButton(
+                currentDestination: widget.currentDestination,
+                expanded: _expanded,
+                onToggle: _toggleExpanded,
+                onDestinationSelected: _selectDestination,
               ),
             ),
           ),
@@ -195,12 +252,19 @@ class _AppPrimaryCircularNavigationOverlay extends StatelessWidget {
             minimum: const EdgeInsets.only(bottom: AppSpacing.sm),
             child: Align(
               alignment: Alignment.bottomCenter,
-              child: Container(
-                width: AppPrimaryNavigationBar._gestureIndicatorWidth,
-                height: AppPrimaryNavigationBar._gestureIndicatorHeight,
-                decoration: BoxDecoration(
-                  color: KeroseneBrandTokens.textPrimary,
-                  borderRadius: BorderRadius.circular(999),
+              child: IgnorePointer(
+                child: AnimatedOpacity(
+                  opacity: _expanded ? 0 : 1,
+                  duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+                  curve: KeroseneMotion.standard,
+                  child: Container(
+                    width: AppPrimaryNavigationBar._gestureIndicatorWidth,
+                    height: AppPrimaryNavigationBar._gestureIndicatorHeight,
+                    decoration: BoxDecoration(
+                      color: KeroseneBrandTokens.textPrimary,
+                      borderRadius: BorderRadius.circular(999),
+                    ),
+                  ),
                 ),
               ),
             ),
@@ -211,277 +275,168 @@ class _AppPrimaryCircularNavigationOverlay extends StatelessWidget {
   }
 }
 
-class _AppPrimaryFloatingMenuButton extends StatefulWidget {
+class _KeroseneExpandableNavigationButton extends StatefulWidget {
   final AppPrimaryDestination currentDestination;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final ValueChanged<AppPrimaryDestination> onDestinationSelected;
 
-  const _AppPrimaryFloatingMenuButton({required this.currentDestination});
+  const _KeroseneExpandableNavigationButton({
+    required this.currentDestination,
+    required this.expanded,
+    required this.onToggle,
+    required this.onDestinationSelected,
+  });
 
   @override
-  State<_AppPrimaryFloatingMenuButton> createState() =>
-      _AppPrimaryFloatingMenuButtonState();
+  State<_KeroseneExpandableNavigationButton> createState() =>
+      _KeroseneExpandableNavigationButtonState();
 }
 
-class _AppPrimaryFloatingMenuButtonState
-    extends State<_AppPrimaryFloatingMenuButton> with TickerProviderStateMixin {
-  late final AnimationController _pressController;
+class _KeroseneExpandableNavigationButtonState
+    extends State<_KeroseneExpandableNavigationButton>
+    with TickerProviderStateMixin {
+  static const double _closedSize = AppPrimaryNavigationBar._buttonSize;
+  static const double _openHeight = 64;
+  static const double _itemGap = 4;
+
   late final AnimationController _menuController;
-  late final Animation<double> _scaleAnimation;
-  OverlayEntry? _menuEntry;
-  bool _menuOpen = false;
-  bool _closing = false;
+  late final AnimationController _pressController;
+  late final Animation<double> _pressScale;
 
   @override
   void initState() {
     super.initState();
+    _menuController = AnimationController(
+      vsync: this,
+      duration: KeroseneMotion.medium,
+      reverseDuration: KeroseneMotion.short,
+      value: widget.expanded ? 1 : 0,
+    );
     _pressController = AnimationController(
       vsync: this,
       duration: KeroseneMotion.fast,
+      reverseDuration: KeroseneMotion.fast,
     );
-    _menuController = AnimationController(
-      vsync: this,
-      duration: KeroseneMotion.long,
-      reverseDuration: KeroseneMotion.short,
-    );
-    _scaleAnimation = Tween<double>(begin: 1.0, end: 0.92).animate(
+    _pressScale = Tween<double>(begin: 1, end: 0.96).animate(
       CurvedAnimation(parent: _pressController, curve: KeroseneMotion.standard),
     );
   }
 
   @override
-  void didUpdateWidget(covariant _AppPrimaryFloatingMenuButton oldWidget) {
+  void didUpdateWidget(covariant _KeroseneExpandableNavigationButton oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentDestination != widget.currentDestination &&
-        _menuOpen) {
-      _closeMenu();
+    if (oldWidget.expanded != widget.expanded) {
+      if (KeroseneMotion.reduceMotion(context)) {
+        _menuController.value = widget.expanded ? 1 : 0;
+      } else if (widget.expanded) {
+        _menuController.forward();
+      } else {
+        _menuController.reverse();
+      }
     }
   }
 
   @override
   void dispose() {
-    _removeOverlay();
-    _pressController.dispose();
     _menuController.dispose();
+    _pressController.dispose();
     super.dispose();
   }
 
   @override
   Widget build(BuildContext context) {
-    final tooltip = _menuOpen
+    final media = MediaQuery.of(context);
+    final reducedMotion = KeroseneMotion.reduceMotion(context);
+    final openWidth = (media.size.width -
+            AppPrimaryNavigationBar._buttonRightSpacing -
+            AppSpacing.md)
+        .clamp(292.0, 392.0)
+        .toDouble();
+    final label = widget.expanded
         ? MaterialLocalizations.of(context).closeButtonTooltip
         : widget.currentDestination.label(context);
 
-    return Tooltip(
-      message: tooltip,
-      child: Semantics(
-        button: true,
-        toggled: _menuOpen,
-        label: tooltip,
-        child: GestureDetector(
-          onTapDown: (_) => _pressController.forward(),
-          onTapUp: (_) {
-            _pressController.reverse();
-            HapticFeedback.selectionClick();
-            _toggleMenu();
-          },
-          onTapCancel: () => _pressController.reverse(),
-          child: ScaleTransition(
-            scale: _scaleAnimation,
-            child: AnimatedContainer(
-              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
-              curve: KeroseneMotion.standard,
-              width: AppPrimaryNavigationBar._buttonSize,
-              height: AppPrimaryNavigationBar._buttonSize,
-              decoration: BoxDecoration(
-                shape: BoxShape.circle,
-                gradient: LinearGradient(
-                  begin: Alignment.topLeft,
-                  end: Alignment.bottomRight,
-                  colors: _menuOpen
-                      ? const [
-                          KeroseneBrandTokens.textPrimary,
-                          AppColors.hexFFE2E2DC,
-                        ]
-                      : const [
-                          AppColors.surface,
-                          KeroseneBrandTokens.backgroundSoft,
-                        ],
-                ),
-                border: Border.all(
-                  color: _menuOpen
-                      ? AppColors.white.withValues(alpha: 0.34)
-                      : AppColors.white.withValues(alpha: 0.13),
-                  width: 1.2,
-                ),
-                boxShadow: [
-                  BoxShadow(
-                    color: Colors.black.withValues(alpha: 0.48),
-                    blurRadius: 24,
-                    offset: const Offset(0, 14),
-                  ),
-                  BoxShadow(
-                    color: AppColors.white.withValues(alpha: 0.08),
-                    blurRadius: 18,
-                    spreadRadius: 1,
-                  ),
-                ],
-              ),
-              child: AnimatedSwitcher(
-                duration:
-                    KeroseneMotion.duration(context, KeroseneMotion.short),
-                switchInCurve: KeroseneMotion.entrance,
-                switchOutCurve: KeroseneMotion.exit,
-                transitionBuilder: (child, animation) {
-                  return RotationTransition(
-                    turns:
-                        Tween<double>(begin: -0.06, end: 0).animate(animation),
-                    child: ScaleTransition(scale: animation, child: child),
-                  );
-                },
-                child: Icon(
-                  _menuOpen
-                      ? KeroseneIcons.close
-                      : widget.currentDestination.icon,
-                  key: ValueKey<String>(
-                    _menuOpen
-                        ? 'navigation-close'
-                        : widget.currentDestination.name,
-                  ),
-                  color: _menuOpen
-                      ? AppColors.background
-                      : KeroseneBrandTokens.textPrimary,
-                  size: 23,
-                ),
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  Future<void> _toggleMenu() async {
-    if (_menuOpen) {
-      await _closeMenu();
-      return;
-    }
-
-    _openMenu();
-  }
-
-  void _openMenu() {
-    if (_menuEntry != null) return;
-
-    _menuEntry = OverlayEntry(
-      builder: (overlayContext) {
-        return _AppPrimaryExpandingMenuOverlay(
-          animation: _menuController,
-          currentDestination: widget.currentDestination,
-          onDismiss: _closeMenu,
-          onDestinationSelected: (destination) async {
-            if (destination != widget.currentDestination) {
-              HapticFeedback.selectionClick();
-            }
-
-            await _closeMenu();
-            if (!mounted || destination == widget.currentDestination) return;
-            AppPrimaryNavigationBar.navigateTo(context, destination);
-          },
-        );
-      },
-    );
-
-    Overlay.of(context, rootOverlay: true).insert(_menuEntry!);
-    setState(() => _menuOpen = true);
-    _menuController.forward(from: 0);
-  }
-
-  Future<void> _closeMenu() async {
-    if (_menuEntry == null || _closing) return;
-    _closing = true;
-
-    await _menuController.reverse();
-    _removeOverlay();
-    _closing = false;
-    if (mounted) setState(() => _menuOpen = false);
-  }
-
-  void _removeOverlay() {
-    _menuEntry?.remove();
-    _menuEntry = null;
-    if (_menuController.value != 0) {
-      _menuController.value = 0;
-    }
-  }
-}
-
-class _AppPrimaryExpandingMenuOverlay extends StatelessWidget {
-  final Animation<double> animation;
-  final AppPrimaryDestination currentDestination;
-  final Future<void> Function() onDismiss;
-  final Future<void> Function(AppPrimaryDestination destination)
-      onDestinationSelected;
-
-  const _AppPrimaryExpandingMenuOverlay({
-    required this.animation,
-    required this.currentDestination,
-    required this.onDismiss,
-    required this.onDestinationSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final media = MediaQuery.of(context);
-    final width = (media.size.width - 32).clamp(252.0, 342.0).toDouble();
-    final bottomInset = media.viewPadding.bottom +
-        AppPrimaryNavigationBar._buttonBottomSpacing +
-        AppPrimaryNavigationBar._buttonSize +
-        AppSpacing.sm;
-
-    return Positioned.fill(
-      child: Material(
-        color: Colors.transparent,
+    return Semantics(
+      button: true,
+      toggled: widget.expanded,
+      label: label,
+      child: RepaintBoundary(
         child: AnimatedBuilder(
-          animation: animation,
+          animation: Listenable.merge([_menuController, _pressController]),
           builder: (context, child) {
-            final fade = CurvedAnimation(
-              parent: animation,
-              curve: KeroseneMotion.standard,
-            ).value;
-            final panelValue = CurvedAnimation(
-              parent: animation,
-              curve: KeroseneMotion.emphasized,
-              reverseCurve: KeroseneMotion.exit,
-            ).value;
+            final rawValue = reducedMotion
+                ? (widget.expanded ? 1.0 : 0.0)
+                : _menuController.value;
+            final panelValue = KeroseneMotion.standard.transform(rawValue);
+            final radiusValue = KeroseneMotion.entrance.transform(rawValue);
+            final width = _closedSize + (openWidth - _closedSize) * panelValue;
+            final height = _closedSize + (_openHeight - _closedSize) * panelValue;
+            final radius = _closedSize / 2 + (32 - _closedSize / 2) * radiusValue;
+            final scale = _pressScale.value;
 
-            return Stack(
-              children: [
-                Positioned.fill(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: onDismiss,
-                    child: ColoredBox(
-                      color: Colors.black.withValues(alpha: 0.18 * fade),
+            return Transform.scale(
+              scale: scale,
+              alignment: Alignment.bottomRight,
+              child: SizedBox(
+                width: width,
+                height: height,
+                child: ClipRRect(
+                  borderRadius: BorderRadius.circular(radius),
+                  clipBehavior: Clip.antiAlias,
+                  child: Material(
+                    color: Colors.black,
+                    child: Stack(
+                      clipBehavior: Clip.hardEdge,
+                      children: [
+                        Positioned.fill(
+                          child: DecoratedBox(
+                            decoration: BoxDecoration(
+                              color: Colors.black,
+                              borderRadius: BorderRadius.circular(radius),
+                              border: Border.all(
+                                color: Colors.white.withValues(
+                                  alpha: 0.10 + panelValue * 0.08,
+                                ),
+                                width: 1,
+                              ),
+                              boxShadow: [
+                                BoxShadow(
+                                  color: Colors.black.withValues(alpha: 0.36),
+                                  blurRadius: 22 + panelValue * 16,
+                                  offset: Offset(0, 10 + panelValue * 10),
+                                ),
+                              ],
+                            ),
+                          ),
+                        ),
+                        Align(
+                          alignment: Alignment.centerRight,
+                          child: SizedBox(
+                            width: openWidth,
+                            height: _openHeight,
+                            child: _KeroseneNavigationDestinations(
+                              progress: rawValue,
+                              currentDestination: widget.currentDestination,
+                              onDestinationSelected: widget.onDestinationSelected,
+                            ),
+                          ),
+                        ),
+                        if (!widget.expanded)
+                          Positioned.fill(
+                            child: GestureDetector(
+                              behavior: HitTestBehavior.opaque,
+                              onTap: widget.onToggle,
+                              onTapDown: (_) => _pressController.forward(),
+                              onTapCancel: _pressController.reverse,
+                              onTapUp: (_) => _pressController.reverse(),
+                            ),
+                          ),
+                      ],
                     ),
                   ),
                 ),
-                Positioned(
-                  right: AppPrimaryNavigationBar._buttonRightSpacing,
-                  bottom: bottomInset,
-                  width: width,
-                  child: Transform.scale(
-                    alignment: Alignment.bottomRight,
-                    scale: 0.72 + (0.28 * panelValue),
-                    child: Opacity(
-                      opacity: fade,
-                      child: _AppPrimaryMenuPanel(
-                        animation: animation,
-                        currentDestination: currentDestination,
-                        onDestinationSelected: onDestinationSelected,
-                      ),
-                    ),
-                  ),
-                ),
-              ],
+              ),
             );
           },
         ),
@@ -490,335 +445,334 @@ class _AppPrimaryExpandingMenuOverlay extends StatelessWidget {
   }
 }
 
-class _AppPrimaryMenuPanel extends StatelessWidget {
-  final Animation<double> animation;
+class _KeroseneNavigationDestinations extends StatelessWidget {
+  final double progress;
   final AppPrimaryDestination currentDestination;
-  final Future<void> Function(AppPrimaryDestination destination)
-      onDestinationSelected;
+  final ValueChanged<AppPrimaryDestination> onDestinationSelected;
 
-  const _AppPrimaryMenuPanel({
-    required this.animation,
+  const _KeroseneNavigationDestinations({
+    required this.progress,
     required this.currentDestination,
     required this.onDestinationSelected,
   });
 
+  static const double _iconBoxSize = 40;
+  static const double _contentPadding = 8;
+  static const double _gap = _KeroseneExpandableNavigationButtonState._itemGap;
+
   @override
   Widget build(BuildContext context) {
-    return ClipRRect(
-      borderRadius: BorderRadius.circular(28),
-      child: DecoratedBox(
-        decoration: BoxDecoration(
-          color: KeroseneBrandTokens.backgroundSoft,
-          borderRadius: BorderRadius.circular(28),
-          border: Border.all(
-            color: AppColors.white.withValues(alpha: 0.10),
-          ),
-          boxShadow: [
-            BoxShadow(
-              color: Colors.black.withValues(alpha: 0.48),
-              blurRadius: 40,
-              offset: const Offset(0, 20),
-            ),
-          ],
-        ),
-        child: Padding(
-          padding: const EdgeInsets.all(10),
-          child: Column(
-            mainAxisSize: MainAxisSize.min,
-            crossAxisAlignment: CrossAxisAlignment.stretch,
+    final destinations = AppPrimaryDestination.values;
+    final eased = KeroseneMotion.standard.transform(
+      progress.clamp(0.0, 1.0).toDouble(),
+    );
+
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final totalGap = _gap * (destinations.length - 1);
+        final itemWidth =
+            (constraints.maxWidth - _contentPadding * 2 - totalGap) /
+                destinations.length;
+        final closeCenterX = constraints.maxWidth -
+            AppPrimaryNavigationBar._buttonSize / 2;
+
+        return Padding(
+          padding: const EdgeInsets.all(_contentPadding),
+          child: Row(
             children: [
-              _AppPrimaryMenuHeader(
-                icon: currentDestination.icon,
-                title: currentDestination.label(context),
-                subtitle: 'Navegacao principal',
-              ),
-              const SizedBox(height: 8),
-              for (var index = 0;
-                  index < AppPrimaryDestination.values.length;
-                  index++)
-                _AnimatedMenuEntry(
-                  animation: animation,
-                  index: index,
-                  child: _AppPrimaryMenuDestinationTile(
-                    destination: AppPrimaryDestination.values[index],
-                    selected: AppPrimaryDestination.values[index] ==
-                        currentDestination,
-                    onTap: () => onDestinationSelected(
-                      AppPrimaryDestination.values[index],
+              for (var index = 0; index < destinations.length; index++) ...[
+                SizedBox(
+                  width: itemWidth,
+                  child: _KeroseneNavigationDestinationPill(
+                    destination: destinations[index],
+                    selected: destinations[index] == currentDestination,
+                    progress: eased,
+                    flyOffset: _selectedFlyOffset(
+                      selected: destinations[index] == currentDestination,
+                      closeCenterX: closeCenterX,
+                      index: index,
+                      itemWidth: itemWidth,
                     ),
+                    onTap: () => onDestinationSelected(destinations[index]),
                   ),
                 ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _AppPrimaryMenuHeader extends StatelessWidget {
-  final IconData icon;
-  final String title;
-  final String subtitle;
-
-  const _AppPrimaryMenuHeader({
-    required this.icon,
-    required this.title,
-    required this.subtitle,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.fromLTRB(12, 12, 12, 10),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(22),
-        color: AppColors.white.withValues(alpha: 0.045),
-        border: Border.all(
-          color: AppColors.white.withValues(alpha: 0.065),
-        ),
-      ),
-      child: Row(
-        children: [
-          Container(
-            width: 38,
-            height: 38,
-            decoration: BoxDecoration(
-              shape: BoxShape.circle,
-              color: AppColors.white.withValues(alpha: 0.08),
-              border: Border.all(
-                color: AppColors.white.withValues(alpha: 0.10),
-              ),
-            ),
-            child: Icon(
-              icon,
-              color: KeroseneBrandTokens.textPrimary,
-              size: 19,
-            ),
-          ),
-          const SizedBox(width: 12),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  title,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: const TextStyle(
-                    color: KeroseneBrandTokens.textPrimary,
-                    fontSize: 14.5,
-                    fontWeight: FontWeight.w700,
-                    letterSpacing: -0.1,
-                  ),
-                ),
-                const SizedBox(height: 3),
-                Text(
-                  subtitle,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: TextStyle(
-                    color: KeroseneBrandTokens.textSecondary.withValues(
-                      alpha: 0.78,
-                    ),
-                    fontSize: 11.5,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.2,
-                  ),
-                ),
+                if (index != destinations.length - 1) const SizedBox(width: _gap),
               ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-class _AnimatedMenuEntry extends StatelessWidget {
-  final Animation<double> animation;
-  final int index;
-  final Widget child;
-
-  const _AnimatedMenuEntry({
-    required this.animation,
-    required this.index,
-    required this.child,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final start = (0.16 + index * 0.07).clamp(0.0, 0.72).toDouble();
-    final entryAnimation = CurvedAnimation(
-      parent: animation,
-      curve: Interval(start, 1.0, curve: KeroseneMotion.entrance),
-      reverseCurve: KeroseneMotion.exit,
-    );
-
-    return AnimatedBuilder(
-      animation: entryAnimation,
-      child: child,
-      builder: (context, child) {
-        final value = entryAnimation.value;
-        return Transform.translate(
-          offset: Offset(10 * (1 - value), 8 * (1 - value)),
-          child: Transform.scale(
-            alignment: Alignment.bottomRight,
-            scale: 0.96 + (0.04 * value),
-            child: Opacity(opacity: value, child: child),
+            ],
           ),
         );
       },
     );
   }
+
+  Offset _selectedFlyOffset({
+    required bool selected,
+    required double closeCenterX,
+    required int index,
+    required double itemWidth,
+  }) {
+    if (!selected) return Offset.zero;
+
+    final itemStart = _contentPadding + index * (itemWidth + _gap);
+    final iconCenterX = itemStart + _iconBoxSize / 2;
+    return Offset((closeCenterX - iconCenterX) * (1 - progress), 0);
+  }
 }
 
-class _AppPrimaryMenuDestinationTile extends StatefulWidget {
+class _KeroseneNavigationDestinationPill extends StatefulWidget {
   final AppPrimaryDestination destination;
   final bool selected;
+  final double progress;
+  final Offset flyOffset;
   final VoidCallback onTap;
 
-  const _AppPrimaryMenuDestinationTile({
+  const _KeroseneNavigationDestinationPill({
     required this.destination,
     required this.selected,
+    required this.progress,
+    required this.flyOffset,
     required this.onTap,
   });
 
   @override
-  State<_AppPrimaryMenuDestinationTile> createState() =>
-      _AppPrimaryMenuDestinationTileState();
+  State<_KeroseneNavigationDestinationPill> createState() =>
+      _KeroseneNavigationDestinationPillState();
 }
 
-class _AppPrimaryMenuDestinationTileState
-    extends State<_AppPrimaryMenuDestinationTile> {
+class _KeroseneNavigationDestinationPillState
+    extends State<_KeroseneNavigationDestinationPill> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
-    final label = widget.destination.label(context);
-    final supporting = widget.destination.supportingLabel(context);
-    final contentColor = widget.selected
-        ? KeroseneBrandTokens.textPrimary
-        : KeroseneBrandTokens.textSecondary;
+    final label = _resolveLabel(context);
+    final visibleTextAlpha = widget.progress.clamp(0.0, 1.0).toDouble();
+    final inactiveAlpha = widget.progress.clamp(0.0, 1.0).toDouble();
+    final iconAlpha = widget.selected ? 1.0 : inactiveAlpha;
+    final itemBackgroundAlpha = widget.selected
+        ? 0.12 * visibleTextAlpha
+        : (_pressed ? 0.07 : 0.0) * visibleTextAlpha;
+    final borderAlpha = widget.selected ? 0.16 * visibleTextAlpha : 0.0;
 
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 3),
-      child: AnimatedScale(
-        scale: _pressed ? 0.985 : 1.0,
-        duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
-        curve: KeroseneMotion.standard,
-        child: Material(
-          color: Colors.transparent,
-          child: InkWell(
-            onTap: widget.onTap,
-            onTapDown: (_) => setState(() => _pressed = true),
-            onTapCancel: () => setState(() => _pressed = false),
-            onTapUp: (_) => setState(() => _pressed = false),
-            borderRadius: BorderRadius.circular(18),
-            splashColor: AppColors.white.withValues(alpha: 0.06),
-            highlightColor: AppColors.white.withValues(alpha: 0.04),
-            child: AnimatedContainer(
-              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
-              curve: KeroseneMotion.standard,
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 11),
-              decoration: BoxDecoration(
-                borderRadius: BorderRadius.circular(18),
-                color: widget.selected
-                    ? AppColors.white.withValues(alpha: 0.075)
-                    : (_pressed
-                        ? AppColors.white.withValues(alpha: 0.045)
-                        : Colors.transparent),
-                border: Border.all(
-                  color: widget.selected
-                      ? AppColors.white.withValues(alpha: 0.12)
-                      : Colors.transparent,
-                ),
+    return AnimatedScale(
+      scale: _pressed ? 0.965 : 1,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+      curve: KeroseneMotion.standard,
+      child: Material(
+        color: Colors.transparent,
+        child: InkWell(
+          onTap: widget.onTap,
+          onTapDown: (_) => setState(() => _pressed = true),
+          onTapCancel: () => setState(() => _pressed = false),
+          onTapUp: (_) => setState(() => _pressed = false),
+          borderRadius: BorderRadius.circular(24),
+          splashColor: Colors.white.withValues(alpha: 0.07),
+          highlightColor: Colors.white.withValues(alpha: 0.04),
+          child: AnimatedContainer(
+            duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+            curve: KeroseneMotion.standard,
+            height: 48,
+            padding: const EdgeInsets.symmetric(horizontal: 4),
+            decoration: BoxDecoration(
+              color: Colors.white.withValues(alpha: itemBackgroundAlpha),
+              borderRadius: BorderRadius.circular(24),
+              border: Border.all(
+                color: Colors.white.withValues(alpha: borderAlpha),
               ),
-              child: Row(
-                children: [
-                  AnimatedContainer(
-                    duration:
-                        KeroseneMotion.duration(context, KeroseneMotion.short),
-                    curve: KeroseneMotion.standard,
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      borderRadius: BorderRadius.circular(14),
-                      color: widget.selected
-                          ? AppColors.white.withValues(alpha: 0.12)
-                          : AppColors.white.withValues(alpha: 0.055),
-                      border: Border.all(
-                        color: AppColors.white.withValues(
-                          alpha: widget.selected ? 0.14 : 0.075,
+            ),
+            child: Row(
+              mainAxisAlignment: MainAxisAlignment.start,
+              children: [
+                Transform.translate(
+                  offset: widget.flyOffset,
+                  child: Transform.rotate(
+                    angle: widget.selected ? widget.progress * math.pi : 0,
+                    child: _KeroseneNativeNavIcon(
+                      kind: widget.destination._iconKind,
+                      color: Colors.white.withValues(alpha: iconAlpha),
+                      size: 40,
+                      strokeWidth: widget.selected ? 1.75 : 1.55,
+                    ),
+                  ),
+                ),
+                Expanded(
+                  child: ClipRect(
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      widthFactor: widget.progress.clamp(0.0, 1.0).toDouble(),
+                      child: Text(
+                        label,
+                        maxLines: 1,
+                        overflow: TextOverflow.fade,
+                        softWrap: false,
+                        style: TextStyle(
+                          color: Colors.white.withValues(alpha: visibleTextAlpha),
+                          fontSize: 11.5,
+                          fontWeight:
+                              widget.selected ? FontWeight.w700 : FontWeight.w600,
+                          letterSpacing: -0.18,
+                          height: 1,
                         ),
                       ),
                     ),
-                    child: Icon(
-                      widget.destination.icon,
-                      color: contentColor,
-                      size: 19,
-                    ),
                   ),
-                  const SizedBox(width: 12),
-                  Expanded(
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Text(
-                          label,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: contentColor,
-                            fontSize: 14.5,
-                            fontWeight: widget.selected
-                                ? FontWeight.w700
-                                : FontWeight.w600,
-                            letterSpacing: -0.1,
-                          ),
-                        ),
-                        const SizedBox(height: 3),
-                        Text(
-                          supporting,
-                          maxLines: 1,
-                          overflow: TextOverflow.ellipsis,
-                          style: TextStyle(
-                            color: KeroseneBrandTokens.textSecondary.withValues(
-                              alpha: 0.66,
-                            ),
-                            fontSize: 11.4,
-                            fontWeight: FontWeight.w500,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(width: 10),
-                  AnimatedSwitcher(
-                    duration:
-                        KeroseneMotion.duration(context, KeroseneMotion.short),
-                    child: widget.selected
-                        ? const Icon(
-                            KeroseneIcons.success,
-                            key: ValueKey<String>('selected'),
-                            color: KeroseneBrandTokens.textPrimary,
-                            size: 17,
-                          )
-                        : Icon(
-                            KeroseneIcons.chevronRight,
-                            key: const ValueKey<String>('next'),
-                            color: KeroseneBrandTokens.textSecondary.withValues(
-                              alpha: 0.46,
-                            ),
-                            size: 16,
-                          ),
-                  ),
-                ],
-              ),
+                ),
+              ],
             ),
           ),
         ),
       ),
     );
+  }
+
+  String _resolveLabel(BuildContext context) {
+    final localized = widget.destination.label(context);
+    if (localized.trim().isEmpty) return widget.destination.compactFallbackLabel;
+    return localized;
+  }
+}
+
+class _KeroseneNativeNavIcon extends StatelessWidget {
+  final _KeroseneNavIconKind kind;
+  final Color color;
+  final double size;
+  final double strokeWidth;
+
+  const _KeroseneNativeNavIcon({
+    required this.kind,
+    required this.color,
+    this.size = 40,
+    this.strokeWidth = 1.6,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox.square(
+      dimension: size,
+      child: RepaintBoundary(
+        child: CustomPaint(
+          painter: _KeroseneNavIconPainter(
+            kind: kind,
+            color: color,
+            strokeWidth: strokeWidth,
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _KeroseneNavIconPainter extends CustomPainter {
+  final _KeroseneNavIconKind kind;
+  final Color color;
+  final double strokeWidth;
+
+  const _KeroseneNavIconPainter({
+    required this.kind,
+    required this.color,
+    required this.strokeWidth,
+  });
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final scale = size.shortestSide / 24;
+    canvas.save();
+    canvas.scale(scale, scale);
+
+    final stroke = Paint()
+      ..color = color
+      ..style = PaintingStyle.stroke
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.round
+      ..strokeJoin = StrokeJoin.round;
+
+    switch (kind) {
+      case _KeroseneNavIconKind.home:
+        _paintHome(canvas, stroke);
+      case _KeroseneNavIconKind.wallet:
+        _paintWallet(canvas, stroke);
+      case _KeroseneNavIconKind.history:
+        _paintHistory(canvas, stroke);
+      case _KeroseneNavIconKind.settings:
+        _paintSettings(canvas, stroke);
+    }
+
+    canvas.restore();
+  }
+
+  void _paintHome(Canvas canvas, Paint stroke) {
+    final roof = Path()
+      ..moveTo(4.4, 10.2)
+      ..lineTo(12, 4.6)
+      ..lineTo(19.6, 10.2);
+    canvas.drawPath(roof, stroke);
+
+    final body = Path()
+      ..moveTo(6.1, 10.1)
+      ..lineTo(6.1, 19.1)
+      ..quadraticBezierTo(6.1, 20, 7, 20)
+      ..lineTo(9.4, 20)
+      ..lineTo(9.4, 14.8)
+      ..quadraticBezierTo(9.4, 14.1, 10.1, 14.1)
+      ..lineTo(13.9, 14.1)
+      ..quadraticBezierTo(14.6, 14.1, 14.6, 14.8)
+      ..lineTo(14.6, 20)
+      ..lineTo(17, 20)
+      ..quadraticBezierTo(17.9, 20, 17.9, 19.1)
+      ..lineTo(17.9, 10.1);
+    canvas.drawPath(body, stroke);
+  }
+
+  void _paintWallet(Canvas canvas, Paint stroke) {
+    final body = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(3.8, 6.7, 16.4, 11.8),
+      const Radius.circular(3.1),
+    );
+    canvas.drawRRect(body, stroke);
+    canvas.drawLine(const Offset(5.1, 9.5), const Offset(18.7, 9.5), stroke);
+
+    final pocket = RRect.fromRectAndRadius(
+      const Rect.fromLTWH(13.3, 11.0, 6.9, 4.2),
+      const Radius.circular(2.1),
+    );
+    canvas.drawRRect(pocket, stroke);
+    canvas.drawCircle(const Offset(15.4, 13.1), 0.45, stroke);
+  }
+
+  void _paintHistory(Canvas canvas, Paint stroke) {
+    final arcRect = Rect.fromCircle(center: const Offset(12, 12), radius: 7.1);
+    canvas.drawArc(arcRect, -math.pi * 1.03, math.pi * 1.72, false, stroke);
+
+    final arrow = Path()
+      ..moveTo(4.7, 8.4)
+      ..lineTo(4.8, 13.1)
+      ..lineTo(8.6, 10.4);
+    canvas.drawPath(arrow, stroke);
+    canvas.drawLine(const Offset(12, 8.1), const Offset(12, 12.3), stroke);
+    canvas.drawLine(const Offset(12, 12.3), const Offset(15.4, 14.1), stroke);
+  }
+
+  void _paintSettings(Canvas canvas, Paint stroke) {
+    canvas.drawCircle(const Offset(12, 12), 3.1, stroke);
+
+    for (var index = 0; index < 8; index++) {
+      final angle = index * math.pi / 4;
+      final inner = Offset(
+        12 + math.cos(angle) * 6.0,
+        12 + math.sin(angle) * 6.0,
+      );
+      final outer = Offset(
+        12 + math.cos(angle) * 8.0,
+        12 + math.sin(angle) * 8.0,
+      );
+      canvas.drawLine(inner, outer, stroke);
+    }
+  }
+
+  @override
+  bool shouldRepaint(covariant _KeroseneNavIconPainter oldDelegate) {
+    return oldDelegate.kind != kind ||
+        oldDelegate.color != color ||
+        oldDelegate.strokeWidth != strokeWidth;
   }
 }

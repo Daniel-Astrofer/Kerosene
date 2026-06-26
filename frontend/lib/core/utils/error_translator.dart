@@ -279,6 +279,13 @@ class ErrorTranslator {
         lower.contains('unexpected character')) {
       return l10n.errCommFailure;
     }
+    if (lower.contains('bitcoin core rpc') ||
+        lower.contains('depósito on-chain') ||
+        lower.contains('deposito on-chain') ||
+        lower.contains('nó bitcoin não respondeu') ||
+        lower.contains('no bitcoin nao respondeu')) {
+      return l10n.errInternalServer;
+    }
     if (lower.contains('invalid address') ||
         lower.contains('bitcoin address')) {
       return l10n.errInvalidBtcAddress;

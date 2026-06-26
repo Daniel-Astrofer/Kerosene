@@ -74,11 +74,13 @@ class HomeGlassPanel extends StatelessWidget {
   final Widget child;
   final EdgeInsetsGeometry padding;
   final BorderRadius borderRadius;
+  final Color? backgroundColor;
 
   const HomeGlassPanel({
     required this.child,
     this.padding = EdgeInsets.zero,
     this.borderRadius = const BorderRadius.all(Radius.circular(22)),
+    this.backgroundColor,
   });
 
   @override
@@ -86,11 +88,14 @@ class HomeGlassPanel extends StatelessWidget {
     final content = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: borderRadius,
-        gradient: const LinearGradient(
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-          colors: [homePanelTopColor, homePanelBottomColor],
-        ),
+        color: backgroundColor,
+        gradient: backgroundColor == null
+            ? const LinearGradient(
+                begin: Alignment.topLeft,
+                end: Alignment.bottomRight,
+                colors: [homePanelTopColor, homePanelBottomColor],
+              )
+            : null,
         border: Border.all(color: homePanelBorderColor),
         boxShadow: [
           BoxShadow(
@@ -117,6 +122,13 @@ class HomeLoadingContent extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    if (MediaQuery.sizeOf(context).width >= 0) {
+      return SizedBox(
+        height: MediaQuery.sizeOf(context).height * 0.58,
+        child: KeroseneLogoLoadingView(logoSize: homeSize(154)),
+      );
+    }
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -586,20 +598,26 @@ class HomeSetupNotice extends StatelessWidget {
   Widget build(BuildContext context) {
     final theme = Theme.of(context);
 
-    return HomeGlassPanel(
-      borderRadius: BorderRadius.circular(homeSize(18)),
-      padding: EdgeInsets.all(homeSize(16)),
+    return Container(
+      padding: EdgeInsets.symmetric(vertical: homeSize(16)),
+      decoration: BoxDecoration(
+        color: Colors.black,
+        border: Border(
+          top: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+          bottom: BorderSide(
+            color: Colors.white.withValues(alpha: 0.1),
+            width: 0.5,
+          ),
+        ),
+      ),
       child: Row(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Container(
-            width: homeSize(42),
-            height: homeSize(42),
-            decoration: BoxDecoration(
-              borderRadius: BorderRadius.circular(homeSize(12)),
-              color: Colors.white.withValues(alpha: 0.06),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
-            ),
+          Padding(
+            padding: EdgeInsets.only(top: homeSize(2)),
             child: Icon(
               icon,
               size: homeSize(24),
@@ -617,8 +635,9 @@ class HomeSetupNotice extends StatelessWidget {
                   overflow: TextOverflow.ellipsis,
                   style: theme.textTheme.titleSmall?.copyWith(
                     color: Colors.white,
-                    fontSize: homeFontSize(14),
-                    fontWeight: FontWeight.w300,
+                    fontSize: homeFontSize(15),
+                    fontFamily: AppTypography.serifFontFamily,
+                    fontWeight: FontWeight.w400,
                     letterSpacing: 0,
                   ),
                 ),
@@ -640,7 +659,7 @@ class HomeSetupNotice extends StatelessWidget {
                   icon: Icon(KeroseneIcons.next, size: homeSize(15)),
                   label: Text(actionLabel),
                   style: TextButton.styleFrom(
-                    foregroundColor: homeAmberColor,
+                    foregroundColor: Colors.white,
                     padding: EdgeInsets.zero,
                     minimumSize: Size(0, homeSize(34)),
                     tapTargetSize: MaterialTapTargetSize.shrinkWrap,
@@ -652,6 +671,15 @@ class HomeSetupNotice extends StatelessWidget {
                   ),
                 ),
               ],
+            ),
+          ),
+          SizedBox(width: homeSize(12)),
+          Padding(
+            padding: EdgeInsets.only(top: homeSize(2)),
+            child: Icon(
+              KeroseneIcons.chevronRight,
+              size: homeSize(18),
+              color: Colors.white.withValues(alpha: 0.4),
             ),
           ),
         ],

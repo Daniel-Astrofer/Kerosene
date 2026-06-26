@@ -1653,8 +1653,8 @@ def project_summary(root: Path, _args: dict[str, Any]) -> dict[str, Any]:
         components.append({"name": "frontend", "stack": "Flutter/Dart app"})
     if (root / "backend/mpc-sidecar/go.mod").exists():
         components.append({"name": "backend/mpc-sidecar", "stack": "Go MPC sidecar"})
-    if (root / "backend/kerosene-infrastructure").exists():
-        components.append({"name": "backend/kerosene-infrastructure", "stack": "Docker/local infrastructure"})
+    if (root / "infra").exists():
+        components.append({"name": "infra", "stack": "Docker/Kubernetes/runtime infrastructure"})
     if (root / "docs").exists():
         components.append({"name": "docs", "stack": "Project documentation"})
 

@@ -70,61 +70,89 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
       backgroundColor: KeroseneBrandTokens.background,
       body: SafeArea(
         child: Center(
-          child: SizedBox(
-            width: logoSize,
-            height: logoSize,
-            child: AnimatedBuilder(
-              animation: _controller,
-              builder: (context, _) {
-                final progress = _controller.value;
-                final reveal = _revealProgress(progress);
-                final erase = _eraseProgress(progress);
-                final glow = _glowOpacity(progress);
-
-                return Stack(
-                  alignment: Alignment.center,
-                  children: [
-                    Opacity(
-                      opacity: 0.10,
-                      child: KeroseneLogo(
-                        size: logoSize,
-                        color: KeroseneBrandTokens.textPrimary,
-                      ),
-                    ),
-                    ClipPath(
-                      clipper: _DiagonalLogoClipper(
-                        revealProgress: reveal,
-                        eraseProgress: erase,
-                      ),
-                      child: Stack(
-                        alignment: Alignment.center,
-                        children: [
-                          if (!widget.isError)
-                            Opacity(
-                              opacity: glow,
-                              child: ImageFiltered(
-                                imageFilter: ui.ImageFilter.blur(
-                                  sigmaX: 12,
-                                  sigmaY: 12,
-                                ),
-                                child: KeroseneLogo(
-                                  size: logoSize,
-                                  color: KeroseneBrandTokens.info,
-                                ),
-                              ),
-                            ),
-                          KeroseneLogo(
-                            size: logoSize,
-                            color: foregroundColor,
-                          ),
-                        ],
-                      ),
-                    ),
-                  ],
-                );
-              },
-            ),
+          child: KeroseneLogoLoadingMark(
+            logoSize: logoSize,
+            controller: _controller,
+            foregroundColor: foregroundColor,
+            showGlow: !widget.isError,
           ),
+        ),
+      ),
+    );
+  }
+
+}
+
+class KeroseneLogoLoadingMark extends StatelessWidget {
+  final double logoSize;
+  final Animation<double> controller;
+  final Color foregroundColor;
+  final bool showGlow;
+
+  const KeroseneLogoLoadingMark({
+    super.key,
+    required this.logoSize,
+    required this.controller,
+    this.foregroundColor = KeroseneBrandTokens.textPrimary,
+    this.showGlow = true,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: logoSize,
+      height: logoSize,
+      child: RepaintBoundary(
+        child: AnimatedBuilder(
+          animation: controller,
+          builder: (context, _) {
+            final progress = controller.value;
+            final reveal = _revealProgress(progress);
+            final erase = _eraseProgress(progress);
+            final glow = _glowOpacity(progress);
+
+            return Stack(
+              alignment: Alignment.center,
+              children: [
+                Opacity(
+                  opacity: 0.10,
+                  child: KeroseneLogo(
+                    size: logoSize,
+                    color: KeroseneBrandTokens.textPrimary,
+                  ),
+                ),
+                ClipPath(
+                  clipper: _DiagonalLogoClipper(
+                    revealProgress: reveal,
+                    eraseProgress: erase,
+                  ),
+                  child: Stack(
+                    alignment: Alignment.center,
+                    children: [
+                      if (showGlow)
+                        Opacity(
+                          opacity: glow,
+                          child: ImageFiltered(
+                            imageFilter: ui.ImageFilter.blur(
+                              sigmaX: 12,
+                              sigmaY: 12,
+                            ),
+                            child: KeroseneLogo(
+                              size: logoSize,
+                              color: KeroseneBrandTokens.info,
+                            ),
+                          ),
+                        ),
+                      KeroseneLogo(
+                        size: logoSize,
+                        color: foregroundColor,
+                      ),
+                    ],
+                  ),
+                ),
+              ],
+            );
+          },
         ),
       ),
     );
@@ -144,7 +172,7 @@ class _KeroseneLogoLoadingViewState extends State<KeroseneLogoLoadingView>
 
   double _glowOpacity(double value) {
     final pulse = math.sin(value * math.pi * 2);
-    return widget.isError ? 0.0 : 0.12 + (pulse + 1) * 0.10;
+    return showGlow ? 0.12 + (pulse + 1) * 0.10 : 0.0;
   }
 }
 

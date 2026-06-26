@@ -15,7 +15,7 @@ Then inspect the relevant area:
 
 - `frontend/agents/` for agent orchestration notes and operator rules
 - `backend/kerosene/` for the main application
-- `backend/kerosene-infrastructure/` for deployment and environment support
+- `infra/` for deployment, runtime, Docker, Kubernetes and environment support
 - `backend/mpc-sidecar/` and `backend/vault/` for integration and secret-handling code
 - `frontend/` for UI-facing code
 

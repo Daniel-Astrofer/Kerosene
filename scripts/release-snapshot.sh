@@ -47,6 +47,21 @@ hash_paths() {
   )
 }
 
+existing_paths() {
+  local path
+  for path in "$@"; do
+    [[ -e "$REPO_ROOT/$path" ]] && printf '%s\n' "$path"
+  done
+}
+
+release_source_paths() {
+  existing_paths backend frontend scripts infra docker-compose.yml
+}
+
+release_config_paths() {
+  existing_paths backend/kerosene/src/main/resources infra docker-compose.yml
+}
+
 ensure_keys() {
   mkdir -p "$RELEASE_DIR"
   chmod 700 "$RELEASE_DIR"
@@ -68,8 +83,8 @@ image_digest() {
 write_manifest() {
   local git_commit source_hash config_hash build_time sbom_path
   git_commit="$(git -C "$REPO_ROOT" rev-parse HEAD 2>/dev/null || printf 'unknown')"
-  source_hash="$(hash_paths backend frontend scripts docker-compose.yml)"
-  config_hash="$(hash_paths backend/kerosene/src/main/resources backend/kerosene-infrastructure docker-compose.yml)"
+  source_hash="$(hash_paths $(release_source_paths))"
+  config_hash="$(hash_paths $(release_config_paths))"
   build_time="$(date -u '+%Y-%m-%dT%H:%M:%SZ')"
   sbom_path=""
 
@@ -158,8 +173,8 @@ validate() {
   verify_signature
 
   local source_hash config_hash manifest_source manifest_config
-  source_hash="sha256:$(hash_paths backend frontend scripts docker-compose.yml)"
-  config_hash="sha256:$(hash_paths backend/kerosene/src/main/resources backend/kerosene-infrastructure docker-compose.yml)"
+  source_hash="sha256:$(hash_paths $(release_source_paths))"
+  config_hash="sha256:$(hash_paths $(release_config_paths))"
   manifest_source="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["sourceTreeHash"])' "$MANIFEST")"
   manifest_config="$(python3 -c 'import json,sys; print(json.load(open(sys.argv[1]))["allowedConfigHash"])' "$MANIFEST")"
 

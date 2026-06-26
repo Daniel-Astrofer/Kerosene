@@ -145,7 +145,7 @@ reset_vault_raft_volumes() {
   fi
 
   info "Vault Raft repair completed. Start the backend again with:"
-  info "  bash scripts/start-local.sh"
+  info "  bash infra/scripts/local/control.sh start"
 }
 
 case "$MODE" in

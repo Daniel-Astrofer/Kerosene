@@ -34,8 +34,6 @@
 /vault/**
 /mpc-sidecar/
 /mpc-sidecar/**
-/kerosene-infrastructure/
-/kerosene-infrastructure/**
 /gradle/
 /gradle/**
 /gradlew

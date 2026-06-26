@@ -1,6 +1,4 @@
-<p align="center">
-  <img src="frontend/assets/logo/kerosene-logo.png" alt="Kerosene" width="96" />
-</p>
+
 
 <h1 align="center">Kerosene</h1>
 
@@ -8,12 +6,7 @@
   <strong>Bitcoin-native banking infrastructure for private, auditable digital finance.</strong>
 </p>
 
-<p align="center">
-  <img alt="Status" src="https://img.shields.io/badge/status-pre--alpha-8A2BE2?style=for-the-badge">
-  <img alt="Backend" src="https://img.shields.io/badge/backend-Spring%20Boot%203.5-111111?style=for-the-badge">
-  <img alt="App" src="https://img.shields.io/badge/app-Flutter-111111?style=for-the-badge">
-  <img alt="Network" src="https://img.shields.io/badge/network-onion--first-111111?style=for-the-badge">
-</p>
+
 
 ---
 
@@ -64,7 +57,7 @@ Repository layout:
 ├── backend/
 │   ├── kerosene/                  # Main Spring Boot backend
 │   ├── mpc-sidecar/               # Go/gRPC sidecar for MPC-related flows
-│   └── kerosene-infrastructure/   # Local Docker, Tor, database and runtime assets
+├── infra/                         # Docker, Kubernetes, runtime and infrastructure scripts
 ├── frontend/                      # Flutter app, web surfaces and design system
 ├── docs/                          # Backend, frontend and API documentation
 └── scripts/                       # Local start, logs, migration, Vault and shutdown helpers
@@ -113,26 +106,26 @@ openssl rand -base64 64   # HMAC_SECRET_KEY
 ### Start the local stack
 
 ```bash
-bash scripts/start-local.sh
+bash infra/scripts/local/control.sh start
 ```
 
 Useful variants:
 
 ```bash
-bash scripts/start-local.sh --lite --region is
-bash scripts/start-local.sh --frontend-server
-bash scripts/start-local.sh --no-build
+bash infra/scripts/local/control.sh start --no-build
+bash infra/scripts/local/control.sh recreate server-wvo
+bash infra/scripts/local/control.sh status --dashboard
 ```
 
 Logs and shutdown:
 
 ```bash
-bash scripts/logs-local.sh
-bash scripts/stop-local.sh
-bash scripts/stop-local.sh --volumes
+bash infra/scripts/local/control.sh logs
+bash infra/scripts/local/control.sh stop
+bash infra/scripts/local/control.sh stop --volumes
 ```
 
-By default, the helper scripts start the local backend cluster, apply migrations when enabled, build the embedded Flutter web admin when needed, arm the local Vault flow and print available onion addresses.
+The root scripts in `scripts/` remain compatibility wrappers, but the canonical operational entry point is `infra/scripts/local/control.sh`.
 
 ---
 

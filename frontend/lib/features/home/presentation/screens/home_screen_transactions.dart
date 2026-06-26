@@ -80,6 +80,10 @@ class _HomeTransactionsListState extends ConsumerState<HomeTransactionsList> {
 
                 ref.invalidate(transactionHistoryProvider);
               },
+              showAction: false,
+              blackSurface: true,
+              plainCenteredIcon: true,
+              serifTitle: true,
             ),
           );
         }
@@ -392,6 +396,10 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
   final String actionLabel;
   final IconData actionIcon;
   final VoidCallback onAction;
+  final bool showAction;
+  final bool blackSurface;
+  final bool plainCenteredIcon;
+  final bool serifTitle;
 
   const HomeEmptyTransactionsPanel({
     required this.icon,
@@ -400,6 +408,10 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
     required this.actionLabel,
     required this.actionIcon,
     required this.onAction,
+    this.showAction = true,
+    this.blackSurface = false,
+    this.plainCenteredIcon = false,
+    this.serifTitle = false,
   });
 
   @override
@@ -407,34 +419,44 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
     final theme = Theme.of(context);
 
     return HomeGlassPanel(
+      backgroundColor: blackSurface ? homeBackgroundColor : null,
       borderRadius: BorderRadius.circular(homeSize(18)),
       padding: EdgeInsets.all(homeSize(AppSpacing.lg)),
       child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+        crossAxisAlignment: plainCenteredIcon
+            ? CrossAxisAlignment.center
+            : CrossAxisAlignment.start,
         children: [
-          Container(
-            width: homeSize(40),
-            height: homeSize(40),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.055),
-              borderRadius: BorderRadius.circular(homeSize(12)),
-              border: Border.all(color: Colors.white.withValues(alpha: 0.09)),
+          SizedBox(
+            width: homeSize(48),
+            height: homeSize(48),
+            child: Center(
+              child: Icon(icon, color: Colors.white, size: homeSize(plainCenteredIcon ? 28 : 18)),
             ),
-            child: Icon(icon, color: Colors.white, size: homeSize(18)),
           ),
           SizedBox(height: homeSize(AppSpacing.lg)),
           Text(
             title,
-            style: theme.textTheme.titleMedium?.copyWith(
-              color: Colors.white,
-              fontSize: homeFontSize(16),
-              fontWeight: FontWeight.w300,
-              letterSpacing: 0,
-            ),
+            textAlign: plainCenteredIcon ? TextAlign.center : TextAlign.start,
+            style: serifTitle
+                ? AppTypography.newsreader(
+                    color: Colors.white,
+                    fontSize: homeFontSize(24),
+                    fontWeight: FontWeight.w500,
+                    height: 1.12,
+                    letterSpacing: -0.2,
+                  )
+                : theme.textTheme.titleMedium?.copyWith(
+                    color: Colors.white,
+                    fontSize: homeFontSize(16),
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 0,
+                  ),
           ),
           SizedBox(height: homeSize(6)),
           Text(
             description,
+            textAlign: plainCenteredIcon ? TextAlign.center : TextAlign.start,
             style: theme.textTheme.bodySmall?.copyWith(
               color: Colors.white.withValues(alpha: 0.66),
               fontSize: homeFontSize(12),
@@ -442,10 +464,11 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
               letterSpacing: 0,
             ),
           ),
-          SizedBox(height: homeSize(AppSpacing.lg)),
-          SizedBox(
-            width: double.infinity,
-            child: FilledButton.icon(
+          if (showAction) ...[
+            SizedBox(height: homeSize(AppSpacing.lg)),
+            SizedBox(
+              width: double.infinity,
+              child: FilledButton.icon(
               onPressed: onAction,
               style: FilledButton.styleFrom(
                 minimumSize: Size.fromHeight(homeSize(50)),
@@ -462,8 +485,9 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
               ),
               icon: Icon(actionIcon, size: homeSize(16)),
               label: Text(actionLabel.toUpperCase()),
+              ),
             ),
-          ),
+          ],
         ],
       ),
     );

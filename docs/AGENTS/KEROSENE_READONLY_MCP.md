@@ -166,15 +166,19 @@ Keep secrets in `scripts/.env.tunnel` or the shell environment. Do not write run
 ```bash
 cd /home/omega/Kerosene
 export CONTROL_PLANE_API_KEY="<runtime-api-key>"
+export CONTROL_PLANE_API_KEY2="<secondary-runtime-api-key>"
+export KEROSENE_TUNNEL_ID2="tunnel_..."
 
 ./scripts/start-kerosene-tunnel.sh
 ```
 
-The startup script recreates the `kerosene-readonly` profile, writes the connector-safe runtime fields back into the generated YAML, validates it with `doctor`, and runs `tunnel-client` under a restart supervisor. Defaults: `CONTROL_PLANE_POLL_TIMEOUT=90s`, `CONTROL_PLANE_MAX_INFLIGHT_REQUESTS=1`, `MCP_CONNECTION_MAX_TTL=2h`, and `MCP_MAX_CONCURRENT_REQUESTS=1`.
+The startup script recreates the `kerosene-readonly` profile, writes the connector-safe runtime fields back into the generated YAML, validates it with `doctor`, and runs `tunnel-client` under a restart supervisor. When `KEROSENE_TUNNEL_ID2` is set, it starts a second isolated profile named `kerosene-readonly-secondary` using `CONTROL_PLANE_API_KEY2`. Defaults: `CONTROL_PLANE_POLL_TIMEOUT=90s`, `CONTROL_PLANE_MAX_INFLIGHT_REQUESTS=1`, `MCP_CONNECTION_MAX_TTL=2h`, and `MCP_MAX_CONCURRENT_REQUESTS=1`.
 
 Logs:
 
 - supervisor: `logs/kerosene-tunnel-supervisor.log`
 - tunnel-client JSON logs: `logs/kerosene-tunnel-client.ndjson`
+- secondary supervisor: `logs/kerosene-tunnel-supervisor-secondary.log`
+- secondary tunnel-client JSON logs: `logs/kerosene-tunnel-client-secondary.ndjson`
 
 Override with `KEROSENE_TUNNEL_CONTROL_PLANE_POLL_TIMEOUT`, `KEROSENE_TUNNEL_MCP_CONNECTION_MAX_TTL`, and `KEROSENE_TUNNEL_MCP_MAX_CONCURRENT_REQUESTS` only when needed.

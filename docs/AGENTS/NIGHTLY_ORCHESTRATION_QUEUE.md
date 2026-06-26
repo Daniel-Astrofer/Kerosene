@@ -3,7 +3,7 @@
 Status: active
 Window: now until 12:00 America/Sao_Paulo
 Cadence: hourly automation
-Runtime constraint: do not run `scripts/start-local.sh` until Nycollas explicitly re-enables it.
+Runtime constraint: do not run `infra/scripts/local/control.sh start` until Nycollas explicitly re-enables it.
 
 ## Global rules
 
@@ -136,7 +136,7 @@ Goal:
 
 Do not run:
 
-- `scripts/start-local.sh`
+- `infra/scripts/local/control.sh start`
 
 Validation:
 

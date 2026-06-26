@@ -45,11 +45,19 @@ class TorService {
       await Tor.init();
       await Tor.instance.start();
 
-      // The `tor` package picks a free port automatically
-      _socksPort = Tor.instance.port;
-      _isRunning = Tor.instance.started;
+      // The `tor` package picks a free port automatically, but some mobile
+      // builds briefly expose -1 while Arti is still bootstrapping. Never let
+      // an invalid port reach Socket.connect; wait for a real SOCKS port first.
+      _socksPort = await _waitForValidTorPackagePort();
+      if (!_isValidPort(_socksPort)) {
+        throw SocketException(
+          'Tor package did not report a valid SOCKS5 port: $_socksPort',
+        );
+      }
 
+      _isRunning = Tor.instance.started;
       if (_isRunning) {
+        await _waitForProxyToBoot(_socksPort, timeoutSeconds: 10);
         debugPrint(
           '🧅 TorService: Tor (Arti) running on SOCKS5 port $_socksPort',
         );
@@ -76,6 +84,35 @@ class TorService {
     }
 
     return _isRunning;
+  }
+
+  static bool _isValidPort(int port) => port > 0 && port <= 65535;
+
+  Future<int> _waitForValidTorPackagePort({
+    Duration timeout = const Duration(seconds: 30),
+  }) async {
+    final stopwatch = Stopwatch()..start();
+    var lastPort = Tor.instance.port;
+
+    while (stopwatch.elapsed < timeout) {
+      lastPort = Tor.instance.port;
+      if (_isValidPort(lastPort)) return lastPort;
+
+      await Future.delayed(const Duration(milliseconds: 250));
+    }
+
+    return lastPort;
+  }
+
+  int _normalizeTargetPort(int targetPort) {
+    if (_isValidPort(targetPort)) return targetPort;
+
+    // Uri.port returns -1 when the URL has no explicit port. Hidden-service
+    // HTTP URLs such as http://example.onion must still connect to port 80.
+    debugPrint(
+      '🧅 TorService: Invalid target port $targetPort; falling back to HTTP port 80.',
+    );
+    return 80;
   }
 
   /// Stops the embedded Tor daemon.
@@ -183,10 +220,14 @@ class TorService {
   /// Starts a local TCP server that blindly relays bytes through the Tor SOCKS5 proxy.
   /// This is used to tunnel protocols like WebSockets that don't natively support SOCKS5.
   Future<int> startRelay(String targetHost, int targetPort) async {
-    if (!_isRunning) {
-      throw const SocketException('Cannot start relay: Tor is not running');
+    if (!_isRunning || !_isValidPort(_socksPort)) {
+      throw SocketException(
+        'Cannot start relay: Tor is not running with a valid SOCKS5 port. current=$_socksPort',
+      );
     }
-    final key = '$targetHost:$targetPort';
+
+    final resolvedTargetPort = _normalizeTargetPort(targetPort);
+    final key = '$targetHost:$resolvedTargetPort';
     if (_relayPorts.containsKey(key)) {
       return _relayPorts[key]!;
     }
@@ -195,7 +236,8 @@ class TorService {
       return inFlight;
     }
 
-    final startFuture = _startRelayInternal(key, targetHost, targetPort);
+    final startFuture =
+        _startRelayInternal(key, targetHost, resolvedTargetPort);
     _relayStartFutures[key] = startFuture;
     try {
       return await startFuture;
@@ -249,6 +291,11 @@ class TorService {
             int sockAttempts = 0;
             while (sockAttempts < 5) {
               try {
+                if (!_isValidPort(_socksPort)) {
+                  throw SocketException(
+                    'Invalid Tor SOCKS5 port before connect: $_socksPort',
+                  );
+                }
                 torSocket = await Socket.connect(
                   '127.0.0.1',
                   _socksPort,

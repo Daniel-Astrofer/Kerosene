@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 
 class NotificationNavigation {
@@ -150,7 +152,7 @@ class _ProfessionalNotificationDialog extends StatelessWidget {
         constraints: const BoxConstraints(maxWidth: 420),
         child: Container(
           decoration: BoxDecoration(
-            color: const Color(0xFF121212),
+            color: KeroseneBrandTokens.surface,
             borderRadius: BorderRadius.circular(28),
             border: Border.all(color: Colors.white.withValues(alpha: 0.08)),
             boxShadow: [
@@ -370,8 +372,8 @@ class _DialogSpec {
     if (NotificationNavigation._isLoginOrSecurity(notification)) {
       return _DialogSpec(
         eyebrow: 'SEGURANÇA',
-        icon: Icons.verified_user_outlined,
-        accent: const Color(0xFF8FA7FF),
+        icon: KeroseneIcons.shield,
+        accent: KeroseneBrandTokens.info,
         rows: _securityRows(notification),
         note:
             'Confira se essa atividade foi feita por você. Se não reconhecer, revise seus acessos e proteja a conta.',
@@ -381,8 +383,8 @@ class _DialogSpec {
     if (NotificationNavigation._isPaymentLink(notification)) {
       return _DialogSpec(
         eyebrow: 'LINK DE PAGAMENTO',
-        icon: Icons.link_rounded,
-        accent: const Color(0xFFB58CFF),
+        icon: KeroseneIcons.qr,
+        accent: KeroseneBrandTokens.lightning,
         rows: _paymentLinkRows(notification),
       );
     }
@@ -390,8 +392,8 @@ class _DialogSpec {
     if (NotificationNavigation._isRealBitcoinMarketAlert(notification)) {
       return _DialogSpec(
         eyebrow: 'MERCADO BITCOIN',
-        icon: Icons.show_chart_rounded,
-        accent: const Color(0xFFFFB14A),
+        icon: KeroseneIcons.activity,
+        accent: KeroseneBrandTokens.bitcoin,
         rows: _marketRows(notification),
         note:
             'Alerta gerado somente a partir do ticker recebido pelo app. Sem valores estimados ou simulados.',
@@ -401,8 +403,8 @@ class _DialogSpec {
     if (NotificationNavigation._isColdWalletNotification(notification)) {
       return _DialogSpec(
         eyebrow: 'CARTEIRA MONITORADA',
-        icon: Icons.account_balance_wallet_outlined,
-        accent: const Color(0xFF7EE0C3),
+        icon: KeroseneIcons.wallet,
+        accent: KeroseneBrandTokens.success,
         rows: _coldWalletRows(notification),
         note:
             'Carteiras cold/watch-only são acompanhadas apenas quando o evento contém material público ou metadata compatível.',
@@ -488,19 +490,19 @@ class _DialogSpec {
     if (notification.kind == SessionNotificationItem.kindTransferReceived ||
         notification.kind == SessionNotificationItem.kindDepositDetected ||
         notification.kind == SessionNotificationItem.kindDepositConfirmed) {
-      return Icons.south_west_rounded;
+      return KeroseneIcons.receive;
     }
-    return Icons.north_east_rounded;
+    return KeroseneIcons.send;
   }
 
   static Color _transactionAccent(SessionNotificationItem notification) {
     if (notification.severity == SessionNotificationItem.severityWarning) {
-      return const Color(0xFFFFCC66);
+      return KeroseneBrandTokens.warning;
     }
     if (notification.severity == SessionNotificationItem.severityError) {
-      return const Color(0xFFFF7A7A);
+      return KeroseneBrandTokens.error;
     }
-    return const Color(0xFF9BE7C0);
+    return KeroseneBrandTokens.success;
   }
 
   static _DialogRow? _rowFromKeys(

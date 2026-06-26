@@ -1,23 +1,999 @@
 #!/usr/bin/env python3
 from __future__ import annotations
-
-import argparse
-import difflib
 import datetime as dt
+import difflib
 import json
 import os
 import re
+import shutil
 import subprocess
+from pathlib import Path
+from typing import Any, Callable, Iterable
+import argparse
 import sys
 import time
 from collections import Counter
-from pathlib import Path
-from typing import Any, Iterable
 
-from kerosene_work_tools import WorkToolError
-from kerosene_work_tools import call_tool as work_call_tool
-from kerosene_work_tools import can_handle as work_can_handle
-from kerosene_work_tools import tool_schema as work_tool_schema
+
+
+
+class WorkToolError(RuntimeError):
+    pass
+
+
+MAX_CONTEXT_CHARS = int(os.environ.get("KEROSENE_WORK_TOOLS_MAX_CONTEXT_CHARS", "120000"))
+SESSION_STATE_REL = Path(os.environ.get("KEROSENE_WORK_TOOLS_SESSION_STATE", "tmp/mcp/session_state.json"))
+BLOCKED_NAMES = {".env", ".netrc", "id_rsa", "id_dsa", "id_ecdsa", "id_ed25519", "wallet.dat"}
+SAFE_ENV_EXAMPLES = {".env.dist", ".env.example", ".env.sample", ".env.template"}
+BLOCKED_DIRS = {".git", ".gnupg", ".ssh", ".secrets", "secrets"}
+BLOCKED_SUFFIXES = {".db", ".jks", ".key", ".keystore", ".mv.db", ".p12", ".pem", ".pfx", ".sqlite", ".sqlite3"}
+BINARY_SUFFIXES = {".7z", ".apk", ".bin", ".class", ".dll", ".dylib", ".gif", ".gz", ".hprof", ".ico", ".jar", ".jpeg", ".jpg", ".keystore", ".mp3", ".mp4", ".otf", ".png", ".so", ".tar", ".ttf", ".webp", ".zip"}
+EXCLUDED_DIRS = {".dart_tool", ".git", ".gradle", ".idea", ".mypy_cache", ".pytest_cache", ".qodana", ".venv", ".vscode", "__pycache__", "build", "coverage", "node_modules", "target", "venv"}
+
+
+def utc_now() -> str:
+    return dt.datetime.now(dt.timezone.utc).isoformat(timespec="seconds")
+
+
+# as_bool, clamp_int and is_relative_to are defined once in the canonical helper block below.
+
+
+def rel(root: Path, path: Path) -> str:
+    root = root.resolve()
+    path = path.resolve(strict=False)
+    if path == root:
+        return "."
+    return path.relative_to(root).as_posix()
+
+
+def blocked_path(path: Path) -> bool:
+    lower_parts = {part.lower() for part in path.parts}
+    if lower_parts & BLOCKED_DIRS:
+        return True
+    name = path.name.lower()
+    if name in SAFE_ENV_EXAMPLES:
+        return False
+    if name in BLOCKED_NAMES:
+        return True
+    if name.startswith(".env.") and name not in SAFE_ENV_EXAMPLES:
+        return True
+    return any(suffix.lower() in BLOCKED_SUFFIXES for suffix in path.suffixes)
+
+
+def resolve_existing(root: Path, raw: Any) -> Path:
+    value = "." if raw in (None, "") else str(raw)
+    candidate = Path(value).expanduser()
+    if not candidate.is_absolute():
+        candidate = root / candidate
+    try:
+        path = candidate.resolve(strict=True)
+    except FileNotFoundError as exc:
+        raise WorkToolError(f"Path does not exist: {value}") from exc
+    if not is_relative_to(path, root):
+        raise WorkToolError(f"Path is outside the project root: {value}")
+    if blocked_path(path):
+        raise WorkToolError(f"Refusing protected path: {rel(root, path)}")
+    return path
+
+
+def resolve_target(root: Path, raw: Any) -> Path:
+    if raw in (None, ""):
+        raise WorkToolError("Path is required")
+    value = str(raw)
+    candidate = Path(value).expanduser()
+    if candidate.is_absolute():
+        raise WorkToolError("Path must be relative to the project root")
+    path = (root.resolve() / candidate).resolve(strict=False)
+    if not is_relative_to(path, root):
+        raise WorkToolError(f"Path is outside the project root: {value}")
+    if blocked_path(path):
+        raise WorkToolError(f"Refusing protected path: {rel(root, path)}")
+    return path
+
+
+def probably_binary(path: Path) -> bool:
+    if any(suffix.lower() in BINARY_SUFFIXES for suffix in path.suffixes):
+        return True
+    try:
+        return b"\x00" in path.read_bytes()[:4096]
+    except OSError:
+        return True
+
+
+def read_text(path: Path) -> str:
+    if path.is_dir():
+        raise WorkToolError(f"Path is a directory: {path}")
+    if probably_binary(path):
+        raise WorkToolError(f"Refusing binary file: {path}")
+    return path.read_text(encoding="utf-8")
+
+
+def truncate(text: str, max_chars: int) -> str:
+    if len(text) <= max_chars:
+        return text
+    keep = max(0, max_chars - 80)
+    return text[:keep] + f"\n...[truncated {len(text) - keep} chars]"
+
+
+def run(root: Path, command: list[str], *, cwd: Path | None = None, timeout_seconds: int = 120) -> dict[str, Any]:
+    completed = subprocess.run(command, cwd=str(cwd or root), env=os.environ.copy(), capture_output=True, text=True, timeout=timeout_seconds, check=False)
+    return {"command": command, "cwd": rel(root, cwd or root), "returncode": completed.returncode, "stdout": completed.stdout, "stderr": completed.stderr}
+
+
+def git(root: Path, args: list[str], *, timeout_seconds: int = 120) -> dict[str, Any]:
+    return run(root, ["git", *args], cwd=root, timeout_seconds=timeout_seconds)
+
+
+def git_out(root: Path, args: list[str], *, timeout_seconds: int = 120) -> str:
+    result = git(root, args, timeout_seconds=timeout_seconds)
+    if result["returncode"] != 0:
+        raise WorkToolError(result["stderr"] or result["stdout"] or "git command failed")
+    return result["stdout"]
+
+
+def diff_text(before: str, after: str, file_path: str, max_chars: int = 12000) -> str:
+    diff = "".join(difflib.unified_diff(before.splitlines(True), after.splitlines(True), fromfile=f"a/{file_path}", tofile=f"b/{file_path}"))
+    return truncate(diff, max_chars)
+
+
+def changed_files(root: Path) -> list[str]:
+    out = git_out(root, ["status", "--short"], timeout_seconds=60)
+    files: list[str] = []
+    for line in out.splitlines():
+        item = line[3:] if len(line) > 3 else line.strip()
+        if " -> " in item:
+            item = item.split(" -> ", 1)[1]
+        if item.strip():
+            files.append(item.strip())
+    return files
+
+
+def patch_paths(patch: str) -> list[str]:
+    paths: set[str] = set()
+    for line in patch.splitlines():
+        if line.startswith(("+++ ", "--- ")):
+            value = line[4:].strip().split("\t", 1)[0]
+            if value != "/dev/null":
+                paths.add(value[2:] if value.startswith(("a/", "b/")) else value)
+        elif line.startswith("diff --git "):
+            parts = line.split()
+            for value in parts[2:4]:
+                paths.add(value[2:] if value.startswith(("a/", "b/")) else value)
+        elif line.startswith(("rename from ", "rename to ")):
+            paths.add(line.split(" ", 2)[2].strip())
+    return sorted(p for p in paths if p)
+
+
+def apply_patch(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    patch = args.get("patch")
+    if not isinstance(patch, str) or not patch.strip():
+        raise WorkToolError("patch must be a non-empty unified diff")
+    dry_run = as_bool(args.get("dry_run"), False)
+    timeout_seconds = clamp_int(args.get("timeout_seconds"), 120, 1, 1200)
+    files = patch_paths(patch)
+    for file_path in files:
+        resolve_target(root, file_path)
+    patch_dir = root / "tmp" / "mcp"
+    patch_dir.mkdir(parents=True, exist_ok=True)
+    patch_file = patch_dir / "last_apply_patch.diff"
+    patch_file.write_text(patch, encoding="utf-8")
+    check = git(root, ["apply", "--check", "--whitespace=nowarn", str(patch_file)], timeout_seconds=timeout_seconds)
+    if check["returncode"] != 0 or dry_run:
+        return {"applied": False, "dry_run": dry_run, "files": files, "check": check}
+    before = git_out(root, ["status", "--short"], timeout_seconds=60)
+    applied = git(root, ["apply", "--whitespace=nowarn", str(patch_file)], timeout_seconds=timeout_seconds)
+    after = git_out(root, ["status", "--short"], timeout_seconds=60)
+    stat = git(root, ["diff", "--stat", "--", *files], timeout_seconds=60) if files else {"stdout": ""}
+    return {"applied": applied["returncode"] == 0, "dry_run": False, "files": files, "apply": applied, "status_before": before, "status_after": after, "diffstat": stat.get("stdout", "")}
+
+
+def multi_edit(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    path = resolve_existing(root, args.get("path"))
+    edits = args.get("edits")
+    if not isinstance(edits, list) or not edits:
+        raise WorkToolError("edits must be a non-empty list")
+    original = read_text(path)
+    updated = original
+    results = []
+    for index, edit in enumerate(edits, 1):
+        old = edit.get("old_text") if isinstance(edit, dict) else None
+        new = edit.get("new_text") if isinstance(edit, dict) else None
+        replace_all = as_bool(edit.get("replace_all") if isinstance(edit, dict) else None, True)
+        if not isinstance(old, str) or not old or not isinstance(new, str):
+            raise WorkToolError(f"invalid edit #{index}")
+        count = updated.count(old)
+        if count == 0:
+            raise WorkToolError(f"edit #{index} found no occurrences")
+        updated = updated.replace(old, new, -1 if replace_all else 1)
+        results.append({"index": index, "occurrences": count, "replacements": count if replace_all else 1})
+    file_path = rel(root, path)
+    dry_run = as_bool(args.get("dry_run"), False)
+    if not dry_run:
+        path.write_text(updated, encoding="utf-8")
+    return {"path": file_path, "dry_run": dry_run, "edits": results, "diff": diff_text(original, updated, file_path)}
+
+
+def copy_tree(src: Path, dst: Path) -> None:
+    if src.is_dir():
+        dst.mkdir(parents=True, exist_ok=True)
+        for child in src.iterdir():
+            copy_tree(child, dst / child.name)
+    else:
+        dst.parent.mkdir(parents=True, exist_ok=True)
+        dst.write_bytes(src.read_bytes())
+
+
+def copy_path(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    src = resolve_existing(root, args.get("source"))
+    dst = resolve_target(root, args.get("destination"))
+    overwrite = as_bool(args.get("overwrite"), False)
+    dry_run = as_bool(args.get("dry_run"), False)
+    if dst.exists() and not overwrite:
+        raise WorkToolError(f"destination exists: {rel(root, dst)}")
+    if dry_run:
+        return {"copied": False, "dry_run": True, "source": rel(root, src), "destination": rel(root, dst)}
+    if dst.exists():
+        shutil.rmtree(dst) if dst.is_dir() else dst.unlink()
+    copy_tree(src, dst)
+    return {"copied": True, "source": rel(root, src), "destination": rel(root, dst)}
+
+
+def move_path(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    src = resolve_existing(root, args.get("source"))
+    dst = resolve_target(root, args.get("destination"))
+    overwrite = as_bool(args.get("overwrite"), False)
+    dry_run = as_bool(args.get("dry_run"), False)
+    if dst.exists() and not overwrite:
+        raise WorkToolError(f"destination exists: {rel(root, dst)}")
+    if dry_run:
+        return {"moved": False, "dry_run": True, "source": rel(root, src), "destination": rel(root, dst)}
+    dst.parent.mkdir(parents=True, exist_ok=True)
+    if dst.exists():
+        shutil.rmtree(dst) if dst.is_dir() else dst.unlink()
+    shutil.move(str(src), str(dst))
+    return {"moved": True, "source": rel(root, src), "destination": rel(root, dst)}
+
+
+def mkdir(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    path = resolve_target(root, args.get("path"))
+    dry_run = as_bool(args.get("dry_run"), False)
+    if not dry_run:
+        path.mkdir(parents=True, exist_ok=True)
+    return {"created": not dry_run, "dry_run": dry_run, "path": rel(root, path)}
+
+
+def delete_path_safe(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    path = resolve_existing(root, args.get("path"))
+    dry_run = as_bool(args.get("dry_run"), True)
+    recursive = as_bool(args.get("recursive"), False)
+    max_entries = clamp_int(args.get("max_entries"), 200, 1, 10000)
+    if path == root:
+        raise WorkToolError("refusing to delete project root")
+    entries = list(path.rglob("*")) if path.is_dir() else []
+    if path.is_dir() and not recursive:
+        raise WorkToolError("directory deletion requires recursive=true")
+    if len(entries) > max_entries:
+        raise WorkToolError(f"directory has {len(entries)} entries; max_entries={max_entries}")
+    if dry_run:
+        return {"deleted": False, "dry_run": True, "path": rel(root, path), "entries": len(entries)}
+    shutil.rmtree(path) if path.is_dir() else path.unlink()
+    return {"deleted": True, "dry_run": False, "path": rel(root, path), "entries": len(entries)}
+
+
+def format_paths(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    raw_paths = args.get("paths") or changed_files(root)
+    if not isinstance(raw_paths, list):
+        raise WorkToolError("paths must be a list")
+    paths = [rel(root, resolve_target(root, p)) for p in raw_paths if str(p).strip()]
+    commands = []
+    dart = [p for p in paths if p.endswith(".dart")]
+    if dart and (root / "frontend").exists():
+        rels = [str(Path(p).relative_to("frontend")) for p in dart if p.startswith("frontend/")]
+        commands.append(run(root, ["dart", "format", *rels], cwd=root / "frontend", timeout_seconds=300))
+    py = [p for p in paths if p.endswith(".py")]
+    if py:
+        commands.append(run(root, ["python3", "-m", "py_compile", *py], timeout_seconds=300))
+    return {"paths": paths, "commands": commands}
+
+
+def symbols(text: str) -> list[str]:
+    found = []
+    patterns = [r"^\s*class\s+([A-Za-z_][A-Za-z0-9_]*)", r"^\s*def\s+([A-Za-z_][A-Za-z0-9_]*)\s*\(", r"^\s*(?:public|private|protected)?\s*(?:class|interface|enum|record)\s+([A-Za-z_][A-Za-z0-9_]*)"]
+    compiled = [re.compile(p) for p in patterns]
+    for line in text.splitlines():
+        for pattern in compiled:
+            match = pattern.match(line)
+            if match:
+                found.append(match.group(1))
+                break
+    return found
+
+
+def file_info(root: Path, path: Path) -> dict[str, Any]:
+    info = {"path": rel(root, path), "exists": path.exists()}
+    if path.exists() and path.is_file() and not probably_binary(path):
+        text = path.read_text(encoding="utf-8", errors="replace")
+        info.update({"lines": text.count("\n") + (0 if text.endswith("\n") else 1), "bytes": len(text.encode("utf-8")), "imports": [line.strip() for line in text.splitlines() if line.strip().startswith(("import ", "export "))][:80], "symbols": symbols(text)[:120]})
+    elif path.exists() and path.is_dir():
+        info["children"] = sorted(child.name for child in path.iterdir() if not child.name.startswith("."))[:120]
+    return info
+
+
+def context_pack(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    topic = str(args.get("topic") or "Kerosene implementation context")
+    max_chars = clamp_int(args.get("max_chars"), 60000, 4000, MAX_CONTEXT_CHARS)
+    raw_paths = args.get("paths") or ["."]
+    if not isinstance(raw_paths, list):
+        raise WorkToolError("paths must be a list")
+    paths = [resolve_existing(root, p) for p in raw_paths]
+    scoped_paths = [rel(root, p) for p in paths]
+    diff_scope = ["--", *scoped_paths] if scoped_paths != ["."] else []
+    tree = []
+    for base in paths[:6]:
+        start = base if base.is_dir() else base.parent
+        count = 0
+        for current, dirs, files in os.walk(start):
+            current_path = Path(current)
+            depth = len(current_path.relative_to(start).parts)
+            dirs[:] = [d for d in dirs if d not in EXCLUDED_DIRS and not d.startswith(".")]
+            if depth > 2:
+                dirs[:] = []
+                continue
+            tree.append(("  " * depth) + (current_path.name + "/"))
+            count += 1
+            for name in sorted(files)[:40]:
+                if count > 180:
+                    break
+                tree.append(("  " * (depth + 1)) + name)
+                count += 1
+            if count > 180:
+                break
+    pack = {"topic": topic, "root": str(root), "generated_at": utc_now(), "paths": scoped_paths, "tree": tree[:260], "overviews": [file_info(root, p) for p in paths], "git_status": truncate(git(root, ["status", "--short"], timeout_seconds=60).get("stdout", ""), 12000), "diffstat": truncate(git(root, ["diff", "--stat", *diff_scope], timeout_seconds=60).get("stdout", ""), 12000), "guidance": ["Prefer apply_patch or multi_edit over full rewrites.", "Run validate_changed_files after edits.", "Keep protected local material out of model context."]}
+    text = json.dumps(pack, ensure_ascii=False, indent=2)
+    if len(text) > max_chars:
+        pack["truncated"] = True
+        pack["text"] = truncate(text, max_chars)
+    return pack
+
+
+def git_status_compact(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    return {"branch": git_out(root, ["branch", "--show-current"], timeout_seconds=60).strip(), "changed_files": changed_files(root), "status": git_out(root, ["status", "--short"], timeout_seconds=60)}
+
+
+def git_diff_summary(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    paths = args.get("paths") or []
+    rels = [rel(root, resolve_target(root, p)) for p in paths] if isinstance(paths, list) else []
+    scoped = ["--", *rels] if rels else []
+    return {"paths": rels, "stat": git(root, ["diff", "--stat", *scoped], timeout_seconds=120).get("stdout", ""), "name_status": git(root, ["diff", "--name-status", *scoped], timeout_seconds=120).get("stdout", "")}
+
+
+def git_diff_file(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    path = rel(root, resolve_target(root, args.get("path")))
+    max_chars = clamp_int(args.get("max_chars"), 60000, 1000, 500000)
+    result = git(root, ["diff", "--", path], timeout_seconds=120)
+    return {"path": path, "diff": truncate(result.get("stdout", ""), max_chars), "returncode": result.get("returncode"), "stderr": result.get("stderr", "")}
+
+
+def batch_read_files(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    raw_paths = args.get("paths")
+    if not isinstance(raw_paths, list) or not raw_paths:
+        raise WorkToolError("paths must be a non-empty list")
+    max_chars_each = clamp_int(args.get("max_chars_each"), 30000, 1000, 200000)
+    return {"files": [{"path": rel(root, p := resolve_existing(root, raw)), "text": truncate(read_text(p), max_chars_each)} for raw in raw_paths]}
+
+
+def named_validation(root: Path, name: str, command: list[str], cwd: Path | None = None, timeout_seconds: int = 900) -> dict[str, Any]:
+    result = run(root, command, cwd=cwd, timeout_seconds=timeout_seconds)
+    return {"name": name, "status": "pass" if result["returncode"] == 0 else "fail", **result}
+
+
+def validate_frontend(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    frontend = root / "frontend"
+    commands = [named_validation(root, "flutter analyze", ["flutter", "analyze"], cwd=frontend, timeout_seconds=1200), named_validation(root, "cleanup guard", ["bash", "tool/check_frontend_cleanup_rules.sh"], cwd=frontend, timeout_seconds=300), named_validation(root, "frontend alignment audit", ["bash", "tool/audit_frontend_alignment.sh"], cwd=frontend, timeout_seconds=300), named_validation(root, "architecture guard", ["dart", "run", "tool/check_frontend_architecture_rules.dart"], cwd=frontend, timeout_seconds=600)]
+    return {"status": "pass" if all(c["status"] == "pass" for c in commands) else "fail", "commands": commands}
+
+
+def validate_backend(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    cwd = root / "backend" if (root / "backend" / "gradlew").exists() else root
+    command = ["./gradlew", "test"]
+    commands = [named_validation(root, "gradle test", command, cwd=cwd, timeout_seconds=1800)]
+    return {"status": "pass" if all(c["status"] == "pass" for c in commands) else "fail", "commands": commands}
+
+
+def validate_changed_files(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    selected = args.get("paths") or changed_files(root)
+    if not isinstance(selected, list):
+        raise WorkToolError("paths must be a list")
+    paths = [rel(root, resolve_target(root, p)) for p in selected if str(p).strip()]
+    commands = []
+    dart = [p for p in paths if p.endswith(".dart")]
+    if dart and (root / "frontend").exists():
+        rels = [str(Path(p).relative_to("frontend")) for p in dart if p.startswith("frontend/")]
+        commands.append(named_validation(root, "dart format changed", ["dart", "format", *rels], cwd=root / "frontend", timeout_seconds=300))
+        commands.append(named_validation(root, "flutter analyze", ["flutter", "analyze"], cwd=root / "frontend", timeout_seconds=1200))
+    py = [p for p in paths if p.endswith(".py")]
+    if py:
+        commands.append(named_validation(root, "python compile", ["python3", "-m", "py_compile", *py], timeout_seconds=300))
+    if paths:
+        commands.append(named_validation(root, "git diff check", ["git", "diff", "--check", "--", *paths], timeout_seconds=120))
+    return {"status": "pass" if all(c["status"] == "pass" for c in commands) else "fail", "paths": paths, "commands": commands}
+
+
+def session_file(root: Path) -> Path:
+    return resolve_target(root, SESSION_STATE_REL.as_posix())
+
+
+def read_session(root: Path) -> dict[str, Any]:
+    path = session_file(root)
+    if not path.exists():
+        return {"active": False, "notes": []}
+    return json.loads(path.read_text(encoding="utf-8"))
+
+
+def write_session(root: Path, state: dict[str, Any]) -> dict[str, Any]:
+    path = session_file(root)
+    path.parent.mkdir(parents=True, exist_ok=True)
+    state["updated_at"] = utc_now()
+    path.write_text(json.dumps(state, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+    return state
+
+
+def session_start(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    return write_session(root, {"active": True, "task": str(args.get("task") or "Kerosene work session"), "created_at": utc_now(), "files_changed": changed_files(root), "notes": []})
+
+
+def session_status(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    state = read_session(root)
+    state["files_changed"] = changed_files(root)
+    return state
+
+
+def session_note(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    note = args.get("note")
+    if not isinstance(note, str) or not note.strip():
+        raise WorkToolError("note must be a non-empty string")
+    state = read_session(root)
+    state.setdefault("notes", []).append({"at": utc_now(), "note": note})
+    return write_session(root, state)
+
+
+def session_finish(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    state = read_session(root)
+    state["active"] = False
+    state["finished_at"] = utc_now()
+    state["files_changed"] = changed_files(root)
+    return write_session(root, state)
+
+
+def grep_fallback(root: Path, query: str, path: str, max_count: int, fixed: bool = False) -> dict[str, Any]:
+    matches: list[str] = []
+    base = resolve_existing(root, path)
+    flags = 0 if fixed else re.IGNORECASE
+    pattern = None if fixed else re.compile(query, flags)
+    needle = query if fixed else ""
+    files = [base] if base.is_file() else [p for p in base.rglob("*") if p.is_file()]
+    for file_path in files:
+        if len(matches) >= max_count:
+            break
+        if any(part in EXCLUDED_DIRS or part.startswith(".") for part in file_path.relative_to(root).parts[:-1]):
+            continue
+        if blocked_path(file_path) or probably_binary(file_path):
+            continue
+        try:
+            for line_no, line in enumerate(file_path.read_text(encoding="utf-8", errors="replace").splitlines(), 1):
+                hit = needle in line if fixed else bool(pattern and pattern.search(line))
+                if hit:
+                    matches.append(f"{rel(root, file_path)}:{line_no}:{line}")
+                    if len(matches) >= max_count:
+                        break
+        except OSError:
+            continue
+    return {"command": ["python-grep-fallback", query, path], "cwd": ".", "returncode": 0 if matches else 1, "stdout": "\n".join(matches), "stderr": ""}
+
+
+def run_rg(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    query = args.get("query")
+    if not isinstance(query, str) or not query:
+        raise WorkToolError("query is required")
+    path = rel(root, resolve_existing(root, args.get("path") or "."))
+    max_count = clamp_int(args.get("max_count", args.get("max_results")), 200, 1, 5000)
+    if shutil.which("rg"):
+        res = run(root, ["rg", "--line-number", "--max-columns", "500", "--max-count", str(max_count), query, path], timeout_seconds=300)
+        stdout = res.get("stdout", "")
+        lines = stdout.splitlines()
+        global_max = 1000
+        if len(lines) > global_max:
+            res["stdout"] = "\n".join(lines[:global_max]) + f"\n... [truncated, total {len(lines)} matching lines]"
+        return res
+    return grep_fallback(root, query, path, max_count)
+
+
+def find_references(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    symbol = args.get("symbol")
+    if not isinstance(symbol, str) or not symbol.strip():
+        raise WorkToolError("symbol is required")
+    path = rel(root, resolve_existing(root, args.get("path") or "."))
+    result = run(root, ["rg", "--line-number", "--fixed-strings", symbol, path], timeout_seconds=300) if shutil.which("rg") else grep_fallback(root, symbol, path, 5000, fixed=True)
+    matches = []
+    for line in result.get("stdout", "").splitlines():
+        parts = line.split(":", 2)
+        if len(parts) == 3:
+            matches.append({"path": parts[0], "line": int(parts[1]) if parts[1].isdigit() else parts[1], "text": parts[2]})
+    return {"symbol": symbol, "matches": matches[:1000], "truncated": len(matches) > 1000}
+
+
+def rename_symbol_safe(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    old = args.get("old")
+    new = args.get("new")
+    paths = args.get("paths") or []
+    dry_run = as_bool(args.get("dry_run"), True)
+    if not isinstance(old, str) or not old or not isinstance(new, str) or not new or not isinstance(paths, list):
+        raise WorkToolError("old, new and paths are required")
+    pattern = re.compile(rf"\b{re.escape(old)}\b")
+    changes = []
+    for raw in paths:
+        path = resolve_existing(root, raw)
+        text = read_text(path)
+        updated, count = pattern.subn(new, text)
+        if count:
+            file_path = rel(root, path)
+            changes.append({"path": file_path, "replacements": count, "diff": diff_text(text, updated, file_path, 8000)})
+            if not dry_run:
+                path.write_text(updated, encoding="utf-8")
+    return {"dry_run": dry_run, "old": old, "new": new, "changes": changes}
+
+
+def dart_import_rewrite(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    path = resolve_existing(root, args.get("path"))
+    package = str(args.get("package") or "kerosene")
+    dry_run = as_bool(args.get("dry_run"), False)
+    text = read_text(path)
+    file_path = Path(rel(root, path))
+    if not file_path.as_posix().startswith("frontend/lib/"):
+        raise WorkToolError("expected a file under frontend/lib")
+    current_dir = file_path.parent
+    lib_root = (root / "frontend" / "lib").resolve(strict=False)
+    def repl(match: re.Match[str]) -> str:
+        quote = match.group(1)
+        value = match.group(2)
+        end_quote = match.group(3)
+        if not value.startswith("."):
+            return match.group(0)
+        target = (root / current_dir / value).resolve(strict=False)
+        if not is_relative_to(target, lib_root):
+            return match.group(0)
+        return f"import {quote}package:{package}/{target.relative_to(lib_root).as_posix()}{end_quote}"
+    updated = re.sub(r"import\s+(['\"])([^'\"]+)(['\"])", repl, text)
+    if not dry_run and updated != text:
+        path.write_text(updated, encoding="utf-8")
+    return {"path": rel(root, path), "dry_run": dry_run, "changed": updated != text, "diff": diff_text(text, updated, rel(root, path))}
+
+
+def validate_mcp(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    files = [p for p in ["scripts/kerosene_server.py", "scripts/kerosene_work_tools.py", "scripts/k_more_tools.py"] if (root / p).exists()]
+    commands = [named_validation(root, "python compile", ["python3", "-m", "py_compile", *files], timeout_seconds=300)]
+    if (root / "scripts" / "kerosene-mcp").exists():
+        commands.append(named_validation(root, "server help", ["scripts/kerosene-mcp", "--help"], timeout_seconds=30))
+    return {"status": "pass" if all(c["status"] == "pass" for c in commands) else "fail", "commands": commands}
+
+
+
+
+
+
+
+
+
+ToolFn = Callable[[Path, dict[str, Any]], dict[str, Any]]
+CHECKPOINT_ROOT_REL = Path("tmp/mcp/checkpoints")
+LAST_CHANGE_REL = Path("tmp/mcp/last_change_manifest.json")
+
+
+def _utc() -> str:
+    return utc_now()
+
+
+def _checkpoint_root(root: Path) -> Path:
+    return resolve_target(root, CHECKPOINT_ROOT_REL.as_posix())
+
+
+def _last_change_path(root: Path) -> Path:
+    return resolve_target(root, LAST_CHANGE_REL.as_posix())
+
+
+def _safe_id(value: Any | None = None) -> str:
+    raw = str(value or _utc()).strip()
+    return re.sub(r"[^A-Za-z0-9_.-]+", "-", raw).strip("-._")[:80] or "checkpoint"
+
+
+def _read_json(path: Path, default: dict[str, Any]) -> dict[str, Any]:
+    if not path.exists():
+        return default
+    try:
+        return json.loads(path.read_text(encoding="utf-8"))
+    except (OSError, json.JSONDecodeError):
+        return default
+
+
+def _write_json(path: Path, data: dict[str, Any]) -> None:
+    path.parent.mkdir(parents=True, exist_ok=True)
+    path.write_text(json.dumps(data, ensure_ascii=False, indent=2) + "\n", encoding="utf-8")
+
+
+def _normalize_paths(root: Path, raw_paths: Any, *, allow_empty: bool = False) -> list[str]:
+    if raw_paths in (None, ""):
+        if allow_empty:
+            return []
+        raise WorkToolError("paths are required")
+    if not isinstance(raw_paths, list):
+        raise WorkToolError("paths must be a list")
+    paths: list[str] = []
+    for raw in raw_paths:
+        if raw in (None, ""):
+            continue
+        target = resolve_target(root, str(raw))
+        paths.append(rel(root, target))
+    return sorted(set(paths))
+
+
+def _patch_paths_from_list(patches: Any) -> list[str]:
+    files: list[str] = []
+    if isinstance(patches, list):
+        for item in patches:
+            patch = item.get("patch") if isinstance(item, dict) else item
+            if isinstance(patch, str):
+                files.extend(patch_paths(patch))
+    return sorted(set(files))
+
+
+def _paths_from_edits(edits: Any) -> list[str]:
+    files: list[str] = []
+    if isinstance(edits, list):
+        for edit in edits:
+            if isinstance(edit, dict) and edit.get("path"):
+                files.append(str(edit["path"]))
+    return sorted(set(files))
+
+
+def _changed_since_status(before: str, after: str) -> list[str]:
+    before_set = set(_status_files(before))
+    after_set = set(_status_files(after))
+    return sorted(after_set | before_set)
+
+
+def _status_files(status: str) -> list[str]:
+    files: list[str] = []
+    for line in status.splitlines():
+        item = line[3:] if len(line) > 3 else line.strip()
+        if " -> " in item:
+            item = item.split(" -> ", 1)[1]
+        if item.strip():
+            files.append(item.strip())
+    return files
+
+
+def _copy_current_file(root: Path, source_rel: str, destination: Path) -> dict[str, Any]:
+    source = resolve_target(root, source_rel)
+    entry = {"path": source_rel, "exists": source.exists(), "is_dir": source.is_dir() if source.exists() else False}
+    if source.exists():
+        if source.is_dir():
+            shutil.copytree(source, destination, dirs_exist_ok=True)
+        else:
+            destination.parent.mkdir(parents=True, exist_ok=True)
+            shutil.copy2(source, destination)
+    return entry
+
+
+def workspace_checkpoint(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    explicit_paths = args.get("paths")
+    if explicit_paths is None:
+        explicit_paths = changed_files(root)
+    paths = _normalize_paths(root, explicit_paths, allow_empty=True)
+    label = _safe_id(args.get("label") or args.get("name"))
+    checkpoint_id = f"{_safe_id(_utc())}-{label}"
+    checkpoint_dir = _checkpoint_root(root) / checkpoint_id
+    files_dir = checkpoint_dir / "files"
+    files_dir.mkdir(parents=True, exist_ok=False)
+    entries = []
+    for item in paths:
+        entries.append(_copy_current_file(root, item, files_dir / item))
+    manifest = {
+        "id": checkpoint_id,
+        "label": label,
+        "created_at": _utc(),
+        "paths": paths,
+        "git_status": git_out(root, ["status", "--short"], timeout_seconds=60),
+        "entries": entries,
+    }
+    _write_json(checkpoint_dir / "manifest.json", manifest)
+    _write_json(_last_change_path(root), {"checkpoint_id": checkpoint_id, "created_at": _utc(), "paths": paths, "reason": "checkpoint"})
+    return {"checkpoint_id": checkpoint_id, "paths": paths, "entry_count": len(entries)}
+
+
+def _latest_checkpoint(root: Path) -> str:
+    root_dir = _checkpoint_root(root)
+    if not root_dir.exists():
+        raise WorkToolError("No checkpoints found")
+    candidates = sorted([p.name for p in root_dir.iterdir() if p.is_dir()])
+    if not candidates:
+        raise WorkToolError("No checkpoints found")
+    return candidates[-1]
+
+
+def _manifest(root: Path, checkpoint_id: str | None) -> tuple[str, Path, dict[str, Any]]:
+    cp_id = checkpoint_id or _latest_checkpoint(root)
+    cp_dir = _checkpoint_root(root) / cp_id
+    manifest = _read_json(cp_dir / "manifest.json", {})
+    if not manifest:
+        raise WorkToolError(f"Checkpoint not found: {cp_id}")
+    return cp_id, cp_dir, manifest
+
+
+def workspace_restore_session(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    cp_id, cp_dir, manifest = _manifest(root, args.get("checkpoint_id"))
+    only_paths = set(_normalize_paths(root, args.get("paths"), allow_empty=True)) if args.get("paths") is not None else None
+    dry_run = as_bool(args.get("dry_run"), False)
+    restored: list[str] = []
+    deleted: list[str] = []
+    files_dir = cp_dir / "files"
+    for entry in manifest.get("entries", []):
+        path_rel = entry.get("path")
+        if not isinstance(path_rel, str) or (only_paths is not None and path_rel not in only_paths):
+            continue
+        target = resolve_target(root, path_rel)
+        snapshot = files_dir / path_rel
+        existed = bool(entry.get("exists"))
+        if dry_run:
+            (restored if existed else deleted).append(path_rel)
+            continue
+        if existed:
+            if target.exists():
+                shutil.rmtree(target) if target.is_dir() else target.unlink()
+            target.parent.mkdir(parents=True, exist_ok=True)
+            if snapshot.is_dir():
+                shutil.copytree(snapshot, target)
+            else:
+                shutil.copy2(snapshot, target)
+            restored.append(path_rel)
+        else:
+            if target.exists():
+                shutil.rmtree(target) if target.is_dir() else target.unlink()
+            deleted.append(path_rel)
+    return {"checkpoint_id": cp_id, "dry_run": dry_run, "restored": restored, "deleted": deleted}
+
+
+def workspace_changed_by_session(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    cp_id, _cp_dir, manifest = _manifest(root, args.get("checkpoint_id"))
+    before = manifest.get("git_status", "")
+    after = git_out(root, ["status", "--short"], timeout_seconds=60)
+    return {"checkpoint_id": cp_id, "before_status": before, "after_status": after, "changed_paths": _changed_since_status(before, after)}
+
+
+def _record_last_change(root: Path, data: dict[str, Any]) -> None:
+    data = {**data, "updated_at": _utc()}
+    _write_json(_last_change_path(root), data)
+
+
+def rollback_last_patch(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    manifest = _read_json(_last_change_path(root), {})
+    checkpoint_id = args.get("checkpoint_id") or manifest.get("checkpoint_id")
+    if not checkpoint_id:
+        raise WorkToolError("No last checkpoint is recorded")
+    result = workspace_restore_session(root, {"checkpoint_id": checkpoint_id, "dry_run": as_bool(args.get("dry_run"), False)})
+    result["rolled_back"] = not result.get("dry_run", False)
+    return result
+
+
+def _split_patch_by_file(patch: str) -> list[str]:
+    lines = patch.splitlines(keepends=True)
+    chunks: list[list[str]] = []
+    current: list[str] = []
+    for line in lines:
+        if line.startswith("diff --git ") and current:
+            chunks.append(current)
+            current = [line]
+        else:
+            current.append(line)
+    if current:
+        chunks.append(current)
+    if len(chunks) <= 1:
+        return [patch]
+    return ["".join(chunk) for chunk in chunks if "+++ " in "".join(chunk) or "--- " in "".join(chunk)]
+
+
+def patch_autosplit(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    patch = args.get("patch")
+    if not isinstance(patch, str) or not patch.strip():
+        raise WorkToolError("patch is required")
+    pieces = []
+    for index, piece in enumerate(_split_patch_by_file(patch), 1):
+        files = patch_paths(piece)
+        for file_path in files:
+            resolve_target(root, file_path)
+        pieces.append({"index": index, "files": files, "chars": len(piece), "patch": piece if as_bool(args.get("include_patches"), False) else None})
+    return {"piece_count": len(pieces), "pieces": pieces}
+
+
+def apply_patch_batch(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    patches = args.get("patches")
+    if isinstance(args.get("patch"), str):
+        patches = [{"patch": piece} for piece in _split_patch_by_file(str(args["patch"]))]
+    if not isinstance(patches, list) or not patches:
+        raise WorkToolError("patches or patch is required")
+    dry_run = as_bool(args.get("dry_run"), False)
+    rollback_on_failure = as_bool(args.get("rollback_on_failure"), True)
+    files = _patch_paths_from_list(patches)
+    checkpoint = workspace_checkpoint(root, {"paths": files, "label": args.get("label") or "patch-batch"}) if not dry_run else {"checkpoint_id": None, "paths": files}
+    results = []
+    try:
+        for index, item in enumerate(patches, 1):
+            patch = item.get("patch") if isinstance(item, dict) else item
+            if not isinstance(patch, str) or not patch.strip():
+                raise WorkToolError(f"invalid patch #{index}")
+            result = apply_patch(root, {"patch": patch, "dry_run": dry_run, "timeout_seconds": args.get("timeout_seconds", 120)})
+            results.append({"index": index, **result})
+            if not result.get("applied") and not dry_run:
+                raise WorkToolError(f"patch #{index} was not applied")
+    except Exception as exc:
+        restored = None
+        if rollback_on_failure and checkpoint.get("checkpoint_id") and not dry_run:
+            restored = workspace_restore_session(root, {"checkpoint_id": checkpoint["checkpoint_id"]})
+        raise WorkToolError(f"apply_patch_batch failed: {exc}; rollback={bool(restored)}") from exc
+    _record_last_change(root, {"type": "patch_batch", "checkpoint_id": checkpoint.get("checkpoint_id"), "paths": files, "results": results})
+    return {"applied": not dry_run, "dry_run": dry_run, "checkpoint_id": checkpoint.get("checkpoint_id"), "files": files, "results": results}
+
+
+def _group_edits(edits: list[dict[str, Any]]) -> dict[str, list[dict[str, Any]]]:
+    grouped: dict[str, list[dict[str, Any]]] = {}
+    for edit in edits:
+        path = edit.get("path")
+        if not isinstance(path, str) or not path:
+            raise WorkToolError("each edit needs a path")
+        grouped.setdefault(path, []).append({"old_text": edit.get("old_text"), "new_text": edit.get("new_text"), "replace_all": edit.get("replace_all", True)})
+    return grouped
+
+
+def _run_validation(root: Path, validation: Any, paths: list[str]) -> dict[str, Any]:
+    value = str(validation or "changed_files").strip().lower()
+    if value in {"none", "false", "skip"}:
+        return {"status": "skipped"}
+    if value in {"mcp", "tools"}:
+        return validate_mcp(root, {})
+    if value == "frontend":
+        return validate_frontend(root, {})
+    if value == "backend":
+        return validate_backend(root, {})
+    return validate_changed_files(root, {"paths": paths})
+
+
+def resilient_apply_change(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    goal = str(args.get("goal") or "resilient change")
+    patches = args.get("patches") or ([] if not isinstance(args.get("patch"), str) else [{"patch": args.get("patch")}])
+    edits = args.get("edits") or []
+    if not patches and not edits:
+        raise WorkToolError("patch, patches or edits are required")
+    dry_run = as_bool(args.get("dry_run"), False)
+    rollback_on_failure = as_bool(args.get("rollback_on_failure"), True)
+    paths = sorted(set(_patch_paths_from_list(patches) + _paths_from_edits(edits) + _normalize_paths(root, args.get("target_files"), allow_empty=True)))
+    checkpoint = workspace_checkpoint(root, {"paths": paths, "label": f"resilient-{_safe_id(goal)}"}) if not dry_run else {"checkpoint_id": None, "paths": paths}
+    steps: list[dict[str, Any]] = []
+    try:
+        if patches:
+            patch_result = apply_patch_batch(root, {"patches": patches, "dry_run": dry_run, "rollback_on_failure": False, "label": goal})
+            steps.append({"type": "patch_batch", "result": patch_result})
+        if edits:
+            if not isinstance(edits, list):
+                raise WorkToolError("edits must be a list")
+            for path, grouped in _group_edits(edits).items():
+                result = multi_edit(root, {"path": path, "edits": grouped, "dry_run": dry_run})
+                steps.append({"type": "multi_edit", "result": result})
+        validation = _run_validation(root, args.get("validation", "changed_files"), paths) if not dry_run else {"status": "skipped", "dry_run": True}
+        if validation.get("status") == "fail":
+            raise WorkToolError("validation failed")
+    except Exception as exc:
+        restored = None
+        if rollback_on_failure and checkpoint.get("checkpoint_id") and not dry_run:
+            restored = workspace_restore_session(root, {"checkpoint_id": checkpoint["checkpoint_id"]})
+        return {"applied": False, "goal": goal, "checkpoint_id": checkpoint.get("checkpoint_id"), "error": str(exc), "rolled_back": bool(restored), "rollback": restored, "steps": steps}
+    result = {"applied": not dry_run, "dry_run": dry_run, "goal": goal, "checkpoint_id": checkpoint.get("checkpoint_id"), "paths": paths, "steps": steps, "validation": validation}
+    _record_last_change(root, {"type": "resilient_apply_change", "checkpoint_id": checkpoint.get("checkpoint_id"), "paths": paths, "goal": goal})
+    return result
+
+
+def blocked_payload_diagnosis(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    message = str(args.get("message") or "")
+    payload = str(args.get("payload") or "")
+    text = f"{message}\n{payload}".lower()
+    findings = []
+    if any(token in text for token in ["auth", "token", "password", "passkey", "biometric", "credential", "secret"]):
+        findings.append("auth_or_secret_like_terms")
+    if len(payload) > 20000:
+        findings.append("large_payload")
+    if payload.count("\n+++") + payload.count("\ndiff --git") > 1:
+        findings.append("multi_file_patch")
+    strategy = "Use resilient_apply_change with target_files and small exact edits."
+    if "multi_file_patch" in findings:
+        strategy = "Use patch_autosplit or apply_patch_batch with one patch per file."
+    if "auth_or_secret_like_terms" in findings:
+        strategy += " Avoid embedding secrets; describe intent and pass only file paths plus exact non-secret replacements."
+    return {"findings": findings, "recommended_strategy": strategy, "safe_tools": ["context_pack", "batch_read_files", "resilient_apply_change", "apply_patch_batch", "rollback_last_patch"]}
+
+
+def _replace_identifier_outside_dart_strings(text: str, old: str, new: str) -> tuple[str, int]:
+    out: list[str] = []
+    i = 0
+    count = 0
+    state = "code"
+    quote = ""
+    ident = re.compile(rf"\b{re.escape(old)}\b")
+    while i < len(text):
+        if state == "code":
+            if text.startswith("//", i):
+                end = text.find("\n", i)
+                if end == -1:
+                    out.append(text[i:])
+                    break
+                out.append(text[i:end])
+                i = end
+                continue
+            if text.startswith("/*", i):
+                end = text.find("*/", i + 2)
+                end = len(text) - 2 if end == -1 else end
+                out.append(text[i:end + 2])
+                i = end + 2
+                continue
+            if text[i] in {'"', "'"}:
+                quote = text[i]
+                state = "string"
+                out.append(text[i])
+                i += 1
+                continue
+            m = ident.match(text, i)
+            if m:
+                out.append(new)
+                i = m.end()
+                count += 1
+                continue
+            out.append(text[i])
+            i += 1
+        else:
+            out.append(text[i])
+            if text[i] == "\\" and i + 1 < len(text):
+                out.append(text[i + 1])
+                i += 2
+                continue
+            if text[i] == quote:
+                state = "code"
+            i += 1
+    return "".join(out), count
+
+
+def dart_rename_symbol_safe(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    old = args.get("old")
+    new = args.get("new")
+    paths = _normalize_paths(root, args.get("paths"))
+    dry_run = as_bool(args.get("dry_run"), True)
+    if not isinstance(old, str) or not old or not isinstance(new, str) or not new:
+        raise WorkToolError("old and new are required")
+    results = []
+    for path_rel in paths:
+        if not path_rel.endswith(".dart"):
+            continue
+        path = resolve_existing(root, path_rel)
+        before = read_text(path)
+        after, count = _replace_identifier_outside_dart_strings(before, old, new)
+        if count:
+            if not dry_run:
+                path.write_text(after, encoding="utf-8")
+            results.append({"path": path_rel, "replacements": count, "diff": diff_text(before, after, path_rel, 10000)})
+    return {"dry_run": dry_run, "old": old, "new": new, "changes": results}
+
+
+
+
+
+
+
 
 
 SERVER_NAME = "kerosene-mcp"
@@ -47,7 +1023,7 @@ DEFAULT_SEARCH_RESULTS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESULTS
 MAX_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILES", "200000"))
 DEFAULT_SEARCH_FILES = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_FILES", "50000"))
 MAX_SEARCH_FILE_BYTES = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_FILE_BYTES", "100000000"))
-DEFAULT_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_TIMEOUT_SECONDS", "900"))
+DEFAULT_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_TIMEOUT_SECONDS", "5"))
 MAX_SEARCH_TIMEOUT_SECONDS = float(os.environ.get("KEROSENE_MCP_MAX_SEARCH_TIMEOUT_SECONDS", "5400"))
 DEFAULT_SEARCH_RESPONSE_CHARS = int(os.environ.get("KEROSENE_MCP_DEFAULT_SEARCH_RESPONSE_CHARS", "750000"))
 MAX_SEARCH_RESPONSE_CHARS = int(os.environ.get("KEROSENE_MCP_MAX_SEARCH_RESPONSE_CHARS", "2000000"))
@@ -57,7 +1033,7 @@ DEFAULT_TREE_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_TREE_ENTRIES", "
 MAX_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_MAX_LIST_ENTRIES", "50000"))
 DEFAULT_LIST_ENTRIES = int(os.environ.get("KEROSENE_MCP_DEFAULT_LIST_ENTRIES", "2000"))
 MAX_CONTEXT_LINES = int(os.environ.get("KEROSENE_MCP_MAX_CONTEXT_LINES", "25"))
-DEFAULT_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_DEFAULT_COMMAND_TIMEOUT_SECONDS", "7200"))
+DEFAULT_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_DEFAULT_COMMAND_TIMEOUT_SECONDS", "10"))
 MAX_COMMAND_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_MAX_COMMAND_TIMEOUT_SECONDS", "14400"))
 MAX_MCP_PROXY_TIMEOUT_SECONDS = int(os.environ.get("KEROSENE_MCP_MAX_PROXY_TIMEOUT_SECONDS", "172800"))
 
@@ -449,58 +1425,6 @@ def replace_text_in_file(root: Path, args: dict[str, Any]) -> dict[str, Any]:
         "bytes_written": len(updated.encode("utf-8")),
     }
 
-
-def shell_command(root: Path, args: dict[str, Any]) -> dict[str, Any]:
-    command = args.get("command")
-    if not isinstance(command, str) or not command.strip():
-        raise ReadOnlyMcpError("Field 'command' must be a non-empty string")
-
-    cwd_arg = args.get("cwd")
-    cwd = resolve_existing_path(root, cwd_arg) if cwd_arg not in (None, "") else root
-    if cwd.is_file():
-        cwd = cwd.parent
-    if not cwd.is_dir():
-        raise ReadOnlyMcpError(f"Path is not a directory: {relative_path(root, cwd)}")
-
-    timeout_seconds = clamp_int(
-        args.get("timeout_seconds"),
-        DEFAULT_COMMAND_TIMEOUT_SECONDS,
-        1,
-        MAX_COMMAND_TIMEOUT_SECONDS,
-    )
-    env = shell_environment(root)
-
-    try:
-        completed = subprocess.run(
-            command,
-            shell=True,
-            cwd=str(cwd),
-            env=env,
-            capture_output=True,
-            text=True,
-            timeout=timeout_seconds,
-            check=False,
-        )
-        return {
-            "command": command,
-            "cwd": relative_path(root, cwd),
-            "timeout_seconds": timeout_seconds,
-            "returncode": completed.returncode,
-            "stdout": completed.stdout,
-            "stderr": completed.stderr,
-            "timed_out": False,
-        }
-    except subprocess.TimeoutExpired as exc:
-        return {
-            "command": command,
-            "cwd": relative_path(root, cwd),
-            "timeout_seconds": timeout_seconds,
-            "returncode": None,
-            "stdout": exc.stdout or "",
-            "stderr": exc.stderr or "",
-            "timed_out": True,
-            "error": f"Command timed out after {timeout_seconds} seconds",
-        }
 
 
 def call_mcp_proxy(script: Path, tool_name: str, arguments: dict[str, Any], timeout_seconds: int = 1200) -> Any:
@@ -906,7 +1830,7 @@ Use the repository-local orchestration queue as the source of truth:
 - {NIGHTLY_QUEUE_REL.as_posix()}
 - {NIGHTLY_STATE_REL.as_posix()}
 
-Implement only the task section below. Do not broaden scope. Do not run scripts/start-local.sh.
+Implement only the task section below. Do not broaden scope. Do not run infra/scripts/local/control.sh start.
 Do not commit; the Kerosene MCP orchestrator will validate and commit locally.
 Do not use git add . If validation is blocked by sandbox, report the exact command and error.
 
@@ -1659,8 +2583,8 @@ def project_summary(root: Path, _args: dict[str, Any]) -> dict[str, Any]:
         components.append({"name": "frontend", "stack": "Flutter/Dart app"})
     if (root / "backend/mpc-sidecar/go.mod").exists():
         components.append({"name": "backend/mpc-sidecar", "stack": "Go MPC sidecar"})
-    if (root / "backend/kerosene-infrastructure").exists():
-        components.append({"name": "backend/kerosene-infrastructure", "stack": "Docker/local infrastructure"})
+    if (root / "infra").exists():
+        components.append({"name": "infra", "stack": "Docker/Kubernetes/runtime infrastructure"})
     if (root / "docs").exists():
         components.append({"name": "docs", "stack": "Project documentation"})
 
@@ -1683,522 +2607,6 @@ def project_summary(root: Path, _args: dict[str, Any]) -> dict[str, Any]:
         "skipped": dict(stats),
     }
 
-
-def tool_schema() -> list[dict[str, Any]]:
-    return [
-        *work_tool_schema(),
-        {
-            "name": "list_directory",
-            "description": "List entries inside the project root.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "default": ".", "description": "Path relative to the project root."},
-                    "include_hidden": {"type": "boolean", "default": False},
-                    "max_entries": {"type": "integer", "minimum": 1, "maximum": MAX_LIST_ENTRIES, "default": DEFAULT_LIST_ENTRIES},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "read_file",
-            "description": "Read a text file from the project with byte limits. Refuses sensitive and binary files.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Path relative to the project root."},
-                    "offset": {"type": "integer", "minimum": 0, "default": 0},
-                    "max_bytes": {"type": "integer", "minimum": 1, "maximum": MAX_READ_BYTES, "default": DEFAULT_READ_BYTES},
-                },
-                "required": ["path"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "read_file_lines",
-            "description": "Read a text file by line range with bounded output. Prefer this for large source files and logs.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Path relative to the project root."},
-                    "start_line": {"type": "integer", "minimum": 1, "default": 1},
-                    "max_lines": {"type": "integer", "minimum": 1, "maximum": MAX_READ_LINES, "default": DEFAULT_READ_LINES},
-                    "max_chars": {"type": "integer", "minimum": 1000, "maximum": MAX_READ_LINES_CHARS, "default": 1000000},
-                    "max_line_chars": {"type": "integer", "minimum": 100, "maximum": MAX_READ_LINE_CHARS, "default": MAX_READ_LINE_CHARS},
-                },
-                "required": ["path"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "search_text",
-            "description": "Search literal text in project files. Skips excluded, sensitive, binary, and oversized files.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string"},
-                    "path": {"type": "string", "default": "."},
-                    "case_sensitive": {"type": "boolean", "default": False},
-                    "include_hidden": {"type": "boolean", "default": False},
-                    "context_lines": {"type": "integer", "minimum": 0, "maximum": MAX_CONTEXT_LINES, "default": 0},
-                    "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_RESULTS, "default": DEFAULT_SEARCH_RESULTS},
-                    "max_files": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_FILES, "default": DEFAULT_SEARCH_FILES},
-                    "max_file_bytes": {"type": "integer", "minimum": 1000, "maximum": MAX_SEARCH_FILE_BYTES, "default": MAX_SEARCH_FILE_BYTES},
-                    "timeout_seconds": {"type": "number", "minimum": 1, "maximum": MAX_SEARCH_TIMEOUT_SECONDS, "default": DEFAULT_SEARCH_TIMEOUT_SECONDS},
-                    "max_response_chars": {"type": "integer", "minimum": 10000, "maximum": MAX_SEARCH_RESPONSE_CHARS, "default": DEFAULT_SEARCH_RESPONSE_CHARS},
-                },
-                "required": ["query"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "write_file",
-            "description": "Write large UTF-8 text to any non-sensitive file inside the project root. Creates parent directories as needed.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Path relative to the project root."},
-                    "content": {"type": "string"},
-                    "create_parents": {"type": "boolean", "default": True},
-                },
-                "required": ["path", "content"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "replace_text_in_file",
-            "description": "Replace text in any existing non-sensitive project file.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Path relative to the project root."},
-                    "old_text": {"type": "string"},
-                    "new_text": {"type": "string"},
-                    "replace_all": {"type": "boolean", "default": True},
-                    "case_sensitive": {"type": "boolean", "default": True},
-                },
-                "required": ["path", "old_text", "new_text"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "search_code",
-            "description": "Alias for search_text, kept for the MCP structure originally requested.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "query": {"type": "string"},
-                    "path": {"type": "string", "default": "."},
-                    "case_sensitive": {"type": "boolean", "default": False},
-                    "include_hidden": {"type": "boolean", "default": False},
-                    "context_lines": {"type": "integer", "minimum": 0, "maximum": MAX_CONTEXT_LINES, "default": 0},
-                    "max_results": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_RESULTS, "default": DEFAULT_SEARCH_RESULTS},
-                    "max_files": {"type": "integer", "minimum": 1, "maximum": MAX_SEARCH_FILES, "default": DEFAULT_SEARCH_FILES},
-                    "max_file_bytes": {"type": "integer", "minimum": 1000, "maximum": MAX_SEARCH_FILE_BYTES, "default": MAX_SEARCH_FILE_BYTES},
-                    "timeout_seconds": {"type": "number", "minimum": 1, "maximum": MAX_SEARCH_TIMEOUT_SECONDS, "default": DEFAULT_SEARCH_TIMEOUT_SECONDS},
-                    "max_response_chars": {"type": "integer", "minimum": 10000, "maximum": MAX_SEARCH_RESPONSE_CHARS, "default": DEFAULT_SEARCH_RESPONSE_CHARS},
-                },
-                "required": ["query"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "get_project_tree",
-            "description": "Return an ASCII tree for the project or a subdirectory.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "default": "."},
-                    "include_hidden": {"type": "boolean", "default": False},
-                    "include_files": {"type": "boolean", "default": True},
-                    "max_depth": {"type": "integer", "minimum": 1, "maximum": 16, "default": 4},
-                    "max_entries": {"type": "integer", "minimum": 1, "maximum": MAX_TREE_ENTRIES, "default": DEFAULT_TREE_ENTRIES},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "project_summary",
-            "description": "Summarize detected project components and file distribution without reading secrets.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "kerosene_cycle_once",
-            "description": "Run one local Kerosene orchestration cycle. For ChatGPT Web, prefer this with {'mode':'nightly'} instead of sending git/fleet/shell payloads.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
-                    "commit_agent_output": {"type": "boolean", "default": True},
-                    "dispatch": {"type": "boolean", "default": True},
-                    "agent_id": {"type": "string"},
-                    "model": {"type": "string", "default": DEFAULT_NIGHTLY_MODEL},
-                    "create_worktree": {"type": "boolean", "default": True},
-                    "lines": {"type": "integer", "minimum": 1, "maximum": 500, "default": 80},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "kerosene_git_status",
-            "description": "Return compact git status for the Kerosene root or a managed agent worktree.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "path": {"type": "string", "description": "Optional repository path under the project root or codex fleet worktrees."},
-                    "agent_id": {"type": "string", "description": "Optional managed Codex agent id; uses that agent cwd."},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "kerosene_clean_worktree",
-            "description": "Inspect a dirty worktree and stop safely. It never discards or stashes unknown work; use commit_agent_output for validated agent changes.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
-                    "path": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "kerosene_dispatch_next",
-            "description": "Dispatch the next nightly queue item through codex-fleet using a local prompt assembled from repository docs.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
-                    "task_id": {"type": "string"},
-                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
-                    "model": {"type": "string", "default": DEFAULT_NIGHTLY_MODEL},
-                    "sandbox": {"type": "string", "enum": ["read-only", "workspace-write", "danger-full-access"], "default": "workspace-write"},
-                    "approval_policy": {"type": "string", "enum": ["untrusted", "on-request", "never"], "default": "never"},
-                    "reasoning_effort": {"type": "string", "enum": ["low", "medium", "high", "xhigh"]},
-                    "create_worktree": {"type": "boolean", "default": True},
-                    "require_clean_worktree": {"type": "boolean", "default": True},
-                    "dry_run": {"type": "boolean", "default": False},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "kerosene_collect_agent_result",
-            "description": "Collect compact status, tail, and dirty-worktree information for a managed Codex agent.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
-                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
-                    "lines": {"type": "integer", "minimum": 1, "maximum": 500, "default": 80},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "kerosene_commit_agent_output",
-            "description": "Validate, stage enumerated files, commit a finished agent worktree, and cherry-pick it into the root branch when needed.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "mode": {"type": "string", "enum": ["nightly"], "default": "nightly"},
-                    "agent_id": {"type": "string", "default": DEFAULT_NIGHTLY_AGENT_ID},
-                    "message": {"type": "string", "description": "Optional commit message. Defaults to the current nightly task id from state."},
-                    "integrate_to_root": {"type": "boolean", "default": True},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "shell_command",
-            "description": "Run a shell command inside the project root and capture stdout/stderr. Supports large local validation/build commands such as Java/Gradle, Flutter, Dart, Go, git, rg, sed, and find.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "command": {"type": "string", "description": "Shell command to execute."},
-                    "cwd": {"type": "string", "default": ".", "description": "Working directory relative to the project root."},
-                    "timeout_seconds": {"type": "integer", "minimum": 1, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": DEFAULT_COMMAND_TIMEOUT_SECONDS},
-                },
-                "required": ["command"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_start_worker",
-            "description": "Start a managed Codex worker. This is the Kerosene-native entrypoint for the Codex fleet.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                    "model": {"type": "string"},
-                    "cwd": {"type": "string"},
-                    "sandbox": {"type": "string"},
-                    "approval_policy": {"type": "string"},
-                    "reasoning_effort": {"type": "string"},
-                    "codex_home": {"type": "string"},
-                    "run_as_user": {"type": "string"},
-                    "create_worktree": {"type": "boolean"},
-                },
-                "required": ["task"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_resume_worker",
-            "description": "Resume a managed Codex worker thread.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "agent_id": {"type": "string"},
-                    "prompt": {"type": "string"},
-                    "model": {"type": "string"},
-                    "sandbox": {"type": "string"},
-                    "approval_policy": {"type": "string"},
-                    "reasoning_effort": {"type": "string"},
-                },
-                "required": ["agent_id", "prompt"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_status",
-            "description": "Show status for managed Codex workers.",
-            "inputSchema": {"type": "object", "properties": {"agent_id": {"type": "string"}}, "additionalProperties": False},
-        },
-        {
-            "name": "fleet_stop_worker",
-            "description": "Stop a managed Codex worker by process group.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {"agent_id": {"type": "string"}, "force": {"type": "boolean", "default": False}},
-                "required": ["agent_id"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_tail",
-            "description": "Read recent JSONL event lines or stderr lines for a managed worker.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "agent_id": {"type": "string"},
-                    "stream": {"type": "string", "enum": ["events", "stderr"]},
-                    "lines": {"type": "integer", "minimum": 1, "maximum": 500},
-                },
-                "required": ["agent_id"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_usage_report",
-            "description": "Aggregate token usage emitted by completed codex exec turns.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "fleet_agent_users",
-            "description": "Show the Codex worker slot to session map.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "fleet_preflight",
-            "description": "Check session availability and Codex login health before dispatching workers.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "check_login": {"type": "boolean", "default": True},
-                    "timeout_seconds": {"type": "number", "minimum": 2, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 8},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_quota_probe",
-            "description": "Open a temporary Codex TUI through a PTY, send /status, capture account and quota text, then terminate it.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "cwd": {"type": "string"},
-                    "model": {"type": "string"},
-                    "codex_home": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                    "run_as_user": {"type": "string"},
-                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
-                    "include_raw_output": {"type": "boolean", "default": True},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "fleet_quota_probe_all",
-            "description": "Probe Codex quota for all default Codex sessions.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "cwd": {"type": "string"},
-                    "model": {"type": "string"},
-                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
-                    "include_raw_output": {"type": "boolean", "default": False},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_start_worker",
-            "description": "Start a managed Antigravity worker. This is the Kerosene-native entrypoint for the agy fleet.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "task": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                    "model": {"type": "string"},
-                    "cwd": {"type": "string"},
-                    "run_as_user": {"type": "string"},
-                    "print_timeout": {"type": "string"},
-                    "sandbox": {"type": "boolean"},
-                    "dangerously_skip_permissions": {"type": "boolean"},
-                    "add_dirs": {"type": "array", "items": {"type": "string"}},
-                },
-                "required": ["task"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_resume_worker",
-            "description": "Resume a managed agy worker.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "agent_id": {"type": "string"},
-                    "prompt": {"type": "string"},
-                    "model": {"type": "string"},
-                    "conversation_id": {"type": "string"},
-                    "continue_recent": {"type": "boolean"},
-                    "print_timeout": {"type": "string"},
-                    "sandbox": {"type": "boolean"},
-                    "dangerously_skip_permissions": {"type": "boolean"},
-                },
-                "required": ["agent_id", "prompt"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_status",
-            "description": "Show status for managed agy workers.",
-            "inputSchema": {"type": "object", "properties": {"agent_id": {"type": "string"}}, "additionalProperties": False},
-        },
-        {
-            "name": "agy_stop_worker",
-            "description": "Stop a managed agy worker by process group.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {"agent_id": {"type": "string"}, "force": {"type": "boolean", "default": False}},
-                "required": ["agent_id"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_tail",
-            "description": "Read recent stdout or stderr lines for a managed agy worker.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "agent_id": {"type": "string"},
-                    "stream": {"type": "string", "enum": ["stdout", "stderr"]},
-                    "lines": {"type": "integer", "minimum": 1, "maximum": 500},
-                },
-                "required": ["agent_id"],
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_usage_report",
-            "description": "Report captured output sizes for managed agy runs.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "agy_agent_users",
-            "description": "Show agy worker slots and the codex session map.",
-            "inputSchema": {"type": "object", "properties": {}, "additionalProperties": False},
-        },
-        {
-            "name": "agy_preflight",
-            "description": "Check session availability and agy CLI health before dispatching workers.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "check_login": {"type": "boolean", "default": True},
-                    "timeout_seconds": {"type": "number", "minimum": 2, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 12},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_quota_probe",
-            "description": "Open a temporary agy TUI through a PTY, send /status, capture account/quota text, then terminate it.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "cwd": {"type": "string"},
-                    "model": {"type": "string"},
-                    "agent_id": {"type": "string"},
-                    "run_as_user": {"type": "string"},
-                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 15},
-                    "include_raw_output": {"type": "boolean", "default": True},
-                },
-                "additionalProperties": False,
-            },
-        },
-        {
-            "name": "agy_quota_probe_all",
-            "description": "Probe agy status/quota for all default slots.",
-            "inputSchema": {
-                "type": "object",
-                "properties": {
-                    "cwd": {"type": "string"},
-                    "model": {"type": "string"},
-                    "timeout_seconds": {"type": "number", "minimum": 3, "maximum": MAX_COMMAND_TIMEOUT_SECONDS, "default": 15},
-                    "include_raw_output": {"type": "boolean", "default": False},
-                },
-                "additionalProperties": False,
-            },
-        },
-    ]
-
-
-def call_tool(root: Path, name: str, args: dict[str, Any]) -> Any:
-    if work_can_handle(name):
-        try:
-            return work_call_tool(root, name, args)
-        except WorkToolError as exc:
-            raise ReadOnlyMcpError(str(exc)) from exc
-    if name == "list_directory":
-        return list_directory(root, args)
-    if name == "read_file":
-        return read_file(root, args)
-    if name == "read_file_lines":
-        return read_file_lines(root, args)
-    if name in {"search_text", "search_code"}:
-        return search_text(root, args)
-    if name == "write_file":
-        return write_file(root, args)
-    if name == "replace_text_in_file":
-        return replace_text_in_file(root, args)
-    if name == "shell_command":
-        return shell_command(root, args)
-    if name == "get_project_tree":
-        return get_project_tree(root, args)
-    if name == "project_summary":
-        return project_summary(root, args)
-    if name.startswith("kerosene_"):
-        return kerosene_call_tool(root, name, args)
-    if name.startswith("fleet_"):
-        return call_mcp_proxy(CODEX_FLEET_SCRIPT, name, args, timeout_seconds=proxy_timeout_seconds(name, args))
-    if name.startswith("agy_"):
-        return call_mcp_proxy(AGY_FLEET_SCRIPT, name, args, timeout_seconds=proxy_timeout_seconds(name, args))
-    raise ReadOnlyMcpError(f"Unknown tool: {name}")
 
 
 class McpServer:
@@ -2296,11 +2704,518 @@ def parse_args() -> argparse.Namespace:
     return parser.parse_args()
 
 
+
+
+# ==========================================
+# META TOOLS ROUTING PATCH (V2)
+# ==========================================
+def tool_schema():
+    return [
+        {
+            "name": "Kerosene.Project",
+            "description": "Navegar pelo projeto, listar diretorios, arvores de arquivos e resumos.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["tree", "list", "summary"]},
+                    "path": {"type": "string", "description": "Caminho relativo (para tree ou list)"}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "Kerosene.Git",
+            "description": "Ver status, limpar worktree ou commitar outputs de agentes.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["status", "clean", "dispatch_next", "collect", "commit"]},
+                    "message": {"type": "string"}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "Kerosene.ReadCode",
+            "description": "Ler um arquivo. Forneca start_line e end_line para trechos parciais.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "path": {"type": "string"},
+                    "start_line": {"type": "integer"},
+                    "end_line": {"type": "integer"}
+                },
+                "required": ["path"]
+            }
+        },
+        {
+            "name": "Kerosene.Search",
+            "description": "Pesquisar texto ou regex em arquivos do projeto.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "query": {"type": "string"},
+                    "mode": {"type": "string", "enum": ["code", "text", "regex"], "default": "code"},
+                    "path": {"type": "string", "description": "Pasta/arquivo opcional"}
+                },
+                "required": ["query"]
+            }
+        },
+        {
+            "name": "Kerosene.Edit",
+            "description": "Modificar arquivos. Use 'resilient' ou 'patch' para refatoracoes seguras.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["write", "replace", "multi_edit", "patch", "resilient", "rollback"]},
+                    "path": {"type": "string", "description": "Para write, replace, rollback"},
+                    "content": {"type": "string", "description": "Para write"},
+                    "old_text": {"type": "string", "description": "Para replace"},
+                    "new_text": {"type": "string", "description": "Para replace"},
+                    "patch": {"type": "string", "description": "Para action=patch"},
+                    "edits": {"type": "array", "description": "Para action=multi_edit ou resilient"},
+                    "instruction": {"type": "string", "description": "Para resilient"}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "Kerosene.Validate",
+            "description": "Rodar validacoes pre-configuradas (frontend, backend).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "target": {"type": "string", "enum": ["frontend", "backend", "changed", "mcp"]}
+                },
+                "required": ["target"]
+            }
+        },
+        {
+            "name": "Kerosene.System",
+            "description": "Mapear processos, portas e recursos do sistema com saida segura e compacta.",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "action": {"type": "string", "enum": ["summary", "processes", "ports", "resources"]},
+                    "query": {"type": "string", "description": "Filtro opcional por nome, usuario ou comando"},
+                    "max_results": {"type": "integer", "minimum": 1, "maximum": 500, "default": 80},
+                    "include_cmdline": {"type": "boolean", "default": true},
+                    "listen_only": {"type": "boolean", "default": true}
+                },
+                "required": ["action"]
+            }
+        },
+        {
+            "name": "Fleet",
+            "description": "Controlar frotas de agentes (Codex, Agy).",
+            "inputSchema": {
+                "type": "object",
+                "properties": {
+                    "fleet": {"type": "string", "enum": ["codex", "agy"], "default": "codex"},
+                    "action": {"type": "string", "enum": ["start", "stop", "resume", "status", "tail", "users", "quota", "usage", "preflight"]},
+                    "agent_id": {"type": "string"},
+                    "task": {"type": "string"}
+                },
+                "required": ["fleet", "action"]
+            }
+        }
+    ]
+
+# Monta o INTERNAL_TOOLS juntando tudo com apenas as ferramentas internas locais
+def build_internal_tools() -> dict[str, Any]:
+    return {
+        "get_project_tree": get_project_tree,
+        "list_directory": list_directory,
+        "project_summary": project_summary,
+        "kerosene_git_status": kerosene_git_status,
+        "kerosene_clean_worktree": kerosene_clean_worktree,
+        "kerosene_dispatch_next": kerosene_dispatch_next,
+        "kerosene_collect_agent_result": kerosene_collect_agent_result,
+        "kerosene_commit_agent_output": kerosene_commit_agent_output,
+        "read_file": read_file,
+        "read_file_lines": read_file_lines,
+        "search_text": search_text,
+        "search_code": search_text,
+        "run_rg": run_rg,
+        "write_file": write_file,
+        "replace_text_in_file": replace_text_in_file,
+        "multi_edit": multi_edit,
+        "apply_patch": apply_patch,
+        "resilient_apply_change": resilient_apply_change,
+        "rollback_last_patch": rollback_last_patch,
+        "validate_frontend": validate_frontend,
+        "validate_backend": validate_backend,
+        "validate_changed_files": validate_changed_files,
+        "validate_mcp": validate_mcp,
+        "system_summary": system_summary,
+        "system_processes": system_processes,
+        "system_ports": system_ports,
+        "system_resources": system_resources,
+    }
+
+def _truncate_system_text(value: Any, max_chars: int = 500) -> Any:
+    if value is None:
+        return None
+    text = str(value).replace("\x00", " ").strip()
+    if len(text) <= max_chars:
+        return text
+    return text[: max(0, max_chars - 40)] + f"... [truncated {len(text) - max(0, max_chars - 40)} chars]"
+
+
+def _redact_cmdline(text: str) -> str:
+    if not text:
+        return ""
+    text = re.sub(r"(?i)(--?(?:password|passwd|token|secret|api[-_]?key|authorization|bearer)(?:=|\s+))\S+", r"\1[redacted]", text)
+    text = re.sub(r"(?i)((?:password|passwd|token|secret|api[-_]?key|authorization|bearer)=)\S+", r"\1[redacted]", text)
+    return text
+
+
+def _read_proc_text(path: Path, max_chars: int = 8192) -> str:
+    try:
+        data = path.read_bytes()[:max_chars]
+    except OSError:
+        return ""
+    return data.decode("utf-8", errors="replace")
+
+
+def _proc_status_field(status_text: str, field: str) -> str | None:
+    prefix = field + ":"
+    for line in status_text.splitlines():
+        if line.startswith(prefix):
+            return line[len(prefix):].strip()
+    return None
+
+
+def _uid_to_user(uid_text: str | None) -> str | None:
+    if not uid_text:
+        return None
+    uid = uid_text.split()[0]
+    try:
+        import pwd
+        return pwd.getpwuid(int(uid)).pw_name
+    except Exception:
+        return uid
+
+
+def _proc_cmdline(pid: str, max_chars: int = 800) -> str:
+    raw = _read_proc_text(Path("/proc") / pid / "cmdline", max_chars * 2)
+    text = raw.replace("\x00", " ").strip()
+    if not text:
+        text = _read_proc_text(Path("/proc") / pid / "comm", max_chars).strip()
+    return _truncate_system_text(_redact_cmdline(text), max_chars) or ""
+
+
+def system_processes(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    max_results = clamp_int(args.get("max_results"), 80, 1, 500)
+    include_cmdline = as_bool(args.get("include_cmdline"), True)
+    query = str(args.get("query") or "").strip().lower()
+    processes: list[dict[str, Any]] = []
+    proc_root = Path("/proc")
+    for proc_dir in proc_root.iterdir() if proc_root.exists() else []:
+        pid = proc_dir.name
+        if not pid.isdigit():
+            continue
+        status_text = _read_proc_text(proc_dir / "status")
+        if not status_text:
+            continue
+        name = _proc_status_field(status_text, "Name") or ""
+        uid_text = _proc_status_field(status_text, "Uid")
+        user = _uid_to_user(uid_text)
+        state = _proc_status_field(status_text, "State")
+        ppid_text = _proc_status_field(status_text, "PPid")
+        rss_text = _proc_status_field(status_text, "VmRSS")
+        cmdline = _proc_cmdline(pid) if include_cmdline else ""
+        haystack = " ".join(str(part or "") for part in (pid, name, user, state, cmdline)).lower()
+        if query and query not in haystack:
+            continue
+        processes.append({
+            "pid": int(pid),
+            "ppid": int(ppid_text) if ppid_text and ppid_text.isdigit() else None,
+            "user": user,
+            "name": name,
+            "state": state,
+            "rss_kb": int(rss_text.split()[0]) if rss_text and rss_text.split()[0].isdigit() else None,
+            "cmdline": cmdline if include_cmdline else None,
+        })
+    processes.sort(key=lambda item: item.get("pid") or 0)
+    total = len(processes)
+    return {
+        "ok": True,
+        "action": "processes",
+        "process_count": total,
+        "returned": min(total, max_results),
+        "truncated": total > max_results,
+        "processes": processes[:max_results],
+    }
+
+
+def system_resources(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    meminfo: dict[str, int] = {}
+    for line in _read_proc_text(Path("/proc/meminfo"), 12000).splitlines():
+        parts = line.replace(":", "").split()
+        if len(parts) >= 2 and parts[1].isdigit():
+            meminfo[parts[0]] = int(parts[1])
+    loadavg = _read_proc_text(Path("/proc/loadavg"), 200).strip()
+    uptime_parts = _read_proc_text(Path("/proc/uptime"), 100).split()
+    disk = shutil.disk_usage(root)
+    total_kb = meminfo.get("MemTotal")
+    available_kb = meminfo.get("MemAvailable")
+    return {
+        "ok": True,
+        "action": "resources",
+        "cpu_count": os.cpu_count(),
+        "loadavg": loadavg,
+        "uptime_seconds": float(uptime_parts[0]) if uptime_parts else None,
+        "memory": {
+            "total_kb": total_kb,
+            "available_kb": available_kb,
+            "used_percent": round((1 - (available_kb / total_kb)) * 100, 2) if total_kb and available_kb is not None else None,
+        },
+        "project_disk": {
+            "path": str(root),
+            "total_bytes": disk.total,
+            "used_bytes": disk.used,
+            "free_bytes": disk.free,
+            "used_percent": round((disk.used / disk.total) * 100, 2) if disk.total else None,
+        },
+    }
+
+
+def _decode_proc_ipv4(hex_value: str) -> str:
+    try:
+        return ".".join(str(part) for part in reversed(bytes.fromhex(hex_value)))
+    except Exception:
+        return hex_value
+
+
+def _socket_inode_process_map(max_pids: int = 5000) -> dict[str, list[int]]:
+    inode_map: dict[str, list[int]] = {}
+    proc_root = Path("/proc")
+    scanned = 0
+    for proc_dir in proc_root.iterdir() if proc_root.exists() else []:
+        pid = proc_dir.name
+        if not pid.isdigit():
+            continue
+        scanned += 1
+        if scanned > max_pids:
+            break
+        fd_dir = proc_dir / "fd"
+        try:
+            fds = list(fd_dir.iterdir())
+        except OSError:
+            continue
+        for fd in fds[:512]:
+            try:
+                target = os.readlink(fd)
+            except OSError:
+                continue
+            match = re.fullmatch(r"socket:\[(\d+)\]", target)
+            if match:
+                inode_map.setdefault(match.group(1), []).append(int(pid))
+    return inode_map
+
+
+def system_ports(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    max_results = clamp_int(args.get("max_results"), 120, 1, 500)
+    listen_only = as_bool(args.get("listen_only"), True)
+    query = str(args.get("query") or "").strip().lower()
+    inode_map = _socket_inode_process_map()
+    tcp_states = {"0A": "LISTEN", "01": "ESTABLISHED", "02": "SYN_SENT", "03": "SYN_RECV", "04": "FIN_WAIT1", "05": "FIN_WAIT2", "06": "TIME_WAIT", "07": "CLOSE", "08": "CLOSE_WAIT", "09": "LAST_ACK"}
+    entries: list[dict[str, Any]] = []
+    for rel_path, protocol in (("tcp", "tcp"), ("tcp6", "tcp6"), ("udp", "udp"), ("udp6", "udp6")):
+        path = Path("/proc/net") / rel_path
+        lines = _read_proc_text(path, 1_000_000).splitlines()[1:]
+        for line in lines:
+            parts = line.split()
+            if len(parts) < 10:
+                continue
+            local = parts[1]
+            state_code = parts[3]
+            inode = parts[9]
+            if listen_only and protocol.startswith("tcp") and state_code != "0A":
+                continue
+            addr_hex, port_hex = local.split(":", 1)
+            address = _decode_proc_ipv4(addr_hex) if protocol == "tcp" or protocol == "udp" else ("::" if set(addr_hex) == {"0"} else addr_hex)
+            port = int(port_hex, 16)
+            pids = sorted(set(inode_map.get(inode, [])))[:8]
+            entry = {
+                "protocol": protocol,
+                "local_address": address,
+                "port": port,
+                "state": tcp_states.get(state_code, state_code),
+                "inode": inode,
+                "pids": pids,
+            }
+            haystack = json.dumps(entry, sort_keys=True).lower()
+            if query and query not in haystack:
+                continue
+            entries.append(entry)
+    entries.sort(key=lambda item: (str(item["protocol"]), int(item["port"]), str(item["local_address"])))
+    total = len(entries)
+    return {
+        "ok": True,
+        "action": "ports",
+        "port_count": total,
+        "returned": min(total, max_results),
+        "truncated": total > max_results,
+        "listen_only": listen_only,
+        "ports": entries[:max_results],
+    }
+
+
+def system_summary(root: Path, args: dict[str, Any]) -> dict[str, Any]:
+    process_args = {**args, "max_results": min(clamp_int(args.get("max_results"), 20, 1, 100), 40), "include_cmdline": False}
+    port_args = {**args, "max_results": min(clamp_int(args.get("max_results"), 40, 1, 120), 80), "listen_only": True}
+    return {
+        "ok": True,
+        "action": "summary",
+        "resources": system_resources(root, args),
+        "processes": system_processes(root, process_args),
+        "ports": system_ports(root, port_args),
+    }
+
+
+def _compact_fleet_text(value: Any, max_chars: int = 500) -> Any:
+    if value is None:
+        return None
+    text = str(value)
+    if len(text) <= max_chars:
+        return value
+    return text[: max(0, max_chars - 40)] + f"... [truncated {len(text) - max(0, max_chars - 40)} chars]"
+
+
+def _compact_fleet_record(record: Any) -> Any:
+    if not isinstance(record, dict):
+        return record
+    errors = record.get("errors") if isinstance(record.get("errors"), list) else []
+    usage = record.get("usage") if isinstance(record.get("usage"), list) else []
+    last_usage = usage[-1] if usage and isinstance(usage[-1], dict) else None
+    return {
+        "agent_id": record.get("agent_id"),
+        "alive": record.get("alive"),
+        "status": record.get("status"),
+        "last_status": record.get("last_status"),
+        "last_event_type": record.get("last_event_type"),
+        "model": record.get("model"),
+        "run_as_user": record.get("run_as_user"),
+        "cwd": record.get("cwd"),
+        "started_at": record.get("started_at"),
+        "updated_at": record.get("updated_at"),
+        "event_count": record.get("event_count"),
+        "error_count": len(errors),
+        "last_error": _compact_fleet_text(errors[-1].get("message") if errors and isinstance(errors[-1], dict) else None, 360),
+        "last_task": _compact_fleet_text(record.get("last_task"), 420),
+        "last_agent_message": _compact_fleet_text(record.get("last_agent_message"), 420),
+        "last_usage": last_usage,
+    }
+
+
+def compact_fleet_response(value: Any, *, max_agents: int = 16) -> Any:
+    if not isinstance(value, dict):
+        return value
+    compact = dict(value)
+    agents = value.get("agents")
+    if isinstance(agents, dict):
+        items = sorted(agents.items())
+        compact["agents"] = {agent_id: _compact_fleet_record(record) for agent_id, record in items[:max_agents]}
+        compact["agent_count"] = len(items)
+        compact["truncated_agents"] = len(items) > max_agents
+    for key in ("stdout", "stderr", "last_task", "last_agent_message"):
+        if key in compact:
+            compact[key] = _compact_fleet_text(compact[key], 800)
+    compact["compact"] = True
+    return compact
+
+
+INTERNAL_TOOLS = build_internal_tools()
+
+def call_tool(root, name, args):
+    if not isinstance(args, dict): args = {}
+    
+    if name == "Kerosene.Project":
+        action = args.get("action")
+        if action == "tree": return INTERNAL_TOOLS["get_project_tree"](root, args)
+        if action == "list": return INTERNAL_TOOLS["list_directory"](root, args)
+        if action == "summary": return INTERNAL_TOOLS["project_summary"](root, args)
+        
+    elif name == "Kerosene.Git":
+        action = args.get("action")
+        if action == "status": return INTERNAL_TOOLS["kerosene_git_status"](root, args)
+        if action == "clean": return INTERNAL_TOOLS["kerosene_clean_worktree"](root, args)
+        if action == "dispatch_next": return INTERNAL_TOOLS["kerosene_dispatch_next"](root, args)
+        if action == "collect": return INTERNAL_TOOLS["kerosene_collect_agent_result"](root, args)
+        if action == "commit": return INTERNAL_TOOLS["kerosene_commit_agent_output"](root, args)
+
+    elif name == "Kerosene.ReadCode":
+        if "start_line" in args or "end_line" in args:
+            translated = dict(args)
+            if "end_line" in args:
+                start = int(args.get("start_line") or 1)
+                end = int(args["end_line"])
+                translated["max_lines"] = max(1, end - start + 1)
+                translated.pop("end_line", None)
+            return INTERNAL_TOOLS["read_file_lines"](root, translated)
+        return INTERNAL_TOOLS["read_file"](root, args)
+
+    elif name == "Kerosene.Search":
+        return INTERNAL_TOOLS["run_rg"](root, {
+            "query": args.get("query", ""),
+            "path": args.get("path", "."),
+            "max_count": args.get("max_results", 200)
+        })
+
+    elif name == "Kerosene.Edit":
+        action = args.get("action")
+        if action == "write": return INTERNAL_TOOLS["write_file"](root, args)
+        if action == "replace": return INTERNAL_TOOLS["replace_text_in_file"](root, args)
+        if action == "multi_edit": return INTERNAL_TOOLS["multi_edit"](root, args)
+        if action == "patch": return INTERNAL_TOOLS["apply_patch"](root, args)
+        if action == "resilient": return INTERNAL_TOOLS["resilient_apply_change"](root, args)
+        if action == "rollback": return INTERNAL_TOOLS["rollback_last_patch"](root, args)
+
+    elif name == "Kerosene.Validate":
+        target = args.get("target")
+        if target == "frontend": return INTERNAL_TOOLS["validate_frontend"](root, args)
+        if target == "backend": return INTERNAL_TOOLS["validate_backend"](root, args)
+        if target == "changed": return INTERNAL_TOOLS["validate_changed_files"](root, args)
+        if target == "mcp": return INTERNAL_TOOLS["validate_mcp"](root, args)
+
+    elif name == "Kerosene.System":
+        action = args.get("action") or "summary"
+        if action == "summary": return INTERNAL_TOOLS["system_summary"](root, args)
+        if action == "processes": return INTERNAL_TOOLS["system_processes"](root, args)
+        if action == "ports": return INTERNAL_TOOLS["system_ports"](root, args)
+        if action == "resources": return INTERNAL_TOOLS["system_resources"](root, args)
+
+    elif name == "Fleet":
+        fleet = args.get("fleet", "codex")
+        action = args.get("action")
+        prefix = "agy" if fleet == "agy" else "fleet"
+        
+        tool_name = f"{prefix}_{action}"
+        if action == "start": tool_name = f"{prefix}_start_worker"
+        elif action == "stop": tool_name = f"{prefix}_stop_worker"
+        elif action == "resume": tool_name = f"{prefix}_resume_worker"
+        elif action == "users": tool_name = f"{prefix}_agent_users"
+        elif action == "quota": tool_name = f"{prefix}_quota_probe_all"
+        elif action == "usage": tool_name = f"{prefix}_usage_report"
+        
+        script = AGY_FLEET_SCRIPT if fleet == "agy" else CODEX_FLEET_SCRIPT
+        result = call_mcp_proxy(script, tool_name, args, timeout_seconds=proxy_timeout_seconds(tool_name, args))
+        return compact_fleet_response(result)
+
+    # Fallback to direct internal tools call
+    if name in INTERNAL_TOOLS:
+        return INTERNAL_TOOLS[name](root, args)
+    raise RuntimeError(f"Unknown tool: {name}")
+
+# ==========================================
+
+
 def main() -> None:
     args = parse_args()
     root = resolve_root(Path(args.root))
     McpServer(root).serve()
-
 
 if __name__ == "__main__":
     main()

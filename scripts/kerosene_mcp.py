@@ -900,7 +900,7 @@ Use the repository-local orchestration queue as the source of truth:
 - {NIGHTLY_QUEUE_REL.as_posix()}
 - {NIGHTLY_STATE_REL.as_posix()}
 
-Implement only the task section below. Do not broaden scope. Do not run scripts/start-local.sh.
+Implement only the task section below. Do not broaden scope. Do not run infra/scripts/local/control.sh start.
 Do not commit; the Kerosene MCP orchestrator will validate and commit locally.
 Do not use git add . If validation is blocked by sandbox, report the exact command and error.
 
@@ -1653,8 +1653,8 @@ def project_summary(root: Path, _args: dict[str, Any]) -> dict[str, Any]:
         components.append({"name": "frontend", "stack": "Flutter/Dart app"})
     if (root / "backend/mpc-sidecar/go.mod").exists():
         components.append({"name": "backend/mpc-sidecar", "stack": "Go MPC sidecar"})
-    if (root / "backend/kerosene-infrastructure").exists():
-        components.append({"name": "backend/kerosene-infrastructure", "stack": "Docker/local infrastructure"})
+    if (root / "infra").exists():
+        components.append({"name": "infra", "stack": "Docker/Kubernetes/runtime infrastructure"})
     if (root / "docs").exists():
         components.append({"name": "docs", "stack": "Project documentation"})
 

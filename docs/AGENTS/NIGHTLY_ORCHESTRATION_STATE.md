@@ -3,7 +3,7 @@
 Status: active
 Current window: now until 12:00 America/Sao_Paulo
 Cadence: hourly
-Start-local policy: ignored; do not run `scripts/start-local.sh`.
+Start-local policy: ignored; do not run `infra/scripts/local/control.sh start`.
 Implementation concurrency: 1 agent maximum.
 Read-only concurrency: 2 agents maximum only for non-overlapping audit scopes.
 
@@ -37,7 +37,7 @@ Status: queue completed
 
 ## Blockers
 
-- `scripts/start-local.sh` intentionally disabled by user instruction.
+- `infra/scripts/local/control.sh start` intentionally disabled by user instruction.
 - Some agent sandboxes cannot create `.git/index.lock`; orchestrator may need to commit after validation.
 - Some agent sandboxes cannot run Gradle due socket/network/cache restrictions; orchestrator should rerun validations from main shell when possible.
 
