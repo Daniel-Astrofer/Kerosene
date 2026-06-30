@@ -817,7 +817,7 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     required bool isLoading,
   }) {
     return SendAmountStep(
-      topBar: _buildInternalTopBar(context),
+      onBack: _handleBack,
       amount: _amount,
       selectedCurrency: _selectedCurrency,
       lockedAmountBtc: _lockedAmountBtc,
