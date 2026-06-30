@@ -1,6 +1,8 @@
 import 'dart:convert';
+import 'dart:math';
 
 import 'package:cryptography/cryptography.dart';
+import 'package:crypto/crypto.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_secure_storage/flutter_secure_storage.dart';
@@ -35,32 +37,41 @@ class SovereignAuthException implements Exception {
 }
 
 abstract interface class PasskeyCryptographyService {
-  Future<Uint8List> generateKeyPair();
-  Future<Uint8List?> getPublicKey();
-  Future<bool> hasRegisteredKey();
+  Future<Uint8List> generateKeyPair({
+    String? subject,
+    Uint8List? credentialId,
+  });
+  Future<Uint8List?> getCredentialId({String? subject});
+  Future<Uint8List?> getPublicKey({String? subject});
+  Future<bool> hasRegisteredKey({String? subject});
   Future<String> getDeviceName();
   Future<Uint8List> signBytes(
     Uint8List data, {
     String? localizedReason,
+    String? subject,
   });
-  Future<String> signChallenge(String hexChallenge);
-  Future<int> nextSignatureCounter();
+  Future<String> signChallenge(String hexChallenge, {String? subject});
+  Future<int> nextSignatureCounter({String? subject});
 }
 
 abstract interface class SovereignKeyStore {
   Future<void> saveKeyMaterial({
     required Uint8List privateKeySeed,
     required Uint8List publicKey,
+    Uint8List? credentialId,
+    String? subject,
   });
-  Future<Uint8List?> readPrivateKeySeed();
-  Future<Uint8List?> readPublicKey();
-  Future<int> nextSignatureCounter();
+  Future<Uint8List?> readCredentialId({String? subject});
+  Future<Uint8List?> readPrivateKeySeed({String? subject});
+  Future<Uint8List?> readPublicKey({String? subject});
+  Future<int> nextSignatureCounter({String? subject});
 }
 
 class SecureStorageSovereignKeyStore implements SovereignKeyStore {
   static const String _privateKeySeedStorageKey = 'sovereign_auth_seed';
   static const String _publicKeyStorageKey = 'sovereign_auth_pubkey';
   static const String _signatureCounterStorageKey = 'sovereign_auth_sign_count';
+  static const String _credentialIdStorageKey = 'sovereign_auth_credential_id';
 
   final FlutterSecureStorage _secureStorage;
 
@@ -77,22 +88,32 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
   Future<void> saveKeyMaterial({
     required Uint8List privateKeySeed,
     required Uint8List publicKey,
+    Uint8List? credentialId,
+    String? subject,
   }) async {
     try {
       await _secureStorage.write(
-        key: _privateKeySeedStorageKey,
+        key: _storageKey(_privateKeySeedStorageKey, subject),
         value: base64Encode(privateKeySeed),
         iOptions: _iosOptions(),
         aOptions: _androidOptions(),
       );
       await _secureStorage.write(
-        key: _publicKeyStorageKey,
+        key: _storageKey(_publicKeyStorageKey, subject),
         value: base64Encode(publicKey),
         iOptions: _iosOptions(),
         aOptions: _androidOptions(),
       );
+      if (credentialId != null) {
+        await _secureStorage.write(
+          key: _storageKey(_credentialIdStorageKey, subject),
+          value: base64Encode(credentialId),
+          iOptions: _iosOptions(),
+          aOptions: _androidOptions(),
+        );
+      }
       await _secureStorage.write(
-        key: _signatureCounterStorageKey,
+        key: _storageKey(_signatureCounterStorageKey, subject),
         value: '0',
         iOptions: _iosOptions(),
         aOptions: _androidOptions(),
@@ -107,20 +128,26 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
   }
 
   @override
-  Future<Uint8List?> readPrivateKeySeed() async {
-    return _readBytes(_privateKeySeedStorageKey);
+  Future<Uint8List?> readCredentialId({String? subject}) async {
+    return _readBytesWithLegacyFallback(_credentialIdStorageKey, subject);
   }
 
   @override
-  Future<Uint8List?> readPublicKey() async {
-    return _readBytes(_publicKeyStorageKey);
+  Future<Uint8List?> readPrivateKeySeed({String? subject}) async {
+    return _readBytesWithLegacyFallback(_privateKeySeedStorageKey, subject);
   }
 
   @override
-  Future<int> nextSignatureCounter() async {
+  Future<Uint8List?> readPublicKey({String? subject}) async {
+    return _readBytesWithLegacyFallback(_publicKeyStorageKey, subject);
+  }
+
+  @override
+  Future<int> nextSignatureCounter({String? subject}) async {
     try {
+      final key = _storageKey(_signatureCounterStorageKey, subject);
       final currentRaw = await _secureStorage.read(
-        key: _signatureCounterStorageKey,
+        key: key,
         iOptions: _iosOptions(),
         aOptions: _androidOptions(),
       );
@@ -128,7 +155,7 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
       final next = current + 1;
 
       await _secureStorage.write(
-        key: _signatureCounterStorageKey,
+        key: key,
         value: next.toString(),
         iOptions: _iosOptions(),
         aOptions: _androidOptions(),
@@ -142,6 +169,17 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
         cause: error,
       );
     }
+  }
+
+  Future<Uint8List?> _readBytesWithLegacyFallback(
+    String baseKey,
+    String? subject,
+  ) async {
+    final scopedValue = await _readBytes(_storageKey(baseKey, subject));
+    if (scopedValue != null || subject == null || subject.trim().isEmpty) {
+      return scopedValue;
+    }
+    return _readBytes(baseKey);
   }
 
   Future<Uint8List?> _readBytes(String key) async {
@@ -168,6 +206,16 @@ class SecureStorageSovereignKeyStore implements SovereignKeyStore {
         cause: error,
       );
     }
+  }
+
+  String _storageKey(String baseKey, String? subject) {
+    final normalized = subject?.trim().toLowerCase();
+    if (normalized == null || normalized.isEmpty) {
+      return baseKey;
+    }
+    final digest = sha256.convert(utf8.encode(normalized)).bytes;
+    final suffix = base64Url.encode(digest).replaceAll('=', '');
+    return '$baseKey.$suffix';
   }
 }
 
@@ -318,7 +366,10 @@ class SovereignAuthService implements PasskeyCryptographyService {
   SovereignAuthService._internal() : this();
 
   @override
-  Future<Uint8List> generateKeyPair() async {
+  Future<Uint8List> generateKeyPair({
+    String? subject,
+    Uint8List? credentialId,
+  }) async {
     await _presenceVerifier.ensureLocalCredentialsAvailable();
 
     try {
@@ -332,6 +383,8 @@ class SovereignAuthService implements PasskeyCryptographyService {
       await _keyStore.saveKeyMaterial(
         privateKeySeed: privateKeySeed,
         publicKey: publicKey,
+        credentialId: credentialId,
+        subject: subject,
       );
 
       return publicKey;
@@ -349,13 +402,18 @@ class SovereignAuthService implements PasskeyCryptographyService {
   }
 
   @override
-  Future<Uint8List?> getPublicKey() {
-    return _keyStore.readPublicKey();
+  Future<Uint8List?> getCredentialId({String? subject}) {
+    return _keyStore.readCredentialId(subject: subject);
   }
 
   @override
-  Future<bool> hasRegisteredKey() async {
-    final publicKey = await _keyStore.readPublicKey();
+  Future<Uint8List?> getPublicKey({String? subject}) {
+    return _keyStore.readPublicKey(subject: subject);
+  }
+
+  @override
+  Future<bool> hasRegisteredKey({String? subject}) async {
+    final publicKey = await _keyStore.readPublicKey(subject: subject);
     return publicKey != null;
   }
 
@@ -372,9 +430,9 @@ class SovereignAuthService implements PasskeyCryptographyService {
   }
 
   @override
-  Future<String> signChallenge(String hexChallenge) async {
+  Future<String> signChallenge(String hexChallenge, {String? subject}) async {
     final challengeBytes = _decodeHex(hexChallenge);
-    final signature = await signBytes(challengeBytes);
+    final signature = await signBytes(challengeBytes, subject: subject);
     return base64Encode(signature);
   }
 
@@ -382,6 +440,7 @@ class SovereignAuthService implements PasskeyCryptographyService {
   Future<Uint8List> signBytes(
     Uint8List data, {
     String? localizedReason,
+    String? subject,
   }) async {
     if (data.isEmpty) {
       throw const SovereignAuthException(
@@ -393,7 +452,9 @@ class SovereignAuthService implements PasskeyCryptographyService {
     await verifyUserPresence(localizedReason: localizedReason);
 
     try {
-      final privateKeySeed = await _keyStore.readPrivateKeySeed();
+      final privateKeySeed = await _keyStore.readPrivateKeySeed(
+        subject: subject,
+      );
       if (privateKeySeed == null) {
         throw const SovereignAuthException(
           code: SovereignAuthErrorCodes.keyNotFound,
@@ -419,8 +480,14 @@ class SovereignAuthService implements PasskeyCryptographyService {
   }
 
   @override
-  Future<int> nextSignatureCounter() {
-    return _keyStore.nextSignatureCounter();
+  Future<int> nextSignatureCounter({String? subject}) {
+    return _keyStore.nextSignatureCounter(subject: subject);
+  }
+
+  static Uint8List generateCredentialId() {
+    final random = Random.secure();
+    return Uint8List.fromList(
+        List<int>.generate(32, (_) => random.nextInt(256)));
   }
 
   Uint8List _decodeHex(String hex) {

@@ -4,43 +4,65 @@ import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/core/services/sovereign_auth_service.dart';
 
 class _InMemorySovereignKeyStore implements SovereignKeyStore {
-  Uint8List? privateKeySeed;
-  Uint8List? publicKey;
-  int signatureCounter = 0;
+  final Map<String, Uint8List> privateKeySeeds = {};
+  final Map<String, Uint8List> publicKeys = {};
+  final Map<String, Uint8List> credentialIds = {};
+  final Map<String, int> signatureCounters = {};
   int saveCalls = 0;
 
   @override
   Future<void> saveKeyMaterial({
     required Uint8List privateKeySeed,
     required Uint8List publicKey,
+    Uint8List? credentialId,
+    String? subject,
   }) async {
     saveCalls++;
-    this.privateKeySeed = Uint8List.fromList(privateKeySeed);
-    this.publicKey = Uint8List.fromList(publicKey);
-    signatureCounter = 0;
+    final key = _key(subject);
+    privateKeySeeds[key] = Uint8List.fromList(privateKeySeed);
+    publicKeys[key] = Uint8List.fromList(publicKey);
+    if (credentialId != null) {
+      credentialIds[key] = Uint8List.fromList(credentialId);
+    }
+    signatureCounters[key] = 0;
   }
 
   @override
-  Future<Uint8List?> readPrivateKeySeed() async {
+  Future<Uint8List?> readCredentialId({String? subject}) async {
+    final credentialId = credentialIds[_key(subject)];
+    if (credentialId == null) {
+      return null;
+    }
+    return Uint8List.fromList(credentialId);
+  }
+
+  @override
+  Future<Uint8List?> readPrivateKeySeed({String? subject}) async {
+    final privateKeySeed = privateKeySeeds[_key(subject)];
     if (privateKeySeed == null) {
       return null;
     }
-    return Uint8List.fromList(privateKeySeed!);
+    return Uint8List.fromList(privateKeySeed);
   }
 
   @override
-  Future<Uint8List?> readPublicKey() async {
+  Future<Uint8List?> readPublicKey({String? subject}) async {
+    final publicKey = publicKeys[_key(subject)];
     if (publicKey == null) {
       return null;
     }
-    return Uint8List.fromList(publicKey!);
+    return Uint8List.fromList(publicKey);
   }
 
   @override
-  Future<int> nextSignatureCounter() async {
-    signatureCounter++;
-    return signatureCounter;
+  Future<int> nextSignatureCounter({String? subject}) async {
+    final key = _key(subject);
+    final next = (signatureCounters[key] ?? 0) + 1;
+    signatureCounters[key] = next;
+    return next;
   }
+
+  String _key(String? subject) => subject ?? '';
 }
 
 class _SpyPresenceVerifier implements SovereignPresenceVerifier {
@@ -105,17 +127,43 @@ void main() {
 
       expect(presenceVerifier.ensureCalls, 1);
       expect(keyStore.saveCalls, 1);
-      expect(keyStore.privateKeySeed, isNotNull);
+      expect(keyStore.privateKeySeeds[''], isNotNull);
       expect(
         generatedPublicKey,
-        orderedEquals(keyStore.publicKey!),
+        orderedEquals(keyStore.publicKeys['']!),
       );
       expect(
         await service.getPublicKey(),
-        orderedEquals(keyStore.publicKey!),
+        orderedEquals(keyStore.publicKeys['']!),
       );
       expect(await service.hasRegisteredKey(), isTrue);
       expect(await service.getDeviceName(), 'Test Device');
+    });
+
+    test('stores generated key material independently per subject', () async {
+      final firstCredentialId = Uint8List.fromList(List.filled(32, 1));
+      final secondCredentialId = Uint8List.fromList(List.filled(32, 2));
+
+      final firstKey = await service.generateKeyPair(
+        subject: 'alice',
+        credentialId: firstCredentialId,
+      );
+      final secondKey = await service.generateKeyPair(
+        subject: 'bob',
+        credentialId: secondCredentialId,
+      );
+
+      expect(firstKey, isNot(orderedEquals(secondKey)));
+      expect(
+        await service.getCredentialId(subject: 'alice'),
+        orderedEquals(firstCredentialId),
+      );
+      expect(
+        await service.getCredentialId(subject: 'bob'),
+        orderedEquals(secondCredentialId),
+      );
+      expect(await service.hasRegisteredKey(subject: 'alice'), isTrue);
+      expect(await service.hasRegisteredKey(subject: 'bob'), isTrue);
     });
 
     test('signs bytes using the stored seed after verifying user presence',
@@ -134,7 +182,7 @@ void main() {
         () async {
       expect(await service.nextSignatureCounter(), 1);
       expect(await service.nextSignatureCounter(), 2);
-      expect(keyStore.signatureCounter, 2);
+      expect(keyStore.signatureCounters[''], 2);
     });
 
     test('throws a typed error when the challenge is not valid hex', () async {
