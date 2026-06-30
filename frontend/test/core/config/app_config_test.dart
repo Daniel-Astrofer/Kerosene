@@ -4,6 +4,15 @@ import 'package:kerosene/core/config/app_config.dart';
 import 'package:test/test.dart';
 
 void main() {
+  test('mobile defaults use the current local-full onion service', () {
+    final nodeUri = Uri.parse(AppConfig.nodeIS);
+
+    expect(nodeUri.scheme, 'http');
+    expect(nodeUri.host, endsWith('.onion'));
+    expect(AppConfig.nodeCH, AppConfig.nodeIS);
+    expect(AppConfig.nodeSG, AppConfig.nodeIS);
+  });
+
   test('activeNodeName tolerates local and custom API URLs', () {
     final previous = AppConfig.activeNodeUrl;
     addTearDown(() => AppConfig.activeNodeUrl = previous);

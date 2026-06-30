@@ -349,7 +349,7 @@ class TorService {
               final errorCode = connectRes[1];
               final errorMsg = _getSocksErrorMessage(errorCode);
               debugPrint(
-                ' onion TorService [Relay]: SOCKS5 Connect failure: $errorMsg on attempt $relayAttempts/$maxRelayAttempts',
+                ' onion TorService [Relay]: SOCKS5 Connect failure to $targetHost:$targetPort: $errorMsg on attempt $relayAttempts/$maxRelayAttempts',
               );
               if (errorCode == 0xF2 && !restartedForStaleDescriptor) {
                 restartedForStaleDescriptor = true;
@@ -361,6 +361,12 @@ class TorService {
                 }
                 relayAttempts = 0;
                 continue;
+              }
+              if (_isTerminalOnionDescriptorError(errorCode)) {
+                relayAttempts = maxRelayAttempts;
+                throw SocketException(
+                  'Tor SOCKS5 to $targetHost refused: $errorMsg',
+                );
               }
               if (relayAttempts >= maxRelayAttempts) {
                 throw SocketException(
@@ -442,6 +448,13 @@ class TorService {
       _ => 'Unknown SOCKS error',
     };
   }
+
+  bool _isTerminalOnionDescriptorError(int code) =>
+      code == 0xF0 ||
+      code == 0xF1 ||
+      code == 0xF5 ||
+      code == 0xF6 ||
+      code == 0xF7;
 }
 
 /// Provides access to the singleton TorService.

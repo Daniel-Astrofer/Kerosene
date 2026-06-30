@@ -2,21 +2,24 @@
 class AppConfig {
   // ==================== Node Routing ====================
 
+  // Local-full Kubernetes onion currently persisted under
+  // /home/omega/.local/state/kerosene/tor/keys/local-full.
+  // Production builds should override this with KERO_NODE_*_URL.
+  static const String _localFullDefaultOnionUrl =
+      'http://exze5uokdpao4lwdodnlsd4pvfm25ntpkwh7xas5fefuzdmiisr4u7yd.onion';
+
   /// Endereços .onion dos nós remotos
   static const String nodeIS = String.fromEnvironment(
     'KERO_NODE_IS_URL',
-    defaultValue:
-        'http://2o3rbpfmyzswqxam52gnqtyq6ouhzmaoosfiidcfzb3ja25dx7g4yhad.onion',
+    defaultValue: _localFullDefaultOnionUrl,
   );
   static const String nodeCH = String.fromEnvironment(
     'KERO_NODE_CH_URL',
-    defaultValue:
-        'http://tfex2ilkkobxbt425oggrko4uy4dwjqjw3vfutc3k7olg7p4mvczmtyd.onion',
+    defaultValue: _localFullDefaultOnionUrl,
   );
   static const String nodeSG = String.fromEnvironment(
     'KERO_NODE_SG_URL',
-    defaultValue:
-        'http://4uznfz5cd6cvyg4msqjx36gk27vo6bh5qekiif2gfxepqhtrpgaoddad.onion',
+    defaultValue: _localFullDefaultOnionUrl,
   );
 
   /// Mapeamento de nós com nomes amigáveis
