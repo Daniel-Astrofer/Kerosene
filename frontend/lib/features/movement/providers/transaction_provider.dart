@@ -173,13 +173,21 @@ Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
 // ==================== Transaction History (API) ====================
 
 /// Busca o histórico de transações a partir do dashboard KFE.
+///
+/// O cache fica indexado pelo escopo da sessão para impedir que histórico de uma
+/// conta seja reutilizado por outra após troca de usuário no mesmo app.
 final transactionHistoryProvider = FutureProvider<List<Transaction>>((
   ref,
 ) async {
-  if (ref.watch(sessionStorageScopeProvider) == null) {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
     return const <Transaction>[];
   }
+  return ref.watch(_scopedTransactionHistoryProvider(sessionScope).future);
+});
 
+final _scopedTransactionHistoryProvider =
+    FutureProvider.family<List<Transaction>, String>((ref, _) async {
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(page: 0, size: 50);
   final externalTransfers = await _loadExternalTransfersSafely(ref);
@@ -200,10 +208,20 @@ final pagedTransactionHistoryProvider =
   ref,
   request,
 ) async {
-  if (ref.watch(sessionStorageScopeProvider) == null) {
+  final sessionScope = ref.watch(sessionStorageScopeProvider);
+  if (sessionScope == null) {
     return const <Transaction>[];
   }
+  return ref.watch(_scopedPagedTransactionHistoryProvider((
+    sessionScope: sessionScope,
+    page: request.page,
+    size: request.size,
+  )).future);
+});
 
+final _scopedPagedTransactionHistoryProvider = FutureProvider.family<
+    List<Transaction>,
+    ({String sessionScope, int page, int size})>((ref, request) async {
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(
     page: request.page,

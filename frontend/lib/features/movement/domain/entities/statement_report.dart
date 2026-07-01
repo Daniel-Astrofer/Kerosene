@@ -10,6 +10,11 @@ class StatementReport {
   final int totalBalanceSats;
   final String dominantWalletName;
   final bool isPartial;
+  final int walletCount;
+  final int loadedTransactionCount;
+  final int includedTransactionCount;
+  final int ignoredFailedTransactionCount;
+  final int ignoredOutOfPeriodTransactionCount;
 
   const StatementReport({
     required this.wallets,
@@ -23,6 +28,11 @@ class StatementReport {
     required this.totalBalanceSats,
     required this.dominantWalletName,
     required this.isPartial,
+    required this.walletCount,
+    required this.loadedTransactionCount,
+    required this.includedTransactionCount,
+    required this.ignoredFailedTransactionCount,
+    required this.ignoredOutOfPeriodTransactionCount,
   });
 }
 

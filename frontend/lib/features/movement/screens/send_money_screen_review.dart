@@ -1,4 +1,5 @@
 import 'package:kerosene/features/movement/domain/entities/tx_status.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/features/movement/screens/send_money_formatters.dart';
 import 'package:kerosene/features/movement/widgets/movement_confirmation_surface.dart';
 
@@ -500,11 +501,11 @@ class _SendFlowColors {
   const _SendFlowColors._();
 
   static const background = Colors.black;
-  static const button = Color(0xFF131313);
-  static const shareButton = Color(0xFF1A1A1A);
-  static const border = Color(0xFF222222);
+  static const button = AppColors.hexFF131313;
+  static const shareButton = AppColors.hexFF1A1A1A;
+  static const border = AppColors.hexFF222222;
   static const text = Colors.white;
-  static const muted = Color(0xFF71717A);
-  static const buttonText = Color(0xFFE4E4E7);
-  static const success = Color(0xFF22C55E);
+  static const muted = AppColors.hexFF71717A;
+  static const buttonText = AppColors.hexFFE4E4E7;
+  static const success = AppColors.hexFF22C55E;
 }

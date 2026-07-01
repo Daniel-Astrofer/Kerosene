@@ -1,30 +1,19 @@
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
+import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/design_system/icons.dart';
 
-class TransactionValueEntryDetail {
-  final String label;
-  final String value;
-  final bool numeric;
-
-  const TransactionValueEntryDetail({
-    required this.label,
-    required this.value,
-    this.numeric = false,
-  });
-}
-
 class TransactionValueEntrySurface extends StatelessWidget {
   final VoidCallback onBack;
-  final String amountLabel;
   final String amountInput;
   final String unitLabel;
   final Currency currency;
   final String fiatReference;
-  final List<TransactionValueEntryDetail> details;
   final Widget? configuration;
   final bool showKeypad;
   final ValueChanged<String>? onAmountChanged;
@@ -37,12 +26,10 @@ class TransactionValueEntrySurface extends StatelessWidget {
   const TransactionValueEntrySurface({
     super.key,
     required this.onBack,
-    required this.amountLabel,
     this.amountInput = '0',
     this.unitLabel = '₿',
     this.currency = Currency.btc,
     required this.fiatReference,
-    this.details = const [],
     this.configuration,
     this.showKeypad = true,
     this.onAmountChanged,
@@ -72,29 +59,35 @@ class TransactionValueEntrySurface extends StatelessWidget {
                       ),
                       child: Center(
                         child: Padding(
-                          padding: const EdgeInsets.fromLTRB(3, 0, 3, 24),
-                          child: Column(
-                            mainAxisSize: MainAxisSize.min,
-                            crossAxisAlignment: CrossAxisAlignment.stretch,
-                            children: [
-                              _AmountEntryDisplay(
-                                amountInput: amountInput,
-                                unitLabel: unitLabel,
-                                currency: currency,
-                                fiatReference: fiatReference,
-                                editable: showKeypad,
-                                onAmountChanged: onAmountChanged,
-                                onFiatReferenceTap: onFiatReferenceTap,
-                                onSubmitted: () {
-                                  if (ctaEnabled && !isBusy) {
-                                    onCta();
-                                  }
-                                },
-                              ),
-                              if (configuration != null) configuration!,
-                              if (details.isNotEmpty)
-                                _AmountEntryDetails(details: details),
-                            ],
+                          padding: const EdgeInsets.fromLTRB(
+                            AppSpacing.xl2,
+                            AppSpacing.none,
+                            AppSpacing.xl2,
+                            AppSpacing.xl2,
+                          ),
+                          child: ConstrainedBox(
+                            constraints: const BoxConstraints(maxWidth: 448),
+                            child: Column(
+                              mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.stretch,
+                              children: [
+                                _AmountEntryDisplay(
+                                  amountInput: amountInput,
+                                  unitLabel: unitLabel,
+                                  currency: currency,
+                                  fiatReference: fiatReference,
+                                  editable: showKeypad,
+                                  onAmountChanged: onAmountChanged,
+                                  onFiatReferenceTap: onFiatReferenceTap,
+                                  onSubmitted: () {
+                                    if (ctaEnabled && !isBusy) {
+                                      onCta();
+                                    }
+                                  },
+                                ),
+                                if (configuration != null) configuration!,
+                              ],
+                            ),
                           ),
                         ),
                       ),
@@ -124,21 +117,29 @@ class _AmountEntryHeader extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.fromLTRB(3, 24, 3, 0),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.xl2,
+        AppSpacing.xl2,
+        AppSpacing.xl2,
+        AppSpacing.none,
+      ),
       child: Row(
         children: [
-          IconButton(
-            tooltip: MaterialLocalizations.of(context).backButtonTooltip,
-            onPressed: onBack,
-            icon: const Icon(KeroseneIcons.back, size: 24),
-            style: IconButton.styleFrom(
-              foregroundColor: _AmountEntryColors.text,
-              minimumSize: const Size.square(40),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          SizedBox.square(
+            dimension: 48,
+            child: IconButton(
+              tooltip: MaterialLocalizations.of(context).backButtonTooltip,
+              onPressed: onBack,
+              icon: const Icon(KeroseneIcons.back, size: 24),
+              style: IconButton.styleFrom(
+                foregroundColor: _AmountEntryColors.text,
+                minimumSize: const Size.square(48),
+                tapTargetSize: MaterialTapTargetSize.padded,
+              ),
             ),
           ),
           const Spacer(),
-          const SizedBox(width: 40),
+          const SizedBox(width: 48),
         ],
       ),
     );
@@ -314,7 +315,12 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
     final displayValue = '${widget.unitLabel}${_displayAmountLabel()}';
 
     return Padding(
-      padding: const EdgeInsets.fromLTRB(3, 0, 3, 32),
+      padding: const EdgeInsets.fromLTRB(
+        AppSpacing.none,
+        AppSpacing.none,
+        AppSpacing.none,
+        AppSpacing.xl2,
+      ),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
@@ -354,7 +360,9 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
                 ),
                 IgnorePointer(
                   child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: AppSpacing.xs,
+                    ),
                     child: FittedBox(
                       fit: BoxFit.scaleDown,
                       alignment: Alignment.center,
@@ -384,7 +392,7 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
             behavior: HitTestBehavior.opaque,
             onTap: widget.onFiatReferenceTap,
             child: AnimatedSwitcher(
-              duration: const Duration(milliseconds: 120),
+              duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
               child: Text(
                 widget.fiatReference,
                 key: ValueKey(widget.fiatReference),
@@ -409,86 +417,6 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
   }
 }
 
-class _AmountEntryDetails extends StatelessWidget {
-  final List<TransactionValueEntryDetail> details;
-
-  const _AmountEntryDetails({required this.details});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(3, 0, 3, 24),
-      child: Column(
-        children: [
-          for (final detail in details) _AmountEntryDetailRow(detail: detail),
-        ],
-      ),
-    );
-  }
-}
-
-class _AmountEntryDetailRow extends StatelessWidget {
-  final TransactionValueEntryDetail detail;
-
-  const _AmountEntryDetailRow({required this.detail});
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 20),
-      child: DecoratedBox(
-        decoration: const BoxDecoration(
-          border: Border(
-            bottom: BorderSide(color: _AmountEntryColors.divider),
-          ),
-        ),
-        child: Padding(
-          padding: const EdgeInsets.only(bottom: 10),
-          child: Row(
-            children: [
-              Expanded(
-                child: Text(
-                  detail.label,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  style: AppTypography.inter(
-                    color: _AmountEntryColors.text,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w300,
-                    height: 1.2,
-                    letterSpacing: 0,
-                  ),
-                ),
-              ),
-              const SizedBox(width: 16),
-              Flexible(
-                flex: 2,
-                child: Text(
-                  detail.value,
-                  maxLines: 1,
-                  overflow: TextOverflow.ellipsis,
-                  textAlign: TextAlign.right,
-                  style: AppTypography.inter(
-                    color: _AmountEntryColors.text,
-                    fontSize: 14,
-                    fontWeight:
-                        detail.numeric ? FontWeight.w600 : FontWeight.w300,
-                    height: 1.2,
-                    letterSpacing: detail.numeric ? 0.42 : 0,
-                    fontFeatures: detail.numeric
-                        ? const [FontFeature.tabularFigures()]
-                        : null,
-                  ),
-                ),
-              ),
-            ],
-          ),
-        ),
-      ),
-    );
-  }
-}
-
 class _AmountEntryBottom extends StatelessWidget {
   final String ctaLabel;
   final bool ctaEnabled;
@@ -505,15 +433,20 @@ class _AmountEntryBottom extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 24),
+      padding: const EdgeInsets.only(bottom: AppSpacing.xl2),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           Padding(
-            padding: const EdgeInsets.fromLTRB(3, 8, 3, 0),
+            padding: const EdgeInsets.fromLTRB(
+              AppSpacing.xl2,
+              AppSpacing.sm,
+              AppSpacing.xl2,
+              AppSpacing.none,
+            ),
             child: SizedBox(
               width: double.infinity,
-              height: 54,
+              height: 56,
               child: _AmountEntryButton(
                 label: ctaLabel,
                 enabled: ctaEnabled,
@@ -553,7 +486,7 @@ class _AmountEntryButton extends StatelessWidget {
           disabledBackgroundColor: _AmountEntryColors.button,
           disabledForegroundColor: _AmountEntryColors.muted,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(12),
+            borderRadius: BorderRadius.circular(16),
           ),
           textStyle: AppTypography.inter(
             fontSize: 14,
@@ -562,7 +495,7 @@ class _AmountEntryButton extends StatelessWidget {
           ),
         ),
         child: AnimatedSwitcher(
-          duration: const Duration(milliseconds: 140),
+          duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
           child: isBusy
               ? const SizedBox(
                   key: ValueKey('busy'),
@@ -588,9 +521,8 @@ class _AmountEntryButton extends StatelessWidget {
 class _AmountEntryColors {
   const _AmountEntryColors._();
 
-  static const background = Color(0xFF000000);
-  static const text = Color(0xFFFFFFFF);
-  static const muted = Color(0xFFA0A0A0);
-  static const button = Color(0xFF333333);
-  static const divider = Color(0xFF333333);
+  static const background = AppColors.hexFF000000;
+  static const text = AppColors.hexFFFFFFFF;
+  static const muted = AppColors.hexFFA0A09B;
+  static const button = AppColors.hexFF333333;
 }

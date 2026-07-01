@@ -863,20 +863,8 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
         btcBrl: btcBrl,
         amountVal: amountValue,
       ),
-      recipient: _currentRecipientLabel(),
-      recipientValue: _currentRecipientValue(),
-      railLabel: _railLabelForDestination(destination),
       onFiatReferenceTap: _toggleAmountCurrency,
     );
-  }
-
-  String _railLabelForDestination(SendDestinationAnalysis destination) {
-    return switch (railForSendDestination(destination)) {
-      MovementRail.paymentLink => 'Link',
-      MovementRail.lightning => 'Lightning',
-      MovementRail.onchain => 'On-chain',
-      _ => 'Kerosene',
-    };
   }
 
   String _currentRecipientValue() {

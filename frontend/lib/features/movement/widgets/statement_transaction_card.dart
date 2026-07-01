@@ -10,6 +10,7 @@ import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/currency_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
+import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/features/movement/utils/transaction_address_display.dart';
 import 'package:kerosene/features/movement/widgets/transaction_visuals.dart';
@@ -98,7 +99,7 @@ class _StatementTransactionScrollStackState
     final paintOrder = _paintOrder(expandedIndex);
 
     return AnimatedSize(
-      duration: KeroseneMotion.medium,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.medium),
       curve: KeroseneMotion.standard,
       alignment: Alignment.topCenter,
       child: SizedBox(
@@ -149,7 +150,7 @@ class _StatementTransactionScrollStackState
     final stackedTop = index * widget.stackGap;
     final top = naturalTop + (stackedTop - naturalTop) * collapseProgress;
     return AnimatedPositioned(
-      duration: KeroseneMotion.fast,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
       curve: KeroseneMotion.standard,
       left: 0,
       right: 0,
@@ -211,13 +212,36 @@ class StatementTransactionCard extends ConsumerWidget {
     final amountStatusGap = compact ? 10.0 : 16.0;
     final pillScale = compact ? 0.92 : 1.0;
 
+    if (mode == StatementTransactionCardMode.separated) {
+      return _BankStatementTransactionRow(
+        transaction: transaction,
+        amountLabel: amountLabel,
+        btcAmount: MoneyDisplay.formatAmountFromBtc(
+          btcAmount: transaction.signedAmountBTC,
+          currency: Currency.btc,
+          btcUsd: btcUsd,
+          btcEur: btcEur,
+          btcBrl: btcBrl,
+          signed: true,
+        ),
+        feeAmount: transaction.hasNetworkFee && transaction.feeSatoshis > 0
+            ? MoneyDisplay.format(
+                amount: transaction.feeBTC,
+                currency: Currency.btc,
+              )
+            : null,
+        expanded: expanded,
+        onTap: onTap,
+      );
+    }
+
     return Material(
       color: Colors.transparent,
       child: InkWell(
         onTap: onTap,
         borderRadius: BorderRadius.circular(28),
         child: AnimatedContainer(
-          duration: KeroseneMotion.medium,
+          duration: KeroseneMotion.duration(context, KeroseneMotion.medium),
           curve: KeroseneMotion.standard,
           padding: EdgeInsets.all(cardPadding),
           decoration: BoxDecoration(
@@ -269,7 +293,7 @@ class StatementTransactionCard extends ConsumerWidget {
                             letterSpacing: 0,
                           ),
                         ),
-                        const SizedBox(height: 3),
+                        const SizedBox(height: AppSpacing.xs),
                         Text(
                           counterparty,
                           maxLines: 1,
@@ -321,7 +345,10 @@ class StatementTransactionCard extends ConsumerWidget {
                 child: _StatusPill(status: transaction.status),
               ),
               AnimatedSize(
-                duration: KeroseneMotion.medium,
+                duration: KeroseneMotion.duration(
+                  context,
+                  KeroseneMotion.medium,
+                ),
                 curve: KeroseneMotion.standard,
                 alignment: Alignment.topCenter,
                 child: expanded
@@ -426,6 +453,501 @@ class StatementTransactionCard extends ConsumerWidget {
     final normalized = value.trim();
     if (normalized.length <= head + tail + 3) return normalized;
     return '${normalized.substring(0, head)}...${normalized.substring(normalized.length - tail)}';
+  }
+}
+
+String _bankTitle(Transaction tx) {
+  if (tx.isInternal) return 'Transferência interna';
+  if (tx.isLightning) return 'Pagamento Lightning';
+  if (tx.type == TransactionType.deposit ||
+      tx.type == TransactionType.receive) {
+    return 'Recebido';
+  }
+  if (tx.type == TransactionType.withdrawal) return 'Saque on-chain';
+  if (tx.type == TransactionType.send) return 'Enviado';
+  if (tx.type == TransactionType.fee) return 'Taxa de rede';
+  return 'Transação';
+}
+
+String _bankRailLabel(Transaction tx) {
+  if (tx.isInternal) return 'Transferência interna';
+  if (tx.isLightning) return 'Lightning';
+  if (tx.type == TransactionType.deposit) return 'Depósito on-chain';
+  if (tx.type == TransactionType.withdrawal) return 'Saque on-chain';
+  return 'On-chain';
+}
+
+String _bankStatusLabel(Transaction tx) {
+  return switch (tx.status) {
+    TransactionStatus.confirmed => 'Confirmado',
+    TransactionStatus.confirming => '${tx.confirmations} confirmações',
+    TransactionStatus.pending => 'Pendente',
+    TransactionStatus.failed => 'Falhou',
+  };
+}
+
+String _bankSubtitle(Transaction tx) {
+  final local = tx.timestamp.toLocal();
+  final hour = local.hour.toString().padLeft(2, '0');
+  final minute = local.minute.toString().padLeft(2, '0');
+  return '$hour:$minute · ${_bankRailLabel(tx)} · ${_bankStatusLabel(tx)}';
+}
+
+String _bankCounterparty(Transaction tx) {
+  final displayName =
+      tx.isDebit ? tx.receiverDisplayName : tx.senderDisplayName;
+  final address = resolvePrimaryTransactionAddress(tx);
+  final fallback = tx.description?.trim() ?? '';
+  final value = [
+    displayName,
+    address,
+    fallback,
+    'Carteira Kerosene',
+  ].firstWhere((value) => (value ?? '').trim().isNotEmpty)!;
+  final label = tx.isDebit ? 'Para' : 'De';
+  return '$label ${StatementTransactionCard._shorten(value, head: 18, tail: 8)}';
+}
+
+String _darkDetailValue(String value) {
+  final trimmed = value.trim();
+  if (trimmed.isEmpty) return '—';
+  return StatementTransactionCard._shorten(trimmed, head: 18, tail: 8);
+}
+
+class _BankStatementTransactionRow extends StatelessWidget {
+  final Transaction transaction;
+  final String amountLabel;
+  final String btcAmount;
+  final String? feeAmount;
+  final bool expanded;
+  final VoidCallback? onTap;
+
+  const _BankStatementTransactionRow({
+    required this.transaction,
+    required this.amountLabel,
+    required this.btcAmount,
+    required this.feeAmount,
+    required this.expanded,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final title = _bankTitle(transaction);
+    final counterparty = _bankCounterparty(transaction);
+    final subtitle = _bankSubtitle(transaction);
+    final amountColor = transaction.status == TransactionStatus.failed
+        ? AppColors.hexFFF4C7C7
+        : Colors.white;
+
+    return Material(
+      color: Colors.transparent,
+      child: InkWell(
+        onTap: onTap,
+        borderRadius: BorderRadius.circular(8),
+        child: AnimatedContainer(
+          duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+          curve: KeroseneMotion.standard,
+          padding: const EdgeInsets.symmetric(
+            horizontal: AppSpacing.xs,
+            vertical: 15,
+          ),
+          decoration: const BoxDecoration(
+            border: Border(
+              bottom: BorderSide(color: AppColors.hexFF222222),
+            ),
+          ),
+          child: Column(
+            children: [
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  _BankDirectionIcon(transaction: transaction),
+                  const SizedBox(width: AppSpacing.md),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          title,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodyMedium.copyWith(
+                            color: Colors.white,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                            letterSpacing: 0,
+                            height: 1.15,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          counterparty,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.bodySmall.copyWith(
+                            color: AppColors.hexFFB8BCC2,
+                            letterSpacing: 0,
+                            height: 1.22,
+                          ),
+                        ),
+                        const SizedBox(height: 3),
+                        Text(
+                          subtitle,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.caption.copyWith(
+                            color: AppColors.hexFF8A8A8E,
+                            letterSpacing: 0,
+                            height: 1.2,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                  const SizedBox(width: AppSpacing.md),
+                  ConstrainedBox(
+                    constraints: const BoxConstraints(maxWidth: 132),
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.end,
+                      children: [
+                        Text(
+                          amountLabel,
+                          textAlign: TextAlign.right,
+                          maxLines: 1,
+                          overflow: TextOverflow.ellipsis,
+                          style: AppTypography.financial(
+                            color: amountColor,
+                            fontSize: 14.5,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        FittedBox(
+                          fit: BoxFit.scaleDown,
+                          alignment: Alignment.centerRight,
+                          child: _DarkStatusPill(status: transaction.status),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+              AnimatedSize(
+                duration: KeroseneMotion.duration(
+                  context,
+                  KeroseneMotion.medium,
+                ),
+                curve: KeroseneMotion.standard,
+                alignment: Alignment.topCenter,
+                child: expanded
+                    ? Padding(
+                        padding: const EdgeInsets.only(top: AppSpacing.base),
+                        child: _BankTransactionDetailsTable(
+                          transaction: transaction,
+                          btcAmount: btcAmount,
+                          feeAmount: feeAmount,
+                        ),
+                      )
+                    : const SizedBox.shrink(),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BankDirectionIcon extends StatelessWidget {
+  final Transaction transaction;
+
+  const _BankDirectionIcon({required this.transaction});
+
+  @override
+  Widget build(BuildContext context) {
+    final icon = _icon();
+    final color = transaction.status == TransactionStatus.failed
+        ? AppColors.hexFFF4C7C7
+        : transaction.isLightning
+            ? AppColors.hexFFD9B66A
+            : transaction.isInternal
+                ? AppColors.hexFFB8BCC2
+                : transaction.isCredit
+                    ? AppColors.hexFFA8C7B1
+                    : AppColors.hexFFD4D4D8;
+
+    return Container(
+      width: 40,
+      height: 40,
+      decoration: BoxDecoration(
+        color: AppColors.hexFF111111,
+        shape: BoxShape.circle,
+        border: Border.all(color: AppColors.hexFF2A2A2A),
+      ),
+      child: Icon(icon, color: color, size: 18),
+    );
+  }
+
+  IconData _icon() {
+    if (transaction.status == TransactionStatus.failed) {
+      return KeroseneIcons.warning;
+    }
+    if (transaction.isLightning) {
+      return KeroseneIcons.lightning;
+    }
+    if (transaction.isInternal) {
+      return KeroseneIcons.moveHorizontal;
+    }
+    return transaction.isCredit ? KeroseneIcons.receive : KeroseneIcons.send;
+  }
+}
+
+class _DarkStatusPill extends StatelessWidget {
+  final TransactionStatus status;
+
+  const _DarkStatusPill({required this.status});
+
+  @override
+  Widget build(BuildContext context) {
+    final colors = switch (status) {
+      TransactionStatus.confirmed => (
+          fg: AppColors.hexFFA8C7B1,
+          label: 'Confirmado',
+        ),
+      TransactionStatus.confirming => (
+          fg: AppColors.hexFFD9B66A,
+          label: 'Confirmando',
+        ),
+      TransactionStatus.pending => (
+          fg: AppColors.hexFFD9B66A,
+          label: 'Pendente',
+        ),
+      TransactionStatus.failed => (
+          fg: AppColors.hexFFF4C7C7,
+          label: 'Falhou',
+        ),
+    };
+    return Row(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        Container(
+          width: 5,
+          height: 5,
+          decoration: BoxDecoration(
+            color: colors.fg,
+            shape: BoxShape.circle,
+          ),
+        ),
+        const SizedBox(width: 6),
+        Text(
+          colors.label,
+          style: AppTypography.caption.copyWith(
+            color: colors.fg,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+            height: 1,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _BankTransactionDetailsTable extends StatelessWidget {
+  final Transaction transaction;
+  final String btcAmount;
+  final String? feeAmount;
+
+  const _BankTransactionDetailsTable({
+    required this.transaction,
+    required this.btcAmount,
+    required this.feeAmount,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final reference = _firstNonEmpty([
+      transaction.blockchainTxid,
+      transaction.paymentHash,
+      transaction.invoiceId,
+      transaction.externalReference,
+    ]);
+    final rows = [
+      _TransactionDetailRow(
+        key: 'amount',
+        label: context.tr.amount,
+        displayValue: btcAmount,
+      ),
+      if (feeAmount != null)
+        _TransactionDetailRow(
+          key: 'network-fee',
+          label: context.tr.networkFee,
+          displayValue: feeAmount!,
+        ),
+      _TransactionDetailRow(
+        key: 'from',
+        label: _titleCase(context.tr.homeCounterpartyFrom),
+        displayValue: _darkDetailValue(resolveTransactionSender(transaction)),
+        copyValue: _copyValue(transaction.fromAddress),
+      ),
+      _TransactionDetailRow(
+        key: 'to',
+        label: _titleCase(context.tr.homeCounterpartyTo),
+        displayValue:
+            _darkDetailValue(resolveTransactionRecipient(transaction)),
+        copyValue: _copyValue(transaction.toAddress),
+      ),
+      _TransactionDetailRow(
+        key: 'id',
+        label: _localizedCopy(
+          context,
+          pt: 'ID interno',
+          en: 'Internal ID',
+          es: 'ID interno',
+        ),
+        displayValue: StatementTransactionCard._shorten(transaction.id),
+        copyValue: _copyValue(transaction.id),
+      ),
+      if (reference != null && reference != transaction.id)
+        _TransactionDetailRow(
+          key: 'reference',
+          label: _localizedCopy(
+            context,
+            pt: 'Hash ou referência',
+            en: 'Hash or reference',
+            es: 'Hash o referencia',
+          ),
+          displayValue: StatementTransactionCard._shorten(reference),
+          copyValue: reference,
+        ),
+    ];
+
+    return DecoratedBox(
+      decoration: const BoxDecoration(
+        border: Border(top: BorderSide(color: AppColors.hexFF222222)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.only(top: 12),
+        child: Column(
+          children: [
+            for (var index = 0; index < rows.length; index++) ...[
+              if (index > 0)
+                const Padding(
+                  padding: EdgeInsets.only(top: 10),
+                  child: Divider(height: 1, color: AppColors.hexFF222222),
+                ),
+              Padding(
+                padding: EdgeInsets.only(top: index == 0 ? 0 : 10),
+                child: _BankTransactionDetailsRow(row: rows[index]),
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BankTransactionDetailsRow extends StatelessWidget {
+  final _TransactionDetailRow row;
+
+  const _BankTransactionDetailsRow({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      crossAxisAlignment: CrossAxisAlignment.center,
+      children: [
+        Text(
+          row.label,
+          style: AppTypography.caption.copyWith(
+            color: AppColors.hexFF8A8A8E,
+            fontWeight: FontWeight.w600,
+            letterSpacing: 0,
+          ),
+        ),
+        const SizedBox(width: 12),
+        Expanded(
+          child: Text(
+            row.displayValue,
+            textAlign: TextAlign.right,
+            maxLines: 2,
+            overflow: TextOverflow.ellipsis,
+            style: AppTypography.bodySmall.copyWith(
+              color: AppColors.hexFFE4E4E7,
+              fontFamily: row.displayValue.length > 20
+                  ? AppTypography.financialFontFamily
+                  : AppTypography.bodyFontFamily,
+              letterSpacing: 0,
+            ),
+          ),
+        ),
+        if (row.copyValue != null) ...[
+          const SizedBox(width: 8),
+          _DarkTransactionDetailCopyButton(row: row),
+        ],
+      ],
+    );
+  }
+}
+
+class _DarkTransactionDetailCopyButton extends StatelessWidget {
+  final _TransactionDetailRow row;
+
+  const _DarkTransactionDetailCopyButton({required this.row});
+
+  @override
+  Widget build(BuildContext context) {
+    return Tooltip(
+      message: context.tr.copy,
+      child: IconButton(
+        key: ValueKey('statement-detail-copy-${row.key}'),
+        onPressed: () => _copyDetail(context, row),
+        padding: EdgeInsets.zero,
+        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(48),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+        icon: const Icon(
+          KeroseneIcons.copy,
+          size: 17,
+          color: AppColors.hexFFB8BCC2,
+        ),
+      ),
+    );
+  }
+
+  Future<void> _copyDetail(
+    BuildContext context,
+    _TransactionDetailRow row,
+  ) async {
+    final value = row.copyValue;
+    if (value == null) return;
+
+    HapticFeedback.selectionClick();
+    await Clipboard.setData(ClipboardData(text: value));
+    if (!context.mounted) return;
+
+    final messenger = ScaffoldMessenger.maybeOf(context);
+    if (messenger == null) return;
+    messenger
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text(
+            _localizedCopy(
+              context,
+              pt: 'Detalhe copiado.',
+              en: 'Transaction detail copied.',
+              es: 'Detalle copiado.',
+            ),
+          ),
+          behavior: SnackBarBehavior.floating,
+          duration: KeroseneMotion.loop,
+        ),
+      );
   }
 }
 
@@ -601,10 +1123,14 @@ class _TransactionDetailCopyButton extends StatelessWidget {
       child: IconButton(
         key: ValueKey('statement-detail-copy-${row.key}'),
         onPressed: () => _copyDetail(context, row),
-        visualDensity: VisualDensity.compact,
+        visualDensity: VisualDensity.standard,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 32, height: 32),
-        icon: Icon(KeroseneIcons.copy, size: 15, color: style.secondaryText),
+        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        style: IconButton.styleFrom(
+          minimumSize: const Size.square(48),
+          tapTargetSize: MaterialTapTargetSize.padded,
+        ),
+        icon: Icon(KeroseneIcons.copy, size: 17, color: style.secondaryText),
       ),
     );
   }

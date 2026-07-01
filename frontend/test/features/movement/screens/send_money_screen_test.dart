@@ -5,6 +5,7 @@ import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
+import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/movement/domain/repositories/transaction_repository.dart';
 import 'package:kerosene/features/movement/providers/transaction_provider.dart'
     as transaction_providers;
@@ -131,7 +132,9 @@ void main() {
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
-          walletProvider.overrideWith(() => _WalletTestNotifier([_wallet()])),
+          walletProvider.overrideWith(
+            () => _WalletTestNotifier([_wallet(balance: 2)]),
+          ),
           latestBtcPriceProvider.overrideWith((ref) => 65000),
           btcEurPriceProvider.overrideWith((ref) => 60000),
           btcBrlPriceProvider.overrideWith((ref) => 350000),
@@ -178,10 +181,74 @@ void main() {
     await tester.pump();
 
     expect(find.textContaining('350.000,00'), findsOneWidget);
+    expect(find.text('Carteira'), findsNothing);
+    expect(find.text('Destino'), findsNothing);
+    expect(find.text('Saldo disponível'), findsNothing);
+    expect(find.text('Rede'), findsNothing);
+    expect(find.text('Taxa estimada'), findsNothing);
+
     final continueButton = tester.widget<FilledButton>(
       find.widgetWithText(FilledButton, 'CONTINUAR'),
     );
     expect(continueButton.onPressed, isNotNull);
+  });
+
+  testWidgets('blocks amount step when total debit exceeds wallet balance',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          walletProvider.overrideWith(() => _WalletTestNotifier([_wallet()])),
+          latestBtcPriceProvider.overrideWith((ref) => 65000),
+          btcEurPriceProvider.overrideWith((ref) => 60000),
+          btcBrlPriceProvider.overrideWith((ref) => 350000),
+          recentTransactionDestinationsProvider.overrideWith(
+            () => _RecentDestinationsNotifier([
+              RecentTransactionDestination(
+                address: '34b5cc23-e18e-4f32-8414-9844e7300c25',
+                label: 'Minecraft',
+                kind: RecentTransactionDestinationKind.internal,
+                lastUsedAt: DateTime(2026, 6, 19),
+              ),
+            ]),
+          ),
+          kfeReceivingCapabilitiesServiceProvider.overrideWithValue(
+            const _ReadyKfeReceivingCapabilitiesService(),
+          ),
+          transaction_providers.transactionRepositoryProvider.overrideWithValue(
+            const _UnusedTransactionRepository(),
+          ),
+        ],
+        child: MaterialApp(
+          scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData.dark(useMaterial3: false).copyWith(
+            splashFactory: NoSplash.splashFactory,
+          ),
+          locale: const Locale('pt'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SendMoneyScreen(walletId: _wallet().id),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.tap(find.text('Minecraft').first);
+    await tester.pump();
+    await tester.tap(find.text('CONTINUAR'));
+    await tester.pumpAndSettle();
+
+    final amountInput = find.byKey(const ValueKey('movement-amount-input'));
+    await tester.ensureVisible(amountInput);
+    await tester.enterText(amountInput, '100000000');
+    await tester.pump();
+
+    expect(find.text('Saldo insuficiente'), findsNothing);
+    final continueButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'CONTINUAR'),
+    );
+    expect(continueButton.onPressed, isNull);
   });
 
   testWidgets('blocks internal wallet UUID when KFE verification rejects it',
@@ -229,15 +296,58 @@ void main() {
 
     await tester.pump(const Duration(seconds: 4));
   });
+
+  testWidgets('shows actionable inline error for invalid destination',
+      (tester) async {
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          walletProvider.overrideWith(() => _WalletTestNotifier([_wallet()])),
+          latestBtcPriceProvider.overrideWith((ref) => 65000),
+          btcEurPriceProvider.overrideWith((ref) => 60000),
+          btcBrlPriceProvider.overrideWith((ref) => 350000),
+          recentTransactionDestinationsProvider.overrideWith(
+            () => _EmptyRecentDestinationsNotifier(),
+          ),
+        ],
+        child: MaterialApp(
+          scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData.dark(useMaterial3: false).copyWith(
+            splashFactory: NoSplash.splashFactory,
+          ),
+          locale: const Locale('pt'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: SendMoneyScreen(walletId: _wallet().id),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.enterText(find.byType(TextField).first, '???');
+    await tester.pump();
+
+    expect(find.byIcon(KeroseneIcons.warning), findsOneWidget);
+    expect(
+      find.textContaining('Corrija o destino'),
+      findsOneWidget,
+    );
+
+    final continueButton = tester.widget<FilledButton>(
+      find.widgetWithText(FilledButton, 'CONTINUAR'),
+    );
+    expect(continueButton.onPressed, isNull);
+  });
 }
 
-Wallet _wallet() {
+Wallet _wallet({double balance = 0.1}) {
   return Wallet(
     id: '61a8bb23-e18e-4f32-8414-9844e7300c14',
     name: 'Carteira Global',
     address: '61a8bb23-e18e-4f32-8414-9844e7300c14',
     walletMode: 'KEROSENE',
-    balance: 0.1,
+    balance: balance,
     derivationPath: "m/84'/0'/0'/0/0",
     type: WalletType.nativeSegwit,
     createdAt: DateTime(2026, 6, 1),

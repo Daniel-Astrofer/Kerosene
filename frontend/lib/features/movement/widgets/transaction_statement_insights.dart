@@ -4,7 +4,6 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
-import 'package:intl/intl.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
@@ -18,10 +17,11 @@ import 'package:kerosene/features/movement/domain/services/statement_report_calc
 
 enum StatementInsightPeriod { monthly, weekly, annual }
 
-const _background = AppColors.hexFF000000;
 const _primary = AppColors.hexFFFFFFFF;
 const _onSurfaceVariant = AppColors.hexFFC4C7C8;
 const _surfaceVariant = AppColors.hexFF353534;
+const _surface = AppColors.hexFF101010;
+const _border = AppColors.hexFF2A2A2A;
 const _surfaceContainerLow = AppColors.hexFF1C1B1B;
 const _singleWalletColor = AppColors.hexFF444748;
 const _chartMinimumFraction = 0.055;
@@ -65,7 +65,7 @@ class _TransactionStatementInsightsState
         'statement-report-${widget.wallets.length}-${widget.transactions.length}',
       ),
       tween: Tween(begin: 0, end: 1),
-      duration: KeroseneMotion.slow,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.slow),
       curve: KeroseneMotion.standard,
       builder: (context, progress, child) {
         return Opacity(
@@ -91,11 +91,14 @@ class _TransactionStatementInsightsState
               onChanged: _setPeriod,
             );
             final distribution = _FundDistributionPanel(report: report);
+            final audit = _AuditSummaryPanel(report: report);
 
             if (!wide) {
               return Column(
                 crossAxisAlignment: CrossAxisAlignment.stretch,
                 children: [
+                  audit,
+                  const SizedBox(height: 18),
                   volume,
                   const SizedBox(height: 18),
                   monthly,
@@ -108,6 +111,8 @@ class _TransactionStatementInsightsState
             return Column(
               crossAxisAlignment: CrossAxisAlignment.stretch,
               children: [
+                audit,
+                const SizedBox(height: 18),
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
@@ -121,6 +126,127 @@ class _TransactionStatementInsightsState
               ],
             );
           },
+        ),
+      ),
+    );
+  }
+}
+
+class _AuditSummaryPanel extends StatelessWidget {
+  final _StatementReport report;
+
+  const _AuditSummaryPanel({required this.report});
+
+  @override
+  Widget build(BuildContext context) {
+    final chips = [
+      _AuditChip(
+        icon: KeroseneIcons.wallet,
+        label: _pluralPt(report.walletCount, 'carteira', 'carteiras'),
+      ),
+      _AuditChip(
+        icon: KeroseneIcons.database,
+        label: _pluralPt(
+          report.loadedTransactionCount,
+          'transação carregada',
+          'transações carregadas',
+        ),
+      ),
+      _AuditChip(
+        icon: KeroseneIcons.success,
+        label: _pluralPt(
+          report.includedTransactionCount,
+          'transação considerada',
+          'transações consideradas',
+        ),
+      ),
+      _AuditChip(
+        icon: KeroseneIcons.warning,
+        label: _pluralPt(
+          report.ignoredFailedTransactionCount,
+          'falha ignorada',
+          'falhas ignoradas',
+        ),
+      ),
+      if (report.ignoredOutOfPeriodTransactionCount > 0)
+        _AuditChip(
+          icon: KeroseneIcons.calendar,
+          label: _pluralPt(
+            report.ignoredOutOfPeriodTransactionCount,
+            'fora do período',
+            'fora do período',
+          ),
+        ),
+      if (report.isPartial)
+        const _AuditChip(
+          icon: KeroseneIcons.info,
+          label: 'Histórico parcial',
+        ),
+    ];
+
+    return _SoftPanel(
+      padding: const EdgeInsets.fromLTRB(16, 14, 16, 14),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Icon(KeroseneIcons.database,
+              color: _onSurfaceVariant, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  'Base auditada',
+                  style: AppTypography.inter(
+                    color: _primary,
+                    fontSize: 13,
+                    fontWeight: FontWeight.w700,
+                    height: 1.25,
+                  ),
+                ),
+                const SizedBox(height: 10),
+                Wrap(spacing: 8, runSpacing: 8, children: chips),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _AuditChip extends StatelessWidget {
+  final IconData icon;
+  final String label;
+
+  const _AuditChip({required this.icon, required this.label});
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: Colors.white.withValues(alpha: 0.04),
+        borderRadius: BorderRadius.circular(999),
+        border: Border.all(color: Colors.white.withValues(alpha: 0.10)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 7),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Icon(icon, color: _onSurfaceVariant, size: 13),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: AppTypography.inter(
+                color: _onSurfaceVariant,
+                fontSize: 12,
+                fontWeight: FontWeight.w600,
+                height: 1.15,
+              ),
+            ),
+          ],
         ),
       ),
     );
@@ -236,20 +362,56 @@ class _RangeSelector extends StatelessWidget {
   }
 }
 
-class _MovementBarChart extends StatelessWidget {
+class _MovementBarChart extends StatefulWidget {
   final _StatementReport report;
 
   const _MovementBarChart({required this.report});
 
   @override
+  State<_MovementBarChart> createState() => _MovementBarChartState();
+}
+
+class _MovementBarChartState extends State<_MovementBarChart> {
+  final ScrollController _barController = ScrollController();
+  final ScrollController _labelController = ScrollController();
+  bool _syncing = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _barController.addListener(() => _sync(_barController, _labelController));
+    _labelController.addListener(() => _sync(_labelController, _barController));
+  }
+
+  @override
+  void dispose() {
+    _barController.dispose();
+    _labelController.dispose();
+    super.dispose();
+  }
+
+  void _sync(ScrollController source, ScrollController target) {
+    if (_syncing || !source.hasClients || !target.hasClients) return;
+    final nextOffset = source.offset.clamp(
+      target.position.minScrollExtent,
+      target.position.maxScrollExtent,
+    );
+    if ((target.offset - nextOffset).abs() < 0.5) return;
+    _syncing = true;
+    target.jumpTo(nextOffset);
+    _syncing = false;
+  }
+
+  @override
   Widget build(BuildContext context) {
+    final report = widget.report;
     final axisValues = _axisValues(report.axisMaxSats);
     return TweenAnimationBuilder<double>(
       key: ValueKey(
         'movement-volume-${report.buckets.map((bucket) => bucket.values.map((value) => value.sats).join(':')).join('|')}',
       ),
       tween: Tween(begin: 0, end: 1),
-      duration: KeroseneMotion.slow,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.slow),
       curve: KeroseneMotion.standard,
       builder: (context, progress, _) {
         return LayoutBuilder(
@@ -308,6 +470,7 @@ class _MovementBarChart extends StatelessWidget {
                   right: 48,
                   bottom: 28,
                   child: SingleChildScrollView(
+                    controller: _barController,
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     child: SizedBox(
@@ -339,6 +502,7 @@ class _MovementBarChart extends StatelessWidget {
                   bottom: 0,
                   height: 22,
                   child: SingleChildScrollView(
+                    controller: _labelController,
                     scrollDirection: Axis.horizontal,
                     physics: const BouncingScrollPhysics(),
                     child: SizedBox(
@@ -396,7 +560,7 @@ class _WalletBarGroup extends StatelessWidget {
             child: FractionallySizedBox(
               heightFactor:
                   _barFraction(bucket.values[index].sats, axisMaxSats) *
-                  progress,
+                      progress,
               alignment: Alignment.bottomCenter,
               child: _GradientBar(
                 topColor: bucket.values[index].color,
@@ -503,7 +667,7 @@ class _PeriodTabs extends StatelessWidget {
           onTap: () => onChanged(period),
           child: AnimatedOpacity(
             opacity: active ? 1 : 0.5,
-            duration: KeroseneMotion.short,
+            duration: KeroseneMotion.duration(context, KeroseneMotion.short),
             child: Text(
               _periodTabLabel(context, period).toUpperCase(),
               style: AppTypography.inter(
@@ -619,12 +783,12 @@ class _DistributionDonut extends StatelessWidget {
         'fund-distribution-${report.distribution.map((segment) => segment.visualSats).join('|')}',
       ),
       tween: Tween(begin: 0, end: 1),
-      duration: KeroseneMotion.slow,
+      duration: KeroseneMotion.duration(context, KeroseneMotion.slow),
       curve: KeroseneMotion.standard,
       builder: (context, progress, _) {
         return AnimatedScale(
           scale: 1 + (math.sin(progress * math.pi) * 0.03),
-          duration: KeroseneMotion.short,
+          duration: KeroseneMotion.duration(context, KeroseneMotion.short),
           child: Stack(
             alignment: Alignment.center,
             children: [
@@ -641,21 +805,34 @@ class _DistributionDonut extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      report.totalBalanceSats > 0 ? '100%' : '0%',
+                      'Total',
                       style: AppTypography.financial(
                         color: _primary,
-                        fontSize: 24,
-                        fontWeight: FontWeight.w500,
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
                       ),
                     ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatBtc(report.totalBalanceSats),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.financial(
+                        color: _primary,
+                        fontSize: 18,
+                        fontWeight: FontWeight.w600,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
                     Text(
                       report.dominantWalletName,
                       maxLines: 1,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
-                      style: AppTypography.inter(
+                      style: AppTypography.caption.copyWith(
                         color: _onSurfaceVariant,
-                        fontSize: 11,
+                        fontSize: 10,
                         fontWeight: FontWeight.w700,
                         height: 1.2,
                       ),
@@ -700,13 +877,15 @@ class _DistributionDonutPainter extends CustomPainter {
 
     var start = -math.pi / 2;
     for (final segment in segments) {
+      if (segment.visualSats <= 0) continue;
       final sweep = (segment.visualSats / total) * math.pi * 2 * progress;
+      if (sweep <= 0) continue;
       final paint = Paint()
         ..style = PaintingStyle.stroke
         ..strokeWidth = 24
         ..strokeCap = StrokeCap.butt
         ..color = segment.color;
-      canvas.drawArc(arcRect, start, math.max(0.01, sweep), false, paint);
+      canvas.drawArc(arcRect, start, sweep, false, paint);
       start += sweep;
     }
   }
@@ -725,8 +904,9 @@ class _DistributionLegend extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 8),
+      padding: const EdgeInsets.only(bottom: 10),
       child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           DecoratedBox(
             decoration: BoxDecoration(
@@ -737,26 +917,88 @@ class _DistributionLegend extends StatelessWidget {
           ),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              segment.label,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.inter(
-                color: _onSurfaceVariant,
-                fontSize: 14,
-                fontWeight: FontWeight.w400,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  segment.label,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                  style: AppTypography.inter(
+                    color: _onSurfaceVariant,
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                if (segment.isDominant) ...[
+                  const SizedBox(height: 4),
+                  const _DominantSliceBadge(),
+                ],
+              ],
             ),
           ),
-          Text(
-            '${segment.percent.toStringAsFixed(1)}%',
-            style: AppTypography.financial(
-              color: _primary,
-              fontSize: 14,
-              fontWeight: FontWeight.w400,
-            ),
+          const SizedBox(width: 10),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                _formatBtc(segment.sats),
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: AppTypography.financial(
+                  color: _primary,
+                  fontSize: 13,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+              const SizedBox(height: 3),
+              Text(
+                '${segment.percent.toStringAsFixed(1)}%',
+                style: AppTypography.financial(
+                  color: _onSurfaceVariant,
+                  fontSize: 12,
+                  fontWeight: FontWeight.w500,
+                ),
+              ),
+            ],
           ),
         ],
+      ),
+    );
+  }
+}
+
+class _DominantSliceBadge extends StatelessWidget {
+  const _DominantSliceBadge();
+
+  @override
+  Widget build(BuildContext context) {
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        color: AppColors.hexFF63FEA7.withValues(alpha: 0.10),
+        borderRadius: BorderRadius.circular(999),
+        border:
+            Border.all(color: AppColors.hexFF63FEA7.withValues(alpha: 0.24)),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 4),
+        child: Row(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            const Icon(KeroseneIcons.trendUp,
+                color: AppColors.hexFF63FEA7, size: 12),
+            const SizedBox(width: 5),
+            Text(
+              'Maior fatia',
+              style: AppTypography.inter(
+                color: AppColors.hexFF63FEA7,
+                fontSize: 11,
+                fontWeight: FontWeight.w700,
+                height: 1.1,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -778,7 +1020,8 @@ class _SoftPanel extends StatelessWidget {
     final panel = DecoratedBox(
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(12),
-        color: _background,
+        color: _surface,
+        border: Border.all(color: _border),
       ),
       child: Padding(padding: padding, child: child),
     );
@@ -798,6 +1041,12 @@ class _StatementReport {
   final int axisMaxSats;
   final int totalBalanceSats;
   final String dominantWalletName;
+  final bool isPartial;
+  final int walletCount;
+  final int loadedTransactionCount;
+  final int includedTransactionCount;
+  final int ignoredFailedTransactionCount;
+  final int ignoredOutOfPeriodTransactionCount;
 
   const _StatementReport({
     required this.wallets,
@@ -808,6 +1057,12 @@ class _StatementReport {
     required this.axisMaxSats,
     required this.totalBalanceSats,
     required this.dominantWalletName,
+    required this.isPartial,
+    required this.walletCount,
+    required this.loadedTransactionCount,
+    required this.includedTransactionCount,
+    required this.ignoredFailedTransactionCount,
+    required this.ignoredOutOfPeriodTransactionCount,
   });
 
   factory _StatementReport.from({
@@ -828,8 +1083,8 @@ class _StatementReport {
     for (var index = 0; index < calculated.wallets.length; index++) {
       colorsByWalletId[calculated.wallets[index].id] =
           calculated.wallets.length == 1
-          ? _singleWalletColor
-          : _walletColor(index);
+              ? _singleWalletColor
+              : _walletColor(index);
     }
     final insights = [
       for (final wallet in calculated.wallets)
@@ -858,9 +1113,12 @@ class _StatementReport {
       for (final segment in calculated.distribution)
         _DistributionSegment(
           label: segment.label,
+          sats: segment.sats,
           visualSats: segment.visualSats,
           percent: segment.percent,
           color: colorsByWalletId[segment.walletId] ?? _singleWalletColor,
+          isDominant: calculated.totalBalanceSats > 0 &&
+              segment.walletId == calculated.distribution.first.walletId,
         ),
     ];
 
@@ -873,6 +1131,13 @@ class _StatementReport {
       axisMaxSats: calculated.axisMaxSats,
       totalBalanceSats: calculated.totalBalanceSats,
       dominantWalletName: calculated.dominantWalletName,
+      isPartial: calculated.isPartial,
+      walletCount: calculated.walletCount,
+      loadedTransactionCount: calculated.loadedTransactionCount,
+      includedTransactionCount: calculated.includedTransactionCount,
+      ignoredFailedTransactionCount: calculated.ignoredFailedTransactionCount,
+      ignoredOutOfPeriodTransactionCount:
+          calculated.ignoredOutOfPeriodTransactionCount,
     );
   }
 }
@@ -919,15 +1184,19 @@ class _WalletBucketValue {
 
 class _DistributionSegment {
   final String label;
+  final int sats;
   final int visualSats;
   final double percent;
   final Color color;
+  final bool isDominant;
 
   const _DistributionSegment({
     required this.label,
+    required this.sats,
     required this.visualSats,
     required this.percent,
     required this.color,
+    required this.isDominant,
   });
 
   factory _DistributionSegment.fromActual({
@@ -939,151 +1208,14 @@ class _DistributionSegment {
   }) {
     return _DistributionSegment(
       label: label,
-      visualSats: math.max(1, visualSats),
+      sats: sats,
+      visualSats: totalSats > 0 ? math.max(0, visualSats) : 0,
       percent: totalSats <= 0 ? 0 : sats / totalSats * 100,
       color: color,
+      isDominant: false,
     );
   }
 }
-
-List<_WalletInsight> _walletInsights(
-  BuildContext context,
-  List<Wallet> source,
-) {
-  final wallets = source.where((wallet) => wallet.isActive).toList();
-  final displayWallets = wallets.isNotEmpty
-      ? wallets
-      : List<Wallet>.from(source);
-  displayWallets.sort((a, b) {
-    final balance = b.balance.compareTo(a.balance);
-    if (balance != 0) return balance;
-    return a.name.toLowerCase().compareTo(b.name.toLowerCase());
-  });
-
-  if (displayWallets.isEmpty) {
-    return [
-      _WalletInsight(
-        id: 'empty',
-        name: context.tr.noWalletsFound,
-        matchKeys: const {},
-        balanceSats: 0,
-        color: _singleWalletColor,
-      ),
-    ];
-  }
-
-  return [
-    for (var index = 0; index < displayWallets.length; index++)
-      _WalletInsight(
-        id: displayWallets[index].id,
-        name: displayWallets[index].name,
-        matchKeys: _walletMatchKeys(displayWallets[index]),
-        balanceSats: _btcToSats(displayWallets[index].balance),
-        color: displayWallets.length == 1
-            ? _singleWalletColor
-            : _walletColor(index),
-      ),
-  ];
-}
-
-Set<String> _walletMatchKeys(Wallet wallet) {
-  return {
-        wallet.id,
-        wallet.name,
-        wallet.address,
-        wallet.cardHolderName,
-        wallet.cardNumberSuffix,
-      }
-      .map((value) => value.trim().toLowerCase())
-      .where((value) => value.isNotEmpty)
-      .toSet();
-}
-
-List<({DateTime start, DateTime end, String label})> _bucketRanges({
-  required BuildContext context,
-  required List<Wallet> wallets,
-  required StatementInsightPeriod period,
-}) {
-  final locale = Localizations.localeOf(context).toLanguageTag();
-  final now = DateTime.now();
-  final createdAt = wallets.isEmpty
-      ? DateTime(now.year, now.month)
-      : wallets
-            .map((wallet) => wallet.createdAt.toLocal())
-            .reduce((a, b) => a.isBefore(b) ? a : b);
-
-  switch (period) {
-    case StatementInsightPeriod.weekly:
-      final currentWeek = _weekStart(now);
-      final firstWeek = _weekStart(createdAt);
-      final ytdWeek = _weekStart(DateTime(now.year));
-      final start = firstWeek.isAfter(ytdWeek) ? firstWeek : ytdWeek;
-      final ranges = <({DateTime start, DateTime end, String label})>[];
-      for (
-        var week = start;
-        !week.isAfter(currentWeek);
-        week = week.add(const Duration(days: 7))
-      ) {
-        ranges.add((
-          start: week,
-          end: week.add(const Duration(days: 7)),
-          label: DateFormat.MMMd(locale).format(week),
-        ));
-      }
-      return ranges.isEmpty
-          ? [
-              (
-                start: currentWeek,
-                end: currentWeek.add(const Duration(days: 7)),
-                label: DateFormat.MMMd(locale).format(currentWeek),
-              ),
-            ]
-          : ranges;
-    case StatementInsightPeriod.annual:
-      final currentMonth = DateTime(now.year, now.month);
-      final firstMonth = DateTime(createdAt.year, createdAt.month);
-      final start = _maxDate(
-        firstMonth,
-        DateTime(currentMonth.year, currentMonth.month - 11),
-      );
-      return _monthRanges(start, currentMonth, locale);
-    case StatementInsightPeriod.monthly:
-      final currentMonth = DateTime(now.year, now.month);
-      final firstMonth = DateTime(createdAt.year, createdAt.month);
-      final start = _maxDate(
-        firstMonth,
-        DateTime(currentMonth.year, currentMonth.month - 5),
-      );
-      return _monthRanges(start, currentMonth, locale);
-  }
-}
-
-List<({DateTime start, DateTime end, String label})> _monthRanges(
-  DateTime start,
-  DateTime currentMonth,
-  String locale,
-) {
-  final ranges = <({DateTime start, DateTime end, String label})>[];
-  for (
-    var month = DateTime(start.year, start.month);
-    !month.isAfter(currentMonth);
-    month = DateTime(month.year, month.month + 1)
-  ) {
-    ranges.add((
-      start: month,
-      end: DateTime(month.year, month.month + 1),
-      label: DateFormat.MMM(locale).format(month),
-    ));
-  }
-  return ranges;
-}
-
-DateTime _weekStart(DateTime date) {
-  final local = date.toLocal();
-  return DateTime(local.year, local.month, local.day - local.weekday + 1);
-}
-
-DateTime _maxDate(DateTime a, DateTime b) => a.isAfter(b) ? a : b;
 
 int _walletBalanceAt(
   _WalletInsight wallet,
@@ -1173,7 +1305,7 @@ List<int> _axisValues(int maxSats) {
 }
 
 double _barFraction(int sats, int axisMaxSats) {
-  if (sats <= 0) return _chartMinimumFraction;
+  if (sats <= 0) return 0;
   return math.max(_chartMinimumFraction, sats / math.max(1, axisMaxSats));
 }
 
@@ -1184,10 +1316,10 @@ int _niceAxisMax(int rawMax) {
   final nice = normalized <= 1
       ? 1
       : normalized <= 2
-      ? 2
-      : normalized <= 5
-      ? 5
-      : 10;
+          ? 2
+          : normalized <= 5
+              ? 5
+              : 10;
   return nice * magnitude;
 }
 
@@ -1195,10 +1327,10 @@ Color _walletColor(int index) {
   return switch (index % 6) {
     0 => _primary,
     1 => AppColors.hexFF63FEA7,
-    2 => const Color(0xFFFFB874),
-    3 => const Color(0xFF8E9192),
-    4 => const Color(0xFFC6C6C6),
-    _ => const Color(0xFF454747),
+    2 => AppColors.hexFFFFCC6E,
+    3 => AppColors.hexFF8A8A8E,
+    4 => AppColors.hexFFC4C4C4,
+    _ => AppColors.hexFF444748,
   };
 }
 
@@ -1237,6 +1369,11 @@ String _formatBtc(int sats) {
   if (sats < 10000) return '$sats sats';
   final btc = sats / 100000000.0;
   return '${btc.toStringAsFixed(btc >= 1 ? 4 : 6)} BTC';
+}
+
+String _pluralPt(int count, String singular, String plural) {
+  final unit = count == 1 ? singular : plural;
+  return '$count $unit';
 }
 
 int _btcToSats(double btc) => math.max(0, (btc * 100000000).round());

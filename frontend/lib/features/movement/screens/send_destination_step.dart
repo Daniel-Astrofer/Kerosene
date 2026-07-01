@@ -75,15 +75,9 @@ class SendDestinationStep extends StatelessWidget {
                     ),
                     if (destination.isNotEmpty) ...[
                       const SizedBox(height: 12),
-                      Text(
-                        _destinationHelperText(analysis),
-                        textAlign: TextAlign.left,
-                        style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                              color: isValidDestination
-                                  ? internalMutedText
-                                  : internalText,
-                              height: 1.35,
-                            ),
+                      _DestinationFeedback(
+                        analysis: analysis,
+                        message: _destinationHelperText(analysis),
                       ),
                     ],
                     if (recentDestinations.isNotEmpty) ...[
@@ -123,7 +117,7 @@ class SendDestinationStep extends StatelessWidget {
       return 'Informe o destino para continuar.';
     }
     if (analysis.isInvalid) {
-      return 'Não reconhecemos este destino. Use usuário Kerosene, endereço Bitcoin, invoice Lightning, link, QR ou NFC.';
+      return 'Corrija o destino: use usuário Kerosene, endereço Bitcoin, invoice Lightning, link, QR ou NFC.';
     }
     if (analysis.isPaymentLink) {
       return 'Link de pagamento Kerosene detectado.';
@@ -154,8 +148,8 @@ class _DestinationHeader extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         SizedBox(
-          width: 40,
-          height: 40,
+          width: 48,
+          height: 48,
           child: IconButton(
             onPressed: () => Navigator.of(context).maybePop(),
             tooltip: context.tr.close,
@@ -163,8 +157,8 @@ class _DestinationHeader extends StatelessWidget {
             color: SendDestinationStep.internalText,
             padding: EdgeInsets.zero,
             style: IconButton.styleFrom(
-              minimumSize: const Size.square(40),
-              tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              minimumSize: const Size.square(48),
+              tapTargetSize: MaterialTapTargetSize.padded,
             ),
           ),
         ),
@@ -226,13 +220,13 @@ class _DestinationBottomAction extends StatelessWidget {
               backgroundColor: backgroundColor,
               foregroundColor: foregroundColor,
               shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(hasContacts ? 8 : 28),
+                borderRadius: BorderRadius.circular(16),
               ),
               textStyle: AppTypography.inter(
-                fontSize: hasContacts ? 14 : 11,
+                fontSize: 14,
                 fontWeight: FontWeight.w800,
                 height: 1.2,
-                letterSpacing: hasContacts ? 1.4 : 1.1,
+                letterSpacing: 1.2,
               ),
             ),
             child: isLoading
@@ -244,6 +238,60 @@ class _DestinationBottomAction extends StatelessWidget {
                 : Text(context.tr.continueButton),
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _DestinationFeedback extends StatelessWidget {
+  final SendDestinationAnalysis analysis;
+  final String message;
+
+  const _DestinationFeedback({
+    required this.analysis,
+    required this.message,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final invalid = analysis.isInvalid;
+    final color = invalid
+        ? KeroseneBrandTokens.error
+        : SendDestinationStep.internalMutedText;
+    final icon = invalid ? KeroseneIcons.warning : KeroseneIcons.info;
+
+    return AnimatedContainer(
+      duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+      curve: KeroseneMotion.standard,
+      padding: invalid
+          ? const EdgeInsets.symmetric(horizontal: 12, vertical: 10)
+          : EdgeInsets.zero,
+      decoration: BoxDecoration(
+        color: invalid
+            ? KeroseneBrandTokens.error.withValues(alpha: 0.10)
+            : Colors.transparent,
+        borderRadius: BorderRadius.circular(12),
+        border: invalid
+            ? Border.all(
+                color: KeroseneBrandTokens.error.withValues(alpha: 0.55))
+            : null,
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(icon, color: color, size: invalid ? 18 : 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Text(
+              message,
+              style: AppTypography.bodySmall.copyWith(
+                color: color,
+                height: 1.35,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -354,7 +402,7 @@ class _DestinationInputSectionState extends State<_DestinationInputSection> {
         ? SendDestinationStep.internalText
         : SendDestinationStep.internalMutedText;
     final borderColor = widget.analysis.isInvalid
-        ? SendDestinationStep.internalText
+        ? KeroseneBrandTokens.error
         : widget.isLoading || _hasFocus
             ? activeElementColor
             : SendDestinationStep.internalBorder;
@@ -403,7 +451,7 @@ class _DestinationInputSectionState extends State<_DestinationInputSection> {
             ),
             const SizedBox(width: 10),
             AnimatedSwitcher(
-              duration: KeroseneMotion.short,
+              duration: KeroseneMotion.duration(context, KeroseneMotion.short),
               child: widget.isLoading
                   ? SizedBox(
                       key: const ValueKey('destination-loading'),
@@ -427,14 +475,14 @@ class _DestinationInputSectionState extends State<_DestinationInputSection> {
               color: activeElementColor,
               padding: EdgeInsets.zero,
               style: IconButton.styleFrom(
-                minimumSize: const Size.square(40),
-                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+                minimumSize: const Size.square(48),
+                tapTargetSize: MaterialTapTargetSize.padded,
               ),
             ),
           ],
         ),
         AnimatedContainer(
-          duration: KeroseneMotion.short,
+          duration: KeroseneMotion.duration(context, KeroseneMotion.short),
           margin: const EdgeInsets.only(top: 8),
           height: 1,
           color: borderColor,

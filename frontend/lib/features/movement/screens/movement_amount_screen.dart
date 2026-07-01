@@ -148,11 +148,6 @@ class _MovementAmountScreenState extends ConsumerState<MovementAmountScreen> {
       btcEur: btcEur,
       btcBrl: btcBrl,
     );
-    final amountLabel = MoneyDisplay.formatEditableInput(
-      rawValue: flowState.amountInput,
-      currency: _selectedCurrency,
-      withSymbol: false,
-    );
     final secondaryLabel = _selectedCurrency == Currency.btc
         ? _formatFiatReference(
             btcAmount: amountBtc,
@@ -169,7 +164,6 @@ class _MovementAmountScreenState extends ConsumerState<MovementAmountScreen> {
     return Scaffold(
       body: TransactionValueEntrySurface(
         onBack: () => Navigator.of(context).maybePop(),
-        amountLabel: amountLabel,
         amountInput: flowState.amountInput,
         unitLabel: MoneyDisplay.tickerSymbolFor(_selectedCurrency),
         currency: _selectedCurrency,

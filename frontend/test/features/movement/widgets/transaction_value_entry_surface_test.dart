@@ -13,7 +13,6 @@ void main() {
         home: Scaffold(
           body: TransactionValueEntrySurface(
             onBack: () {},
-            amountLabel: '0',
             fiatReference: '≈ R\$ 350.000,00',
             onAmountChanged: (value) => latestAmount = value,
             onFiatReferenceTap: () => quoteTapped = true,

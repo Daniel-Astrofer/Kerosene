@@ -61,37 +61,68 @@ void main() {
     ),
   ];
 
-  testWidgets('statement report is analytics-only and wallet-reactive',
+  testWidgets('statement opens as searchable bank-style transaction list',
       (tester) async {
     await pumpStatement(tester, wallets: wallets, transactions: transactions);
 
-    expect(find.text('Relatório de movimentação'), findsOneWidget);
-    expect(find.text('Volume de movimentação'), findsOneWidget);
-    expect(find.text('Distribuição de fundos'), findsOneWidget);
-    expect(find.text('Carteira Global'), findsWidgets);
-    expect(find.text('Reserva fria'), findsOneWidget);
+    expect(find.text('Extrato'), findsWidgets);
+    expect(find.byIcon(KeroseneIcons.search), findsOneWidget);
+    expect(find.text('Todos'), findsOneWidget);
+    expect(find.text('Recebidos'), findsOneWidget);
+    expect(find.text('Enviados'), findsOneWidget);
+    expect(find.text('Pendentes'), findsOneWidget);
+    expect(find.text('Falhas'), findsOneWidget);
+    expect(find.text('On-chain'), findsOneWidget);
+    expect(find.text('Lightning'), findsOneWidget);
+    expect(find.text('Internas'), findsOneWidget);
+    expect(find.text('20 de mai. de 2026'), findsOneWidget);
+    expect(find.text('21 de mai. de 2026'), findsOneWidget);
+    expect(find.text('Recebido'), findsOneWidget);
+    expect(find.text('Saque on-chain'), findsOneWidget);
 
-    expect(find.byIcon(KeroseneIcons.search), findsNothing);
-    expect(find.text('Todas'), findsNothing);
-    expect(find.text('Recebidas'), findsNothing);
-    expect(find.text('Lightning'), findsNothing);
-    expect(find.text('Onchain'), findsNothing);
+    expect(find.text('Volume de movimentação'), findsNothing);
+    expect(find.text('Distribuição de fundos'), findsNothing);
     expect(tester.takeException(), isNull);
   });
 
-  testWidgets('statement period selector updates the report in place',
+  testWidgets('statement filters and search narrow visible transactions',
       (tester) async {
     await pumpStatement(tester, wallets: wallets, transactions: transactions);
 
-    expect(find.text('Últimos 6 meses'), findsOneWidget);
-
-    await tester.tap(find.text('Últimos 6 meses'));
-    await tester.pumpAndSettle();
-    await tester.tap(find.text('Ano atual').last);
+    await tester.tap(find.text('Enviados'));
     await tester.pumpAndSettle();
 
-    expect(find.text('Ano atual'), findsOneWidget);
-    expect(find.text('Relatório de movimentação'), findsOneWidget);
+    expect(find.text('Saque on-chain'), findsOneWidget);
+    expect(find.text('Recebido'), findsNothing);
+
+    await tester.enterText(find.byType(TextField), 'global');
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nenhuma transação encontrada'), findsOneWidget);
+    expect(tester.takeException(), isNull);
+  });
+
+  testWidgets('statement keeps analytics in the secondary insights tab',
+      (tester) async {
+    await pumpStatement(tester, wallets: wallets, transactions: transactions);
+
+    expect(find.text('Volume de movimentação'), findsNothing);
+
+    await tester.tap(find.text('Insights'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Volume de movimentação'), findsOneWidget);
+    expect(find.text('Distribuição de fundos'), findsOneWidget);
+    expect(find.text('Total'), findsOneWidget);
+    expect(find.text('100%'), findsNothing);
+    expect(find.text('Base auditada'), findsOneWidget);
+    expect(find.text('2 carteiras'), findsOneWidget);
+    expect(find.text('2 transações consideradas'), findsOneWidget);
+    expect(find.text('0 falhas ignoradas'), findsOneWidget);
+    expect(find.text('Maior fatia'), findsOneWidget);
+    expect(find.text('0.015000 BTC'), findsOneWidget);
+    expect(find.text('Carteira Global'), findsWidgets);
+    expect(find.text('Reserva fria'), findsOneWidget);
     expect(tester.takeException(), isNull);
   });
 }

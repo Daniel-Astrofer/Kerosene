@@ -64,10 +64,18 @@ class StatementReportCalculator {
     var outgoing = 0;
     var fees = 0;
     var internalTransfers = 0;
+    var includedTransactions = 0;
+    var ignoredFailedTransactions = 0;
+    var ignoredOutOfPeriodTransactions = 0;
 
-    for (final tx in usableTransactions) {
+    for (final tx in transactions) {
       final local = tx.timestamp.toLocal();
       if (local.isBefore(reportStart) || !local.isBefore(reportEnd)) {
+        ignoredOutOfPeriodTransactions += 1;
+        continue;
+      }
+      if (tx.status == TransactionStatus.failed) {
+        ignoredFailedTransactions += 1;
         continue;
       }
 
@@ -79,6 +87,7 @@ class StatementReportCalculator {
       if (!classification.belongsToKnownWallet) {
         continue;
       }
+      includedTransactions += 1;
 
       final amount = tx.amountSatoshis.abs();
       final fee = tx.feeSatoshis.abs();
@@ -115,8 +124,9 @@ class StatementReportCalculator {
           walletId: wallet.id,
           label: wallet.name,
           sats: wallet.balanceSats,
-          visualSats: math.max(1, totalBalance > 0 ? wallet.balanceSats : 1),
-          percent: totalBalance <= 0 ? 0 : wallet.balanceSats / totalBalance * 100,
+          visualSats: totalBalance > 0 ? math.max(0, wallet.balanceSats) : 0,
+          percent:
+              totalBalance <= 0 ? 0 : wallet.balanceSats / totalBalance * 100,
         ),
     ];
     final rawAxisMax = buckets.fold<int>(
@@ -142,7 +152,17 @@ class StatementReportCalculator {
       totalBalanceSats: totalBalance,
       dominantWalletName: dominant.name,
       isPartial: transactions.length >= partialHistoryThreshold,
+      walletCount: _sourceWalletCount(wallets),
+      loadedTransactionCount: transactions.length,
+      includedTransactionCount: includedTransactions,
+      ignoredFailedTransactionCount: ignoredFailedTransactions,
+      ignoredOutOfPeriodTransactionCount: ignoredOutOfPeriodTransactions,
     );
+  }
+
+  static int _sourceWalletCount(List<Wallet> wallets) {
+    final activeWallets = wallets.where((wallet) => wallet.isActive).length;
+    return activeWallets > 0 ? activeWallets : wallets.length;
   }
 
   static List<StatementWalletInsight> _walletInsights(
@@ -150,7 +170,8 @@ class StatementReportCalculator {
     required String emptyWalletName,
   }) {
     final wallets = source.where((wallet) => wallet.isActive).toList();
-    final displayWallets = wallets.isNotEmpty ? wallets : List<Wallet>.from(source);
+    final displayWallets =
+        wallets.isNotEmpty ? wallets : List<Wallet>.from(source);
     displayWallets.sort((a, b) {
       final balance = b.balance.compareTo(a.balance);
       if (balance != 0) return balance;
@@ -346,7 +367,8 @@ class StatementReportCalculator {
           _matchesWallet(wallet, [tx.destinationWalletId, tx.toAddress]);
     }
     return _TransactionClassification(
-      belongsToKnownWallet: walletMatches || sourceMatches || destinationMatches,
+      belongsToKnownWallet:
+          walletMatches || sourceMatches || destinationMatches,
       sourceMatchesKnownWallet: sourceMatches || (tx.isDebit && walletMatches),
       destinationMatchesKnownWallet:
           destinationMatches || (tx.isCredit && walletMatches),

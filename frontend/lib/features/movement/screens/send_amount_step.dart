@@ -23,9 +23,6 @@ class SendAmountStep extends StatelessWidget {
   final ValueChanged<String> onAmountChanged;
   final VoidCallback onContinue;
   final double Function(String amountValue) resolveAmountBtc;
-  final String recipient;
-  final String recipientValue;
-  final String railLabel;
   final VoidCallback? onFiatReferenceTap;
 
   const SendAmountStep({
@@ -45,9 +42,6 @@ class SendAmountStep extends StatelessWidget {
     required this.onAmountChanged,
     required this.onContinue,
     required this.resolveAmountBtc,
-    required this.recipient,
-    required this.recipientValue,
-    required this.railLabel,
     this.onFiatReferenceTap,
   });
 
@@ -58,13 +52,6 @@ class SendAmountStep extends StatelessWidget {
       builder: (context, amountValue, child) {
         final amountBtc = resolveAmountBtc(amountValue);
         final amountLocked = hasPaymentLink || lockedAmountBtc > 0;
-        final amountLabel = lockedAmountBtc > 0
-            ? formatBtcValue(lockedAmountBtc)
-            : MoneyDisplay.formatEditableInput(
-                rawValue: amountValue,
-                currency: selectedCurrency,
-                withSymbol: false,
-              );
         final secondaryLabel = selectedCurrency == Currency.btc
             ? formatFiatReference(
                 btcAmount: amountBtc,
@@ -77,13 +64,19 @@ class SendAmountStep extends StatelessWidget {
                 currency: Currency.btc,
                 maxDecimalPlaces: 8,
               )}';
+        final totalDebitedBtc =
+            destination.isExternal ? feeQuote.totalDebitedBtc : amountBtc;
+        final insufficientBalance = wallet != null &&
+            amountBtc > 0 &&
+            !feeQuote.isLoading &&
+            totalDebitedBtc > wallet!.balance + 0.000000009;
         final canContinue = amountBtc > 0 &&
             !isLoading &&
-            (!destination.isOnChain || feeQuote.isReady);
+            (!destination.isOnChain || feeQuote.isReady) &&
+            !insufficientBalance;
 
         return TransactionValueEntrySurface(
           onBack: onBack,
-          amountLabel: amountLabel,
           amountInput: amountValue,
           unitLabel: MoneyDisplay.tickerSymbolFor(selectedCurrency),
           currency: selectedCurrency,
