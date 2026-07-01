@@ -1,15 +1,13 @@
-import 'dart:math' as math;
-
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
+import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
+import 'package:kerosene/design_system/icons/kerosene_icons.dart';
 
 enum AppPrimaryDestination { home, card, history, settings }
-
-enum _KeroseneNavIconKind { home, wallet, history, settings }
 
 extension AppPrimaryDestinationX on AppPrimaryDestination {
   String get routeName {
@@ -43,32 +41,32 @@ extension AppPrimaryDestinationX on AppPrimaryDestination {
       case AppPrimaryDestination.home:
         return 'Inicio';
       case AppPrimaryDestination.card:
-        return 'Carteira';
+        return 'Cartao';
       case AppPrimaryDestination.history:
-        return 'Atividade';
+        return 'Historico';
       case AppPrimaryDestination.settings:
         return 'Ajustes';
     }
   }
 
-  _KeroseneNavIconKind get _iconKind {
+  IconData get _iconData {
     switch (this) {
       case AppPrimaryDestination.home:
-        return _KeroseneNavIconKind.home;
+        return KeroseneIcons.home;
       case AppPrimaryDestination.card:
-        return _KeroseneNavIconKind.wallet;
+        return KeroseneIcons.creditCard;
       case AppPrimaryDestination.history:
-        return _KeroseneNavIconKind.history;
+        return KeroseneIcons.history;
       case AppPrimaryDestination.settings:
-        return _KeroseneNavIconKind.settings;
+        return KeroseneIcons.settings;
     }
   }
 }
 
 class AppPrimaryNavigationBar {
-  static const double _buttonSize = 60;
-  static const double _buttonRightSpacing = AppSpacing.xl2;
-  static const double _buttonBottomSpacing = 32;
+  static const double _buttonSize = 64;
+  static const double _buttonSideSpacing = AppSpacing.base;
+  static const double _buttonBottomSpacing = AppSpacing.xl2;
   static const double _contentBuffer = AppSpacing.xl2;
   static const double _gestureIndicatorWidth = 128;
   static const double _gestureIndicatorHeight = 4;
@@ -77,8 +75,9 @@ class AppPrimaryNavigationBar {
 
   static void navigateTo(
     BuildContext context,
-    AppPrimaryDestination destination,
-  ) {
+    AppPrimaryDestination destination, {
+    bool triggerFeedback = true,
+  }) {
     final navigator = Navigator.of(context);
     final currentRouteName = ModalRoute.of(context)?.settings.name;
     final targetRouteName = destination.routeName;
@@ -87,7 +86,9 @@ class AppPrimaryNavigationBar {
       return;
     }
 
-    HapticFeedback.selectionClick();
+    if (triggerFeedback) {
+      HapticFeedback.selectionClick();
+    }
 
     if (destination == AppPrimaryDestination.home) {
       _returnToHome(navigator);
@@ -184,7 +185,8 @@ class _KerosenePrimaryNavigationOverlayState
   @override
   void didUpdateWidget(covariant _KerosenePrimaryNavigationOverlay oldWidget) {
     super.didUpdateWidget(oldWidget);
-    if (oldWidget.currentDestination != widget.currentDestination && _expanded) {
+    if (oldWidget.currentDestination != widget.currentDestination &&
+        _expanded) {
       setState(() => _expanded = false);
     }
   }
@@ -207,7 +209,11 @@ class _KerosenePrimaryNavigationOverlayState
 
     await Future<void>.delayed(KeroseneMotion.fast);
     if (!mounted) return;
-    AppPrimaryNavigationBar.navigateTo(context, destination);
+    AppPrimaryNavigationBar.navigateTo(
+      context,
+      destination,
+      triggerFeedback: false,
+    );
   }
 
   @override
@@ -215,30 +221,44 @@ class _KerosenePrimaryNavigationOverlayState
     return Positioned.fill(
       child: Stack(
         children: [
-          if (_expanded)
-            Positioned.fill(
-              child: Semantics(
-                label: MaterialLocalizations.of(context).modalBarrierDismissLabel,
-                button: true,
-                child: GestureDetector(
-                  behavior: HitTestBehavior.opaque,
-                  onTap: _closeExpanded,
-                  child: ColoredBox(
-                    color: Colors.black.withValues(alpha: 0.16),
+          Positioned.fill(
+            child: IgnorePointer(
+              ignoring: !_expanded,
+              child: AnimatedOpacity(
+                opacity: _expanded ? 1 : 0,
+                duration: KeroseneMotion.duration(
+                  context,
+                  KeroseneMotion.short,
+                ),
+                curve: KeroseneMotion.standard,
+                child: ExcludeSemantics(
+                  excluding: !_expanded,
+                  child: Semantics(
+                    label: MaterialLocalizations.of(context)
+                        .modalBarrierDismissLabel,
+                    button: true,
+                    child: GestureDetector(
+                      behavior: HitTestBehavior.opaque,
+                      onTap: _closeExpanded,
+                      child: ColoredBox(
+                        color: Colors.black.withValues(alpha: 0.16),
+                      ),
+                    ),
                   ),
                 ),
               ),
             ),
+          ),
           SafeArea(
             top: false,
             minimum: const EdgeInsets.fromLTRB(
-              AppSpacing.md,
+              AppPrimaryNavigationBar._buttonSideSpacing,
               0,
-              AppPrimaryNavigationBar._buttonRightSpacing,
+              AppPrimaryNavigationBar._buttonSideSpacing,
               AppPrimaryNavigationBar._buttonBottomSpacing,
             ),
             child: Align(
-              alignment: Alignment.bottomRight,
+              alignment: Alignment.bottomCenter,
               child: _KeroseneExpandableNavigationButton(
                 currentDestination: widget.currentDestination,
                 expanded: _expanded,
@@ -255,7 +275,8 @@ class _KerosenePrimaryNavigationOverlayState
               child: IgnorePointer(
                 child: AnimatedOpacity(
                   opacity: _expanded ? 0 : 1,
-                  duration: KeroseneMotion.duration(context, KeroseneMotion.short),
+                  duration:
+                      KeroseneMotion.duration(context, KeroseneMotion.short),
                   curve: KeroseneMotion.standard,
                   child: Container(
                     width: AppPrimaryNavigationBar._gestureIndicatorWidth,
@@ -298,7 +319,8 @@ class _KeroseneExpandableNavigationButtonState
     with TickerProviderStateMixin {
   static const double _closedSize = AppPrimaryNavigationBar._buttonSize;
   static const double _openHeight = 64;
-  static const double _itemGap = 4;
+  static const double _maxOpenWidth = 330;
+  static const Color _navBackground = Color(0xFF1A1A1A);
 
   late final AnimationController _menuController;
   late final AnimationController _pressController;
@@ -309,7 +331,7 @@ class _KeroseneExpandableNavigationButtonState
     super.initState();
     _menuController = AnimationController(
       vsync: this,
-      duration: KeroseneMotion.medium,
+      duration: KeroseneMotion.long,
       reverseDuration: KeroseneMotion.short,
       value: widget.expanded ? 1 : 0,
     );
@@ -324,7 +346,8 @@ class _KeroseneExpandableNavigationButtonState
   }
 
   @override
-  void didUpdateWidget(covariant _KeroseneExpandableNavigationButton oldWidget) {
+  void didUpdateWidget(
+      covariant _KeroseneExpandableNavigationButton oldWidget) {
     super.didUpdateWidget(oldWidget);
     if (oldWidget.expanded != widget.expanded) {
       if (KeroseneMotion.reduceMotion(context)) {
@@ -348,19 +371,21 @@ class _KeroseneExpandableNavigationButtonState
   Widget build(BuildContext context) {
     final media = MediaQuery.of(context);
     final reducedMotion = KeroseneMotion.reduceMotion(context);
-    final openWidth = (media.size.width -
-            AppPrimaryNavigationBar._buttonRightSpacing -
-            AppSpacing.md)
-        .clamp(292.0, 392.0)
-        .toDouble();
-    final label = widget.expanded
+    final availableWidth = media.size.width -
+        media.viewPadding.left -
+        media.viewPadding.right -
+        AppPrimaryNavigationBar._buttonSideSpacing * 2;
+    final openWidth =
+        availableWidth.clamp(_closedSize, _maxOpenWidth).toDouble();
+    final currentLabel = widget.currentDestination.label(context);
+    final semanticsLabel = widget.expanded
         ? MaterialLocalizations.of(context).closeButtonTooltip
-        : widget.currentDestination.label(context);
+        : '${MaterialLocalizations.of(context).showMenuTooltip}: $currentLabel';
 
     return Semantics(
       button: true,
       toggled: widget.expanded,
-      label: label,
+      label: semanticsLabel,
       child: RepaintBoundary(
         child: AnimatedBuilder(
           animation: Listenable.merge([_menuController, _pressController]),
@@ -368,57 +393,79 @@ class _KeroseneExpandableNavigationButtonState
             final rawValue = reducedMotion
                 ? (widget.expanded ? 1.0 : 0.0)
                 : _menuController.value;
-            final panelValue = KeroseneMotion.standard.transform(rawValue);
-            final radiusValue = KeroseneMotion.entrance.transform(rawValue);
-            final width = _closedSize + (openWidth - _closedSize) * panelValue;
-            final height = _closedSize + (_openHeight - _closedSize) * panelValue;
-            final radius = _closedSize / 2 + (32 - _closedSize / 2) * radiusValue;
+            final normalized = rawValue.clamp(0.0, 1.0).toDouble();
+            final widthProgress = KeroseneMotion.standard.transform(normalized);
+            final destinationsProgress = KeroseneMotion.standard.transform(
+              ((normalized - 0.20) / 0.80).clamp(0.0, 1.0).toDouble(),
+            );
+            final closedProgress = KeroseneMotion.standard.transform(
+              (normalized / 0.45).clamp(0.0, 1.0).toDouble(),
+            );
+            final width =
+                _closedSize + (openWidth - _closedSize) * widthProgress;
             final scale = _pressScale.value;
 
             return Transform.scale(
               scale: scale,
-              alignment: Alignment.bottomRight,
+              alignment: Alignment.bottomCenter,
               child: SizedBox(
+                key: const ValueKey('appPrimaryNavigationSurface'),
                 width: width,
-                height: height,
+                height: _openHeight,
                 child: ClipRRect(
-                  borderRadius: BorderRadius.circular(radius),
+                  borderRadius: BorderRadius.circular(_openHeight / 2),
                   clipBehavior: Clip.antiAlias,
                   child: Material(
-                    color: Colors.black,
+                    color: _navBackground,
                     child: Stack(
                       clipBehavior: Clip.hardEdge,
                       children: [
                         Positioned.fill(
                           child: DecoratedBox(
                             decoration: BoxDecoration(
-                              color: Colors.black,
-                              borderRadius: BorderRadius.circular(radius),
+                              color: _navBackground,
+                              borderRadius:
+                                  BorderRadius.circular(_openHeight / 2),
                               border: Border.all(
                                 color: Colors.white.withValues(
-                                  alpha: 0.10 + panelValue * 0.08,
+                                  alpha: 0.10 + widthProgress * 0.05,
                                 ),
-                                width: 1,
                               ),
                               boxShadow: [
                                 BoxShadow(
-                                  color: Colors.black.withValues(alpha: 0.36),
-                                  blurRadius: 22 + panelValue * 16,
-                                  offset: Offset(0, 10 + panelValue * 10),
+                                  color: Colors.black.withValues(alpha: 0.80),
+                                  blurRadius: 30,
+                                  offset: const Offset(0, 10),
                                 ),
                               ],
                             ),
                           ),
                         ),
-                        Align(
-                          alignment: Alignment.centerRight,
-                          child: SizedBox(
-                            width: openWidth,
-                            height: _openHeight,
-                            child: _KeroseneNavigationDestinations(
-                              progress: rawValue,
-                              currentDestination: widget.currentDestination,
-                              onDestinationSelected: widget.onDestinationSelected,
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: normalized < 0.98,
+                            child: Opacity(
+                              opacity: destinationsProgress,
+                              child: Transform.scale(
+                                scale: 0.96 + destinationsProgress * 0.04,
+                                child: _KeroseneNavigationDestinations(
+                                  progress: destinationsProgress,
+                                  currentDestination: widget.currentDestination,
+                                  onDestinationSelected:
+                                      widget.onDestinationSelected,
+                                ),
+                              ),
+                            ),
+                          ),
+                        ),
+                        Positioned.fill(
+                          child: IgnorePointer(
+                            ignoring: widget.expanded,
+                            child: Opacity(
+                              opacity: 1 - closedProgress,
+                              child: _KeroseneClosedNavigationGlyph(
+                                destination: widget.currentDestination,
+                              ),
                             ),
                           ),
                         ),
@@ -445,6 +492,38 @@ class _KeroseneExpandableNavigationButtonState
   }
 }
 
+class _KeroseneClosedNavigationGlyph extends StatelessWidget {
+  final AppPrimaryDestination destination;
+
+  const _KeroseneClosedNavigationGlyph({required this.destination});
+
+  @override
+  Widget build(BuildContext context) {
+    return Center(
+      child: Container(
+        width: 44,
+        height: 44,
+        decoration: BoxDecoration(
+          shape: BoxShape.circle,
+          color: Colors.white,
+          boxShadow: [
+            BoxShadow(
+              color: Colors.white.withValues(alpha: 0.14),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
+        ),
+        child: Icon(
+          destination._iconData,
+          color: Colors.black,
+          size: 22,
+        ),
+      ),
+    );
+  }
+}
+
 class _KeroseneNavigationDestinations extends StatelessWidget {
   final double progress;
   final AppPrimaryDestination currentDestination;
@@ -456,168 +535,168 @@ class _KeroseneNavigationDestinations extends StatelessWidget {
     required this.onDestinationSelected,
   });
 
-  static const double _iconBoxSize = 40;
   static const double _contentPadding = 8;
-  static const double _gap = _KeroseneExpandableNavigationButtonState._itemGap;
+  static const List<AppPrimaryDestination> _visualOrder = [
+    AppPrimaryDestination.home,
+    AppPrimaryDestination.card,
+    AppPrimaryDestination.history,
+    AppPrimaryDestination.settings,
+  ];
 
   @override
   Widget build(BuildContext context) {
-    final destinations = AppPrimaryDestination.values;
     final eased = KeroseneMotion.standard.transform(
       progress.clamp(0.0, 1.0).toDouble(),
     );
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final totalGap = _gap * (destinations.length - 1);
         final itemWidth =
-            (constraints.maxWidth - _contentPadding * 2 - totalGap) /
-                destinations.length;
-        final closeCenterX = constraints.maxWidth -
-            AppPrimaryNavigationBar._buttonSize / 2;
+            (constraints.maxWidth - _contentPadding * 2) / _visualOrder.length;
 
         return Padding(
-          padding: const EdgeInsets.all(_contentPadding),
+          padding: const EdgeInsets.symmetric(
+            horizontal: _contentPadding,
+            vertical: 6,
+          ),
           child: Row(
             children: [
-              for (var index = 0; index < destinations.length; index++) ...[
+              for (var index = 0; index < _visualOrder.length; index++)
                 SizedBox(
+                  key: ValueKey(
+                    'appPrimaryNavigationDestination-${_visualOrder[index].name}',
+                  ),
                   width: itemWidth,
-                  child: _KeroseneNavigationDestinationPill(
-                    destination: destinations[index],
-                    selected: destinations[index] == currentDestination,
+                  height: double.infinity,
+                  child: _KeroseneNavigationDestinationItem(
+                    destination: _visualOrder[index],
+                    selected: _visualOrder[index] == currentDestination,
                     progress: eased,
-                    flyOffset: _selectedFlyOffset(
-                      selected: destinations[index] == currentDestination,
-                      closeCenterX: closeCenterX,
-                      index: index,
-                      itemWidth: itemWidth,
-                    ),
-                    onTap: () => onDestinationSelected(destinations[index]),
+                    onTap: () => onDestinationSelected(_visualOrder[index]),
                   ),
                 ),
-                if (index != destinations.length - 1) const SizedBox(width: _gap),
-              ],
             ],
           ),
         );
       },
     );
   }
-
-  Offset _selectedFlyOffset({
-    required bool selected,
-    required double closeCenterX,
-    required int index,
-    required double itemWidth,
-  }) {
-    if (!selected) return Offset.zero;
-
-    final itemStart = _contentPadding + index * (itemWidth + _gap);
-    final iconCenterX = itemStart + _iconBoxSize / 2;
-    return Offset((closeCenterX - iconCenterX) * (1 - progress), 0);
-  }
 }
 
-class _KeroseneNavigationDestinationPill extends StatefulWidget {
+class _KeroseneNavigationDestinationItem extends StatefulWidget {
   final AppPrimaryDestination destination;
   final bool selected;
   final double progress;
-  final Offset flyOffset;
   final VoidCallback onTap;
 
-  const _KeroseneNavigationDestinationPill({
+  const _KeroseneNavigationDestinationItem({
     required this.destination,
     required this.selected,
     required this.progress,
-    required this.flyOffset,
     required this.onTap,
   });
 
   @override
-  State<_KeroseneNavigationDestinationPill> createState() =>
-      _KeroseneNavigationDestinationPillState();
+  State<_KeroseneNavigationDestinationItem> createState() =>
+      _KeroseneNavigationDestinationItemState();
 }
 
-class _KeroseneNavigationDestinationPillState
-    extends State<_KeroseneNavigationDestinationPill> {
+class _KeroseneNavigationDestinationItemState
+    extends State<_KeroseneNavigationDestinationItem> {
   bool _pressed = false;
 
   @override
   Widget build(BuildContext context) {
     final label = _resolveLabel(context);
-    final visibleTextAlpha = widget.progress.clamp(0.0, 1.0).toDouble();
-    final inactiveAlpha = widget.progress.clamp(0.0, 1.0).toDouble();
-    final iconAlpha = widget.selected ? 1.0 : inactiveAlpha;
-    final itemBackgroundAlpha = widget.selected
-        ? 0.12 * visibleTextAlpha
-        : (_pressed ? 0.07 : 0.0) * visibleTextAlpha;
-    final borderAlpha = widget.selected ? 0.16 * visibleTextAlpha : 0.0;
+    final progress = widget.progress.clamp(0.0, 1.0).toDouble();
+    final iconColor = widget.selected
+        ? Colors.black
+        : Colors.white.withValues(alpha: 0.72 + progress * 0.28);
+    final backgroundAlpha = widget.selected ? 1.0 : (_pressed ? 0.10 : 0.0);
+    final borderAlpha = widget.selected ? 0.0 : 0.08 + progress * 0.08;
 
-    return AnimatedScale(
-      scale: _pressed ? 0.965 : 1,
-      duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
-      curve: KeroseneMotion.standard,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: widget.onTap,
-          onTapDown: (_) => setState(() => _pressed = true),
-          onTapCancel: () => setState(() => _pressed = false),
-          onTapUp: (_) => setState(() => _pressed = false),
-          borderRadius: BorderRadius.circular(24),
-          splashColor: Colors.white.withValues(alpha: 0.07),
-          highlightColor: Colors.white.withValues(alpha: 0.04),
-          child: AnimatedContainer(
-            duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
-            curve: KeroseneMotion.standard,
-            height: 48,
-            padding: const EdgeInsets.symmetric(horizontal: 4),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: itemBackgroundAlpha),
-              borderRadius: BorderRadius.circular(24),
-              border: Border.all(
-                color: Colors.white.withValues(alpha: borderAlpha),
-              ),
-            ),
-            child: Row(
-              mainAxisAlignment: MainAxisAlignment.start,
-              children: [
-                Transform.translate(
-                  offset: widget.flyOffset,
-                  child: Transform.rotate(
-                    angle: widget.selected ? widget.progress * math.pi : 0,
-                    child: _KeroseneNativeNavIcon(
-                      kind: widget.destination._iconKind,
-                      color: Colors.white.withValues(alpha: iconAlpha),
-                      size: 40,
-                      strokeWidth: widget.selected ? 1.75 : 1.55,
+    return ExcludeSemantics(
+      excluding: progress < 0.98,
+      child: Semantics(
+        button: true,
+        selected: widget.selected,
+        label: label,
+        child: AnimatedScale(
+          scale: _pressed ? 0.96 : 1,
+          duration: KeroseneMotion.duration(context, KeroseneMotion.fast),
+          curve: KeroseneMotion.standard,
+          child: Material(
+            color: Colors.transparent,
+            child: InkWell(
+              onTap: widget.onTap,
+              onTapDown: (_) => setState(() => _pressed = true),
+              onTapCancel: () => setState(() => _pressed = false),
+              onTapUp: (_) => setState(() => _pressed = false),
+              borderRadius: BorderRadius.circular(32),
+              splashColor: Colors.white.withValues(alpha: 0.06),
+              highlightColor: Colors.white.withValues(alpha: 0.04),
+              child: Column(
+                mainAxisAlignment: MainAxisAlignment.center,
+                children: [
+                  AnimatedContainer(
+                    duration: KeroseneMotion.duration(
+                      context,
+                      KeroseneMotion.fast,
+                    ),
+                    curve: KeroseneMotion.standard,
+                    width: 34,
+                    height: 34,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: Colors.white.withValues(alpha: backgroundAlpha),
+                      border: Border.all(
+                        color: Colors.white.withValues(alpha: borderAlpha),
+                      ),
+                      boxShadow: widget.selected
+                          ? [
+                              BoxShadow(
+                                color: Colors.white.withValues(alpha: 0.14),
+                                blurRadius: 10,
+                                offset: const Offset(0, 3),
+                              ),
+                            ]
+                          : null,
+                    ),
+                    child: Icon(
+                      widget.destination._iconData,
+                      color: iconColor,
+                      size: 20,
                     ),
                   ),
-                ),
-                Expanded(
-                  child: ClipRect(
-                    child: Align(
-                      alignment: Alignment.centerLeft,
-                      widthFactor: widget.progress.clamp(0.0, 1.0).toDouble(),
-                      child: Text(
-                        label,
-                        maxLines: 1,
-                        overflow: TextOverflow.fade,
-                        softWrap: false,
-                        style: TextStyle(
-                          color: Colors.white.withValues(alpha: visibleTextAlpha),
-                          fontSize: 11.5,
-                          fontWeight:
-                              widget.selected ? FontWeight.w700 : FontWeight.w600,
-                          letterSpacing: -0.18,
-                          height: 1,
+                  const SizedBox(height: 3),
+                  SizedBox(
+                    height: 12,
+                    width: double.infinity,
+                    child: Padding(
+                      padding: const EdgeInsets.symmetric(horizontal: 3),
+                      child: Center(
+                        child: FittedBox(
+                          fit: BoxFit.scaleDown,
+                          child: Text(
+                            label,
+                            maxLines: 1,
+                            softWrap: false,
+                            style: AppTypography.caption.copyWith(
+                              color: Colors.white.withValues(alpha: 0.88),
+                              fontSize: 10,
+                              fontWeight: widget.selected
+                                  ? FontWeight.w700
+                                  : FontWeight.w500,
+                              height: 1,
+                              letterSpacing: 0,
+                            ),
+                          ),
                         ),
                       ),
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           ),
         ),
@@ -627,152 +706,9 @@ class _KeroseneNavigationDestinationPillState
 
   String _resolveLabel(BuildContext context) {
     final localized = widget.destination.label(context);
-    if (localized.trim().isEmpty) return widget.destination.compactFallbackLabel;
+    if (localized.trim().isEmpty) {
+      return widget.destination.compactFallbackLabel;
+    }
     return localized;
-  }
-}
-
-class _KeroseneNativeNavIcon extends StatelessWidget {
-  final _KeroseneNavIconKind kind;
-  final Color color;
-  final double size;
-  final double strokeWidth;
-
-  const _KeroseneNativeNavIcon({
-    required this.kind,
-    required this.color,
-    this.size = 40,
-    this.strokeWidth = 1.6,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox.square(
-      dimension: size,
-      child: RepaintBoundary(
-        child: CustomPaint(
-          painter: _KeroseneNavIconPainter(
-            kind: kind,
-            color: color,
-            strokeWidth: strokeWidth,
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _KeroseneNavIconPainter extends CustomPainter {
-  final _KeroseneNavIconKind kind;
-  final Color color;
-  final double strokeWidth;
-
-  const _KeroseneNavIconPainter({
-    required this.kind,
-    required this.color,
-    required this.strokeWidth,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final scale = size.shortestSide / 24;
-    canvas.save();
-    canvas.scale(scale, scale);
-
-    final stroke = Paint()
-      ..color = color
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round
-      ..strokeJoin = StrokeJoin.round;
-
-    switch (kind) {
-      case _KeroseneNavIconKind.home:
-        _paintHome(canvas, stroke);
-      case _KeroseneNavIconKind.wallet:
-        _paintWallet(canvas, stroke);
-      case _KeroseneNavIconKind.history:
-        _paintHistory(canvas, stroke);
-      case _KeroseneNavIconKind.settings:
-        _paintSettings(canvas, stroke);
-    }
-
-    canvas.restore();
-  }
-
-  void _paintHome(Canvas canvas, Paint stroke) {
-    final roof = Path()
-      ..moveTo(4.4, 10.2)
-      ..lineTo(12, 4.6)
-      ..lineTo(19.6, 10.2);
-    canvas.drawPath(roof, stroke);
-
-    final body = Path()
-      ..moveTo(6.1, 10.1)
-      ..lineTo(6.1, 19.1)
-      ..quadraticBezierTo(6.1, 20, 7, 20)
-      ..lineTo(9.4, 20)
-      ..lineTo(9.4, 14.8)
-      ..quadraticBezierTo(9.4, 14.1, 10.1, 14.1)
-      ..lineTo(13.9, 14.1)
-      ..quadraticBezierTo(14.6, 14.1, 14.6, 14.8)
-      ..lineTo(14.6, 20)
-      ..lineTo(17, 20)
-      ..quadraticBezierTo(17.9, 20, 17.9, 19.1)
-      ..lineTo(17.9, 10.1);
-    canvas.drawPath(body, stroke);
-  }
-
-  void _paintWallet(Canvas canvas, Paint stroke) {
-    final body = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(3.8, 6.7, 16.4, 11.8),
-      const Radius.circular(3.1),
-    );
-    canvas.drawRRect(body, stroke);
-    canvas.drawLine(const Offset(5.1, 9.5), const Offset(18.7, 9.5), stroke);
-
-    final pocket = RRect.fromRectAndRadius(
-      const Rect.fromLTWH(13.3, 11.0, 6.9, 4.2),
-      const Radius.circular(2.1),
-    );
-    canvas.drawRRect(pocket, stroke);
-    canvas.drawCircle(const Offset(15.4, 13.1), 0.45, stroke);
-  }
-
-  void _paintHistory(Canvas canvas, Paint stroke) {
-    final arcRect = Rect.fromCircle(center: const Offset(12, 12), radius: 7.1);
-    canvas.drawArc(arcRect, -math.pi * 1.03, math.pi * 1.72, false, stroke);
-
-    final arrow = Path()
-      ..moveTo(4.7, 8.4)
-      ..lineTo(4.8, 13.1)
-      ..lineTo(8.6, 10.4);
-    canvas.drawPath(arrow, stroke);
-    canvas.drawLine(const Offset(12, 8.1), const Offset(12, 12.3), stroke);
-    canvas.drawLine(const Offset(12, 12.3), const Offset(15.4, 14.1), stroke);
-  }
-
-  void _paintSettings(Canvas canvas, Paint stroke) {
-    canvas.drawCircle(const Offset(12, 12), 3.1, stroke);
-
-    for (var index = 0; index < 8; index++) {
-      final angle = index * math.pi / 4;
-      final inner = Offset(
-        12 + math.cos(angle) * 6.0,
-        12 + math.sin(angle) * 6.0,
-      );
-      final outer = Offset(
-        12 + math.cos(angle) * 8.0,
-        12 + math.sin(angle) * 8.0,
-      );
-      canvas.drawLine(inner, outer, stroke);
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _KeroseneNavIconPainter oldDelegate) {
-    return oldDelegate.kind != kind ||
-        oldDelegate.color != color ||
-        oldDelegate.strokeWidth != strokeWidth;
   }
 }

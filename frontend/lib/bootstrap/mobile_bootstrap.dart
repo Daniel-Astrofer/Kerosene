@@ -28,15 +28,15 @@ import '../features/home/presentation/screens/home_screen.dart'
     deferred as home;
 import '../features/security/presentation/providers/security_provider.dart';
 import '../features/security/presentation/widgets/app_entry_pin_gate.dart';
-import '../features/settings/presentation/screens/settings_screen.dart'
+import '../features/security/presentation/screens/settings_screen.dart'
     deferred as settings;
 import '../features/notifications/presentation/widgets/global_notification_host.dart';
 import '../core/services/background_service.dart';
 import '../core/services/notification_service.dart' as local_notifications;
-import '../features/financial_activity/presentation/screens/deposits_screen.dart'
+import '../features/movement/screens/movement_hub_screen.dart'
     deferred as deposits;
 import '../features/financial_accounts/domain/entities/wallet.dart';
-import '../features/send/presentation/screens/send_money_screen.dart'
+import '../features/movement/screens/send_money_screen.dart'
     deferred as send_money;
 import '../features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
 import '../core/providers/tor_providers.dart';
@@ -219,7 +219,7 @@ class MyApp extends ConsumerWidget {
         '/receive': (context) => _PrivateMobileRoute(
               child: DeferredPage(
                 loadLibrary: deposits.loadLibrary,
-                builder: (_) => deposits.DepositsScreen(),
+                builder: (_) => deposits.MovementHubScreen(),
               ),
             ),
         '/send-money': (context) => _PrivateMobileRoute(

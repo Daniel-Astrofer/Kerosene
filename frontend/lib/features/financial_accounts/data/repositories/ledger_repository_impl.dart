@@ -4,7 +4,7 @@ import 'package:kerosene/features/auth/data/datasources/auth_local_datasource.da
 import 'package:kerosene/features/auth/data/models/user_model.dart';
 import '../../../../core/errors/exceptions.dart';
 import '../../../../core/errors/failures.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 import '../../domain/repositories/ledger_repository.dart';
 import '../datasources/ledger_remote_datasource.dart';
 

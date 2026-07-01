@@ -188,6 +188,25 @@ class MoneyDisplay {
     return '$symbol $value';
   }
 
+  static String rawInputFromAmount({
+    required double amount,
+    required Currency currency,
+  }) {
+    if (amount <= 0 || amount.isNaN || amount.isInfinite) {
+      return _zeroRawInput(currency);
+    }
+
+    return amount.toStringAsFixed(decimalsFor(currency));
+  }
+
+  static String _zeroRawInput(Currency currency) {
+    final decimals = decimalsFor(currency);
+    if (decimals == 0) {
+      return '0';
+    }
+    return '0.${'0' * decimals}';
+  }
+
   static String applyKeypadInput({
     required String currentValue,
     required String key,

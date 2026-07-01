@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 
-import 'package:kerosene/features/settings/presentation/screens/settings_screen.dart';
+import 'package:kerosene/features/security/presentation/screens/settings_screen.dart';
 
 import 'golden_harness.dart';
 

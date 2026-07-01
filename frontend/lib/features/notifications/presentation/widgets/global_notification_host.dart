@@ -3,17 +3,14 @@ import 'dart:math' as math;
 
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:shared_preferences/shared_preferences.dart';
 
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/presentation/widgets/app_notification_surface.dart';
-import 'package:kerosene/core/providers/alert_preferences_provider.dart';
 import 'package:kerosene/core/presentation/widgets/app_screen_feedback_host.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/notifications/presentation/notification_navigation.dart';
 import 'package:kerosene/features/notifications/presentation/notification_visuals.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
@@ -33,26 +30,8 @@ class GlobalNotificationHost extends ConsumerStatefulWidget {
 
 class _GlobalNotificationHostState
     extends ConsumerState<GlobalNotificationHost> {
-  bool _backgroundNudgeScheduled = false;
-  bool _backgroundNudgeShownForSession = false;
-
-  @override
-  void initState() {
-    super.initState();
-    WidgetsBinding.instance.addPostFrameCallback((_) {
-      _scheduleBackgroundAlertsNudge();
-    });
-  }
-
   @override
   Widget build(BuildContext context) {
-    ref.listen<AuthState>(authControllerProvider, (_, __) {
-      _scheduleBackgroundAlertsNudge();
-    });
-    ref.listen<AlertPreferencesState>(alertPreferencesProvider, (_, __) {
-      _scheduleBackgroundAlertsNudge();
-    });
-
     final sidebarOpen = ref.watch(notificationSidebarProvider);
 
     return Stack(
@@ -87,70 +66,9 @@ class _GlobalNotificationHostState
                   ref.read(notificationSidebarProvider.notifier).close(),
             ),
           ),
-        const _TopNotificationBanner(),
-      ],
+      const _TopNotificationBanner(),
+    ],
     );
-  }
-
-  void _scheduleBackgroundAlertsNudge() {
-    if (_backgroundNudgeShownForSession || _backgroundNudgeScheduled) {
-      return;
-    }
-
-    _backgroundNudgeScheduled = true;
-    unawaited(
-      Future<void>.delayed(const Duration(milliseconds: 900), () async {
-        _backgroundNudgeScheduled = false;
-        await _maybeShowBackgroundAlertsNudge();
-      }),
-    );
-  }
-
-  Future<void> _maybeShowBackgroundAlertsNudge() async {
-    if (!mounted || _backgroundNudgeShownForSession) {
-      return;
-    }
-
-    final authState = ref.read(authControllerProvider);
-    if (authState is! AuthAuthenticated) {
-      return;
-    }
-
-    final preferences = ref.read(alertPreferencesProvider);
-    if (!preferences.inAppBannersEnabled ||
-        preferences.backgroundAlertsEnabled) {
-      return;
-    }
-
-    final prefs = await SharedPreferences.getInstance();
-    final persistedEnabled =
-        prefs.getBool(AlertPreferencesNotifier.backgroundAlertsKey) ?? false;
-    if (persistedEnabled || !mounted) {
-      return;
-    }
-
-    final userId = authState.user.id.trim();
-    final now = DateTime.now();
-    final notification = SessionNotificationItem(
-      id: 'background-alerts-nudge-$userId-${now.millisecondsSinceEpoch}',
-      title: 'Ative alertas em segundo plano',
-      body:
-          'Receba transações, depósitos e atualizações importantes mesmo fora do app. Toque para revisar as configurações.',
-      timestamp: now,
-      kind: SessionNotificationItem.kindBackgroundAlertsSetup,
-      severity: SessionNotificationItem.severityInfo,
-      deeplink: '/settings/notifications',
-      entityType: 'device',
-      entityId: userId,
-      metadata: const {
-        'dedupeKey': 'background-alerts-setup-nudge',
-        'cta': 'Configurar agora',
-      },
-    );
-
-    _backgroundNudgeShownForSession = true;
-    ref.read(sessionNotificationFeedProvider.notifier).add(notification);
-    ref.read(notificationBannerProvider.notifier).show(notification);
   }
 }
 

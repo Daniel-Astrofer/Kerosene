@@ -150,7 +150,7 @@ class AppConfig {
   static const String kfeOnrampUrls = '$kfeTransactions/onramp-urls';
   static const String kfeReserveOverview = '/api/admin/kfe/reserves/overview';
   static String kfeReceivingCapabilities(String receiverIdentifier) =>
-      '/kfe/users/$receiverIdentifier/receiving-capabilities';
+      '/kfe/users/${Uri.encodeComponent(receiverIdentifier.trim())}/receiving-capabilities';
 
   static String kfeColdWalletPsbtCreate(String walletId) =>
       '$kfeWallets/$walletId/cold-wallet/psbt';

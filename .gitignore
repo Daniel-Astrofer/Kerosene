@@ -49,7 +49,7 @@
 
 # Secrets and local credentials.
 **/.env
-**/.env.*
+infra/kubernetes/scripts/.env.tunnel
 !**/.env.example
 **/*.secret
 **/*.key

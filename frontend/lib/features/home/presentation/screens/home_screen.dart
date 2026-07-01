@@ -31,24 +31,24 @@ import 'package:kerosene/shared/widgets/bitcoin_refresh_indicator.dart';
 import 'package:kerosene/shared/widgets/bouncing_button_wrapper.dart';
 
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/payment_link.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/tx_status.dart';
-import '../../../financial_activity/presentation/screens/deposits_screen.dart'
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/payment_link.dart';
+import 'package:kerosene/features/movement/domain/entities/tx_status.dart';
+import 'package:kerosene/features/movement/screens/movement_hub_screen.dart'
     deferred as deposits;
-import '../../../financial_activity/presentation/providers/transaction_provider.dart';
-import '../../../financial_activity/presentation/widgets/statement_transaction_card.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/widgets/statement_transaction_card.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart'
     hide transactionRepositoryProvider;
 import 'package:kerosene/features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/balance_settings_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/receive/presentation/widgets/receive_flow_ui.dart';
+import 'package:kerosene/features/movement/widgets/receive_flow_ui.dart';
 import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
-import 'package:kerosene/features/send/presentation/screens/send_money_screen.dart'
+import 'package:kerosene/features/movement/screens/send_money_screen.dart'
     deferred as send_money;
 import '../widgets/animated_balance_display.dart';
 import '../widgets/home_bitcoin_market_chart_card.dart';
@@ -341,7 +341,7 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
         destinationBuilder: (selectedWallet) => DeferredPage(
           loadLibrary: deposits.loadLibrary,
           builder: (_) =>
-              deposits.DepositsScreen(initialWallet: selectedWallet),
+              deposits.MovementHubScreen(initialWallet: selectedWallet),
         ),
       ),
     );
@@ -370,7 +370,7 @@ class HomeScreenState extends ConsumerState<HomeScreen> {
         destinationBuilder: (selectedWallet) => DeferredPage(
           loadLibrary: deposits.loadLibrary,
           builder: (_) =>
-              deposits.DepositsScreen(initialWallet: selectedWallet),
+              deposits.MovementHubScreen(initialWallet: selectedWallet),
         ),
       ),
     );

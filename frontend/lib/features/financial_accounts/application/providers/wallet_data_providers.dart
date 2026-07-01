@@ -8,10 +8,10 @@ import 'package:kerosene/features/financial_accounts/data/repositories/ledger_re
 import 'package:kerosene/features/financial_accounts/data/repositories/wallet_repository_impl.dart';
 import 'package:kerosene/features/financial_accounts/domain/repositories/ledger_repository.dart';
 import 'package:kerosene/features/financial_accounts/domain/repositories/wallet_repository.dart';
-import 'package:kerosene/features/financial_activity/application/providers/transaction_data_providers.dart'
-    as financial_activity_data;
-import 'package:kerosene/features/financial_activity/data/datasources/transaction_remote_datasource.dart';
-import 'package:kerosene/features/financial_activity/domain/repositories/transaction_repository.dart';
+import 'package:kerosene/features/movement/providers/transaction_data_providers.dart'
+    as movement_data;
+import 'package:kerosene/features/movement/data/datasources/transaction_remote_datasource.dart';
+import 'package:kerosene/features/movement/domain/repositories/transaction_repository.dart';
 
 final ledgerRepositoryProvider = Provider<LedgerRepository>((ref) {
   final apiClient = ref.watch(apiClientProvider);
@@ -41,5 +41,5 @@ final walletRepositoryProvider = Provider<WalletRepository>((ref) {
 });
 
 final transactionRepositoryProvider = Provider<TransactionRepository>((ref) {
-  return ref.watch(financial_activity_data.transactionRepositoryProvider);
+  return ref.watch(movement_data.transactionRepositoryProvider);
 });

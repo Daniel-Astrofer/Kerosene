@@ -1,131 +1,16 @@
-import 'dart:async';
-
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/logging/app_log.dart';
-import 'package:kerosene/core/providers/alert_preferences_provider.dart';
-import 'package:kerosene/core/providers/price_provider.dart';
-import 'package:kerosene/core/services/notification_service.dart';
-import 'package:kerosene/core/services/price_websocket_service.dart';
-import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
-import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 
-/// Thresholds (in absolute %) that must be crossed for a price notification to fire.
-/// Alerts fire at most once per threshold per session.
-const List<double> _alertThresholds = [3.0, 5.0, 8.0, 10.0, 12.0, 15.0, 20.0];
-
-/// Provider that subscribes to the BTC ticker and fires market-alert
-/// notifications whenever the 24h change crosses a meaningful threshold.
-///
-/// Wire this provider in bootstrap widgets (similar to balanceWebSocketServiceProvider)
-/// so it is always active while the user is logged in.
+/// Market notifications are backend-authored. The provider is kept as a
+/// compatibility hook for older bootstrap code and intentionally does not
+/// author local notification text.
 final priceAlertProvider = Provider.autoDispose<_PriceAlertController>((ref) {
-  final controller = _PriceAlertController(ref);
-  ref.onDispose(() => controller.dispose());
-  return controller;
+  appLog('PriceAlerts: backend notification source enabled.');
+  return const _PriceAlertController();
 });
 
 class _PriceAlertController {
-  final Ref _ref;
-  StreamSubscription<PriceTickerSnapshot>? _sub;
-  final Set<String> _firedAlerts = {};
-  double? _lastNotifiedChangePercent;
+  const _PriceAlertController();
 
-  _PriceAlertController(this._ref) {
-    _start();
-  }
-
-  void _start() {
-    final service = _ref.read(priceWebSocketServiceProvider);
-    _sub = service.tickerStream.listen(_onTicker);
-    appLog('PriceAlerts: monitoring market movements.');
-  }
-
-  void _onTicker(PriceTickerSnapshot ticker) {
-    final alertPrefs = _ref.read(alertPreferencesProvider);
-    if (!alertPrefs.marketAlertsEnabled) return;
-
-    final change = ticker.dailyChangePercent;
-    if (change == null) return;
-
-    final abs = change.abs();
-    final isPositive = change >= 0;
-
-    // Find the highest threshold that was crossed but not yet notified
-    double? crossedThreshold;
-    for (final threshold in _alertThresholds.reversed) {
-      if (abs >= threshold) {
-        crossedThreshold = threshold;
-        break;
-      }
-    }
-    if (crossedThreshold == null) return;
-
-    final alertKey =
-        '${isPositive ? "up" : "down"}_${crossedThreshold.toStringAsFixed(0)}';
-    if (_firedAlerts.contains(alertKey)) return;
-
-    // Also deduplicate: only fire if the magnitude has changed meaningfully
-    // from the last notification (prevents repeat fires on same threshold level)
-    final last = _lastNotifiedChangePercent;
-    if (last != null && (change - last).abs() < 1.0) return;
-
-    _firedAlerts.add(alertKey);
-    _lastNotifiedChangePercent = change;
-
-    final sign = isPositive ? '▲' : '▼';
-    final direction = isPositive ? 'subiu' : 'caiu';
-    final title = 'Bitcoin $sign ${abs.toStringAsFixed(1)}% (24h)';
-    final body =
-        'O Bitcoin $direction ${abs.toStringAsFixed(1)}% nas últimas 24 horas.'
-        ' Preço atual: \$${ticker.priceUsd.toStringAsFixed(0)}.';
-
-    final notification = SessionNotificationItem(
-      id: 'market_alert_$alertKey',
-      title: title,
-      body: body,
-      timestamp: DateTime.now(),
-      kind: SessionNotificationItem.kindMarketAlert,
-      severity: isPositive
-          ? SessionNotificationItem.severitySuccess
-          : SessionNotificationItem.severityWarning,
-      deeplink: '/home',
-      metadata: {
-        'priceUsd': ticker.priceUsd.toStringAsFixed(2),
-        'dailyChangePercent': change.toStringAsFixed(4),
-        'thresholdPercent': crossedThreshold.toStringAsFixed(1),
-        'direction': isPositive ? 'up' : 'down',
-        'source': 'priceTickerStream',
-      },
-    );
-
-    appLog(
-        'PriceAlerts: firing alert – $alertKey (${change.toStringAsFixed(2)}%).');
-
-    _ref.read(sessionNotificationFeedProvider.notifier).add(notification);
-
-    // Choose one delivery channel per event. Native Android has priority for
-    // visibility; the in-app banner is only used when native/background alerts
-    // are not enabled. This prevents duplicate native + internal notifications.
-    if (alertPrefs.backgroundAlertsEnabled) {
-      unawaited(
-        NotificationService().showTransactionNotification(
-          id: notification.id.hashCode & 0x7fffffff,
-          title: title,
-          body: body,
-          summary: 'Kerosene',
-          payload: '/home',
-          incoming: isPositive,
-          dedupeKey: notification.id,
-        ),
-      );
-    } else if (alertPrefs.inAppBannersEnabled) {
-      _ref.read(notificationBannerProvider.notifier).show(notification);
-    }
-  }
-
-  void dispose() {
-    _sub?.cancel();
-    _sub = null;
-    appLog('PriceAlerts: disposed.');
-  }
+  void dispose() {}
 }

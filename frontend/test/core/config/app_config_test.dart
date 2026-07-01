@@ -76,6 +76,10 @@ void main() {
       '/kfe/tax-events/event-1/classify',
     );
     expect(AppConfig.kfeReserveOverview, '/api/admin/kfe/reserves/overview');
+    expect(
+      AppConfig.kfeReceivingCapabilities(' @alice/btc '),
+      '/kfe/users/%40alice%2Fbtc/receiving-capabilities',
+    );
 
     expect(AppConfig.notificationsList, '/notifications');
     expect(() => AppConfig.auditStats, throwsUnsupportedError);

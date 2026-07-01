@@ -28,8 +28,8 @@ import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_provider.dart';
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 
 import 'bitcoin_accounts_empty_layout.dart';
 import 'bitcoin_accounts_header.dart';
@@ -231,18 +231,29 @@ class AccountsContent extends ConsumerWidget {
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     if (accounts.isEmpty) {
-      return StatePanel(
-        icon: KeroseneIcons.wallet,
-        title: context.tr.bitcoinAccountsEmptyTitle,
-        message: context.tr.bitcoinAccountsEmptyMessage,
-        actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
-        onAction: onCreateInternalAccount,
+      return Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          StatePanel(
+            icon: KeroseneIcons.wallet,
+            title: context.tr.bitcoinAccountsEmptyTitle,
+            message: context.tr.bitcoinAccountsEmptyMessage,
+            actionLabel: context.tr.bitcoinAccountsNewKeroseneCard,
+            onAction: onCreateInternalAccount,
+          ),
+          const SizedBox(height: 14),
+          CreateWalletActionChip(
+            label: 'Cold Wallet',
+            icon: KeroseneIcons.security,
+            onTap: onCreateColdWallet,
+          ),
+        ],
       );
     }
 
     final selectedIndex = selectedAccountIndex.clamp(0, accounts.length - 1);
     final selectedAccount = accounts[selectedIndex];
-    final canCreateInternalAccount = canCreateInternalKeroseneAccount(accounts);
+    final canCreateKeroseneWallet = canCreateKeroseneWalletAccount(accounts);
     final canCreateColdWallet = canCreateColdWalletAccount(accounts);
     final txAsync = ref.watch(transactionHistoryProvider);
     final requestsAsync = selectedAccount.isWatchOnly
@@ -263,9 +274,9 @@ class AccountsContent extends ConsumerWidget {
               firstBitcoinReceiveRequest(requestsAsync),
         ),
         const SizedBox(height: 18),
-        if (canCreateInternalAccount || canCreateColdWallet) ...[
+        if (canCreateKeroseneWallet || canCreateColdWallet) ...[
           CreateWalletShortcut(
-            canCreateInternalAccount: canCreateInternalAccount,
+            canCreateInternalAccount: canCreateKeroseneWallet,
             canCreateColdWallet: canCreateColdWallet,
             onCreateInternalAccount: onCreateInternalAccount,
             onCreateColdWallet: onCreateColdWallet,
@@ -294,6 +305,17 @@ bool canCreateInternalKeroseneAccount(List<BitcoinAccount> accounts) {
     (account) =>
         account.isActive && account.isInternal && !account.isCustodialOnchain,
   );
+}
+
+bool canCreateCustodialOnchainAccount(List<BitcoinAccount> accounts) {
+  return !accounts.any(
+    (account) => account.isActive && account.isCustodialOnchain,
+  );
+}
+
+bool canCreateKeroseneWalletAccount(List<BitcoinAccount> accounts) {
+  return canCreateInternalKeroseneAccount(accounts) ||
+      canCreateCustodialOnchainAccount(accounts);
 }
 
 bool canCreateColdWalletAccount(List<BitcoinAccount> accounts) {

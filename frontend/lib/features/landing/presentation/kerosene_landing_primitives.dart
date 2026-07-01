@@ -96,7 +96,7 @@ class LandingPhoneImagePanel extends StatelessWidget {
             Opacity(
               opacity: 0.72,
               child: Image.asset(
-                'assets/images/HOMESCREEN.png',
+                'assets/welcome_phone_mockup.png',
                 fit: BoxFit.cover,
                 alignment: Alignment.topCenter,
               ),

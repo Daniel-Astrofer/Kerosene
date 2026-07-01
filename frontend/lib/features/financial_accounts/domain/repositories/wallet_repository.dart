@@ -1,7 +1,7 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
 import '../entities/wallet.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 
 /// Interface do repositório de carteiras
 /// Define contratos para operações com carteiras Bitcoin/DeFi

@@ -8,7 +8,7 @@ import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.da
 import 'package:kerosene/core/providers/shared_preferences_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart'
     deferred as bitcoin_accounts;
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart'

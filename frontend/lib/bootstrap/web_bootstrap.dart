@@ -7,6 +7,7 @@ import 'package:flutter_web_plugins/url_strategy.dart';
 import 'package:http/http.dart' as http;
 import 'package:kerosene/core/config/app_config.dart';
 import 'package:kerosene/core/copy/kerosene_ui_copy.dart';
+import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/core/navigation/deferred_page.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
 import 'package:kerosene/core/performance/kerosene_performance_boundary.dart';
@@ -16,16 +17,16 @@ import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
-import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
+import 'package:kerosene/features/web/theme/admin_theme.dart';
 import 'package:kerosene/features/auth/presentation/screens/server_unavailable_screen.dart'
     deferred as server_unavailable;
 import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart'
     deferred as landing;
-import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart'
+import 'package:kerosene/features/web/navigation/admin_content_router.dart'
     deferred as admin_content_router;
-import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart'
+import 'package:kerosene/features/web/screens/login/admin_login_screen.dart'
     deferred as admin_login;
-import 'package:kerosene/features/web_admin/shell/admin_shell.dart'
+import 'package:kerosene/features/web/shell/admin_shell.dart'
     deferred as admin_shell;
 
 typedef RuntimeConfigReader = Future<Map<String, dynamic>?> Function(
@@ -304,6 +305,8 @@ class _AdminWebApp extends ConsumerWidget {
       theme: AdminTheme.themeData.copyWith(
         pageTransitionsTheme: kerosenePageTransitionsTheme,
       ),
+      localizationsDelegates: AppLocalizations.localizationsDelegates,
+      supportedLocales: AppLocalizations.supportedLocales,
       scrollBehavior: const _WebScrollBehavior(),
       builder: (context, child) {
         return KeroseneResponsiveBoundary(

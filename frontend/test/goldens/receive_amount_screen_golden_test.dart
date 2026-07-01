@@ -1,8 +1,8 @@
 import 'package:flutter_test/flutter_test.dart';
 import 'package:golden_toolkit/golden_toolkit.dart';
 
-import 'package:kerosene/features/receive/presentation/screens/receive_amount_screen.dart';
-import 'package:kerosene/features/receive/presentation/screens/receive_method.dart';
+import 'package:kerosene/features/movement/screens/movement_amount_screen.dart';
+import 'package:kerosene/features/movement/screens/receive_method.dart';
 import 'package:kerosene/storybook/storybook_mocks.dart';
 
 import 'golden_harness.dart';
@@ -15,7 +15,7 @@ void main() {
   testGoldens('receive amount screen', (tester) async {
     await pumpFullScreenGolden(
       tester,
-      ReceiveAmountScreen(
+      MovementAmountScreen(
         wallet: mockWallets.first,
         method: ReceiveAmountMethod.qrCode,
         onChainWallet: true,

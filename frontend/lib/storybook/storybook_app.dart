@@ -15,11 +15,11 @@ import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
 import 'package:kerosene/features/security/presentation/providers/security_provider.dart';
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart'
     show walletProvider;
-import 'package:kerosene/features/web_admin/providers/admin_providers.dart';
-import 'package:kerosene/features/web_admin/screens/notifications/notifications_screen.dart';
+import 'package:kerosene/features/web/providers/admin_providers.dart';
+import 'package:kerosene/features/web/screens/notifications/notifications_screen.dart';
 
 import 'stories/admin_stories.dart';
 import 'stories/app_flow_story.dart';

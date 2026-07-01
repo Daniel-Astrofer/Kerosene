@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 
 abstract class LedgerRepository {
   Future<Either<Failure, List<dynamic>>> getAllLedgers();

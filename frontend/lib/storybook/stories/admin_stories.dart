@@ -1,11 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:storybook_flutter/storybook_flutter.dart';
-import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
-import 'package:kerosene/features/web_admin/navigation/admin_routes.dart';
-import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart';
-import 'package:kerosene/features/web_admin/shell/admin_shell.dart';
-import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
+import 'package:kerosene/features/web/navigation/admin_content_router.dart';
+import 'package:kerosene/features/web/navigation/admin_routes.dart';
+import 'package:kerosene/features/web/screens/login/admin_login_screen.dart';
+import 'package:kerosene/features/web/shell/admin_shell.dart';
+import 'package:kerosene/features/web/theme/admin_theme.dart';
 
 List<Story> adminStories() {
   return [

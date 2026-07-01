@@ -10,7 +10,7 @@ import 'package:kerosene/features/auth/domain/entities/user.dart';
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';

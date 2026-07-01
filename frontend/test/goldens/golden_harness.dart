@@ -21,7 +21,7 @@ import 'package:kerosene/features/auth/data/datasources/auth_remote_datasource.d
 import 'package:kerosene/features/auth/controller/auth_providers.dart';
 import 'package:kerosene/features/notifications/domain/entities/session_notification_item.dart';
 import 'package:kerosene/features/notifications/presentation/providers/session_notification_provider.dart';
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/balance_settings_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/storybook/storybook_mocks.dart';

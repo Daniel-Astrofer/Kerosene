@@ -11,7 +11,7 @@ import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/bitcoin_account_models.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_presentation_support.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';

@@ -8,14 +8,14 @@ import '../../../../features/auth/controller/auth_controller.dart'
     show sessionStorageScopeFromUser;
 import '../../../../core/utils/bitcoin_network.dart';
 import '../../../../features/auth/data/datasources/auth_local_datasource.dart';
-import '../../../financial_activity/data/datasources/transaction_remote_datasource.dart';
-import '../../../financial_activity/domain/entities/fee_estimate.dart'
+import 'package:kerosene/features/movement/data/datasources/transaction_remote_datasource.dart';
+import 'package:kerosene/features/movement/domain/entities/fee_estimate.dart'
     as tx_fee;
 import '../../domain/repositories/wallet_repository.dart';
 import '../datasources/wallet_remote_datasource.dart';
 import '../datasources/ledger_remote_datasource.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 
 class WalletRepositoryImpl implements WalletRepository {
   final WalletRemoteDataSource remoteDataSource;

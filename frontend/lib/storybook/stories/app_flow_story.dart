@@ -16,20 +16,20 @@ import 'package:kerosene/features/home/presentation/screens/home_loading_screen.
 import 'package:kerosene/features/home/presentation/screens/home_screen.dart';
 import 'package:kerosene/features/landing/presentation/kerosene_landing_page.dart';
 import 'package:kerosene/features/notifications/presentation/screens/notification_center_screen.dart';
-import 'package:kerosene/features/profile/presentation/screens/notification_settings_screen.dart';
+import 'package:kerosene/features/security/presentation/screens/notification_settings_screen.dart';
 import 'package:kerosene/features/security/presentation/screens/sovereignty_status_screen.dart';
-import 'package:kerosene/features/settings/presentation/screens/settings_screen.dart';
-import 'package:kerosene/features/financial_activity/presentation/screens/deposits_screen.dart';
-import 'package:kerosene/features/receive/presentation/screens/receive_amount_screen.dart';
-import 'package:kerosene/features/receive/presentation/screens/receive_method.dart';
-import 'package:kerosene/features/receive/presentation/screens/receive_nfc_flow_screen.dart';
-import 'package:kerosene/features/receive/presentation/screens/receive_request_flow_screen.dart';
-import 'package:kerosene/features/send/presentation/screens/send_money_screen.dart';
-import 'package:kerosene/features/web_admin/navigation/admin_content_router.dart';
-import 'package:kerosene/features/web_admin/navigation/admin_routes.dart';
-import 'package:kerosene/features/web_admin/screens/login/admin_login_screen.dart';
-import 'package:kerosene/features/web_admin/shell/admin_shell.dart';
-import 'package:kerosene/features/web_admin/theme/admin_theme.dart';
+import 'package:kerosene/features/security/presentation/screens/settings_screen.dart';
+import 'package:kerosene/features/movement/screens/movement_hub_screen.dart';
+import 'package:kerosene/features/movement/screens/movement_amount_screen.dart';
+import 'package:kerosene/features/movement/screens/receive_method.dart';
+import 'package:kerosene/features/movement/screens/receive_nfc_flow_screen.dart';
+import 'package:kerosene/features/movement/screens/receive_request_flow_screen.dart';
+import 'package:kerosene/features/movement/screens/send_money_screen.dart';
+import 'package:kerosene/features/web/navigation/admin_content_router.dart';
+import 'package:kerosene/features/web/navigation/admin_routes.dart';
+import 'package:kerosene/features/web/screens/login/admin_login_screen.dart';
+import 'package:kerosene/features/web/shell/admin_shell.dart';
+import 'package:kerosene/features/web/theme/admin_theme.dart';
 
 import '../storybook_mocks.dart';
 import 'receive_stories.dart';
@@ -583,7 +583,7 @@ Map<String, WidgetBuilder> _routeBuilders() {
           initialAddress: 'bc1qstorybookrecipient00000000000000000',
           initialAmountBtc: 0.0015,
         ),
-    '/receive': (_) => DepositsScreen(initialWallet: primaryWallet),
+    '/receive': (_) => MovementHubScreen(initialWallet: primaryWallet),
     '/receive/providers': (_) => ReceiveGatewayProvidersScreen(
           wallet: primaryWallet,
         ),
@@ -605,17 +605,17 @@ Map<String, WidgetBuilder> _routeBuilders() {
     '/receive/requests/error': (_) => const ReceiveRequestsScenarioPreview(
           scenario: ReceiveRequestStoryScenario.error,
         ),
-    '/receive/amount/qr': (_) => ReceiveAmountScreen(
+    '/receive/amount/qr': (_) => MovementAmountScreen(
           wallet: primaryWallet,
           method: ReceiveAmountMethod.qrCode,
           onChainWallet: false,
         ),
-    '/receive/amount/link': (_) => ReceiveAmountScreen(
+    '/receive/amount/link': (_) => MovementAmountScreen(
           wallet: primaryWallet,
           method: ReceiveAmountMethod.paymentLink,
           onChainWallet: false,
         ),
-    '/receive/amount/nfc': (_) => ReceiveAmountScreen(
+    '/receive/amount/nfc': (_) => MovementAmountScreen(
           wallet: primaryWallet,
           method: ReceiveAmountMethod.nfc,
           onChainWallet: false,

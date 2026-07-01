@@ -144,28 +144,8 @@ void onStart(ServiceInstance service) async {
         'BackgroundService: Update for ${update.walletName}: ${update.newBalance}',
       );
 
-      final lastBalance = lastBalances[update.walletName] ?? 0.0;
-
-      // Check if balance INCREASED (received money).
-      // Background updates should never open in-app screens; Android gets a
-      // native notification and the foreground UI refreshes on the next sync.
-      if (lastBalance > 0 && update.newBalance > lastBalance + 0.00000001) {
-        final delta =
-            update.amount > 0 ? update.amount : update.newBalance - lastBalance;
-        await NotificationService().showTransactionNotification(
-          id: DateTime.now().millisecondsSinceEpoch ~/ 1000,
-          title: 'BTC recebido',
-          body:
-              'Você recebeu ${delta.toStringAsFixed(8)} BTC em ${update.walletName}.',
-          summary: update.walletName,
-          payload: '/home',
-          incoming: true,
-          dedupeKey:
-              'received:${update.walletId}:${delta.toStringAsFixed(8)}:${update.walletName}',
-        );
-      }
-
-      // Update stored balance regardless of increase/decrease
+      // Backend-authored notifications arrive through the notification stream.
+      // The background balance stream only keeps the local balance snapshot.
       lastBalances[update.walletName] = update.newBalance;
     },
   );

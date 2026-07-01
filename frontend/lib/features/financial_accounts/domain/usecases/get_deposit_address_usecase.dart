@@ -1,6 +1,6 @@
 import 'package:dartz/dartz.dart';
 import '../../../../core/errors/failures.dart';
-import '../../../financial_activity/domain/repositories/transaction_repository.dart';
+import 'package:kerosene/features/movement/domain/repositories/transaction_repository.dart';
 
 class GetDepositAddressUseCase {
   final TransactionRepository repository;

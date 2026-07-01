@@ -11,8 +11,8 @@ import 'app_colors.dart';
 /// Brand direction:
 /// - Display / hero / onboarding: Newsreader.
 /// - UI / section hierarchy / descriptions: Inter.
-/// - Editable transaction amounts and Home balance: Inter SemiBold with tabular figures.
-/// - Ledger values, BTC, sats, hashes and technical IDs outside primary balance/input: IBM Plex Mono.
+/// - Numbers, editable transaction amounts and Home balance: Inter SemiBold with tabular figures.
+/// - Hashes and technical IDs: IBM Plex Mono.
 class AppTypography {
   AppTypography._();
 
@@ -21,7 +21,7 @@ class AppTypography {
   static const String displayFontFamily = 'Newsreader';
   static const String titleFontFamily = displayFontFamily;
   static const String monoFontFamily = 'IBMPlexMono';
-  static const String numericFontFamily = monoFontFamily;
+  static const String numericFontFamily = fontFamily;
   static const String financialFontFamily = monoFontFamily;
 
   // Temporary aliases retained while older widgets migrate names.
@@ -229,35 +229,43 @@ class AppTypography {
 
   // ─────────────────────────────────────────────────────────────
   // Financial values
-  // Usage: ledger rows, BTC/sats breakdowns, fees, TXID, hashes.
-  // IBM Plex Mono, 500/600, tabular figures. Primary input and Home balance use Inter SemiBold.
+  // Usage: balances, transaction amounts, fees, BTC/sats breakdowns.
+  // Inter SemiBold, 3px tracking, tabular figures.
   // ─────────────────────────────────────────────────────────────
 
-  static final TextStyle number = financial(
+  static final TextStyle number = inter(
     fontSize: 18,
     fontWeight: FontWeight.w600,
     color: AppColors.textPrimary,
+    letterSpacing: 3,
+    fontFeatures: const [FontFeature.tabularFigures()],
   );
 
-  static final TextStyle amount = financial(
+  static final TextStyle amount = inter(
     fontSize: 32,
     fontWeight: FontWeight.w600,
     height: 1.08,
     color: AppColors.textPrimary,
+    letterSpacing: 3,
+    fontFeatures: const [FontFeature.tabularFigures()],
   );
 
-  static final TextStyle amountLarge = financial(
+  static final TextStyle amountLarge = inter(
     fontSize: 40,
     fontWeight: FontWeight.w600,
     height: 1.05,
     color: AppColors.textPrimary,
+    letterSpacing: 3,
+    fontFeatures: const [FontFeature.tabularFigures()],
   );
 
-  static final TextStyle amountSmall = financial(
+  static final TextStyle amountSmall = inter(
     fontSize: 16,
-    fontWeight: FontWeight.w500,
+    fontWeight: FontWeight.w600,
     height: 1.12,
     color: AppColors.textPrimary,
+    letterSpacing: 3,
+    fontFeatures: const [FontFeature.tabularFigures()],
   );
 
   static final TextStyle mono = financial(
@@ -276,7 +284,7 @@ class AppTypography {
       fontWeight: FontWeight.w600,
       color: color,
       height: 1.02,
-      letterSpacing: -0.7,
+      letterSpacing: 3,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
   }
@@ -289,7 +297,7 @@ class AppTypography {
       fontWeight: FontWeight.w600,
       color: color,
       height: 1.02,
-      letterSpacing: -0.7,
+      letterSpacing: 3,
       fontFeatures: const [FontFeature.tabularFigures()],
     );
   }

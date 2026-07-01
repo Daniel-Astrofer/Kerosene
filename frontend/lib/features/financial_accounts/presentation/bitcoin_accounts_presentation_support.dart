@@ -7,7 +7,7 @@ import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/theme/monochrome_theme.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/bitcoin_account_models.dart';
 
-import 'package:kerosene/features/financial_activity/domain/entities/transaction.dart';
+import 'package:kerosene/features/movement/domain/entities/transaction.dart';
 
 const kKeroseneBrandLabel = 'Kerosene';
 

@@ -1,2 +1,2 @@
-// Legacy compatibility export. Use features/financial_activity instead.
-export 'package:kerosene/features/financial_activity/presentation/utils/transaction_address_display.dart';
+// Legacy compatibility export. Use features/movement instead.
+export 'package:kerosene/features/movement/utils/transaction_address_display.dart';

@@ -4,13 +4,13 @@ import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
+import 'package:kerosene/features/auth/domain/entities/user.dart';
 import 'package:kerosene/core/theme/app_theme.dart';
 import 'package:kerosene/features/financial_accounts/data/bitcoin_accounts_service.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/bitcoin_accounts_screen.dart';
-import 'package:kerosene/features/financial_activity/presentation/providers/transaction_provider.dart';
+import 'package:kerosene/features/movement/providers/transaction_provider.dart';
 import 'package:kerosene/core/l10n/app_localizations.dart';
-import 'package:kerosene/design_system/icons.dart';
 
 void main() {
   testWidgets(
@@ -49,6 +49,7 @@ void main() {
             ),
           ),
           sessionStorageScopeProvider.overrideWithValue('test-user'),
+          authControllerProvider.overrideWith(() => _AuthTestController()),
           transactionHistoryProvider.overrideWith((ref) async => const []),
         ],
         child: MaterialApp(
@@ -116,6 +117,7 @@ void main() {
     expect(find.text('Contas Bitcoin'), findsOneWidget);
     expect(find.text('Nenhuma conta Bitcoin ainda'), findsOneWidget);
     expect(find.text('Novo cartão Kerosene'), findsOneWidget);
+    expect(find.text('Criar Cold Wallet'), findsOneWidget);
     expect(find.text('Carteira interna'), findsNothing);
   });
 
@@ -137,6 +139,26 @@ void main() {
     expect(find.text('Continuar'), findsOneWidget);
   });
 
+  testWidgets('allows custodial on-chain creation when internal wallet exists',
+      (tester) async {
+    await _pumpBitcoinAccounts(
+      tester,
+      _FakeBitcoinAccountsService(const [_internalAccount]),
+    );
+
+    await tester.pumpAndSettle();
+
+    expect(find.text('Novo cartão Kerosene'), findsOneWidget);
+
+    await tester.tap(find.text('Novo cartão Kerosene'));
+    await tester.pumpAndSettle();
+
+    expect(find.text('Nova Carteira'), findsOneWidget);
+    expect(find.text('Custodial On-chain'), findsOneWidget);
+    expect(
+        find.text('As carteiras disponíveis já foram criadas.'), findsNothing);
+  });
+
   testWidgets('hides custody creation options that already exist',
       (tester) async {
     await _pumpBitcoinAccounts(
@@ -154,18 +176,33 @@ void main() {
             cardId: 'card-2',
             balanceAvailableSats: 50000,
           ),
+          BitcoinAccount(
+            id: 'watch-1',
+            type: 'WATCH_ONLY_COLD_WALLET',
+            custody: 'WATCH_ONLY',
+            status: 'ACTIVE',
+            label: 'Cold 1',
+            riskTier: 'WATCH_ONLY',
+            coldWalletId: 'cold-1',
+          ),
+          BitcoinAccount(
+            id: 'watch-2',
+            type: 'WATCH_ONLY_COLD_WALLET',
+            custody: 'WATCH_ONLY',
+            status: 'ACTIVE',
+            label: 'Cold 2',
+            riskTier: 'WATCH_ONLY',
+            coldWalletId: 'cold-2',
+          ),
         ],
       ),
     );
 
     await tester.pumpAndSettle();
-    await tester.tap(find.byIcon(KeroseneIcons.plus));
-    await tester.pumpAndSettle();
 
-    expect(find.text('Carteira Interna'), findsNothing);
-    expect(find.text('Custodial On-chain'), findsNothing);
-    expect(find.text('As carteiras disponíveis já foram criadas.'),
-        findsOneWidget);
+    expect(find.text('Novo cartão Kerosene'), findsNothing);
+    expect(find.text('Cold Wallet'), findsNothing);
+    expect(find.byType(CreateWalletActionChip), findsNothing);
   });
 
   testWidgets('requires name and custody before creating wallet',
@@ -394,6 +431,7 @@ Future<void> _pumpBitcoinAccounts(
     ProviderScope(
       overrides: [
         bitcoinAccountsServiceProvider.overrideWithValue(service),
+        authControllerProvider.overrideWith(() => _AuthTestController()),
         sessionStorageScopeProvider.overrideWithValue('test-user'),
         transactionHistoryProvider.overrideWith((ref) async => const []),
       ],
@@ -406,6 +444,17 @@ Future<void> _pumpBitcoinAccounts(
       ),
     ),
   );
+}
+
+class _AuthTestController extends AuthController {
+  @override
+  AuthState build() => AuthAuthenticated(
+        User(
+          id: 'user-1',
+          username: 'Satoshi Nakamoto',
+          createdAt: DateTime(2026, 1, 1),
+        ),
+      );
 }
 
 class _FakeBitcoinAccountsService implements BitcoinAccountsService {
