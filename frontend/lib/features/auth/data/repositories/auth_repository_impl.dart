@@ -202,6 +202,11 @@ class AuthRepositoryImpl implements AuthRepository {
     int? multisigThreshold,
   }) async {
     try {
+      await localDataSource.removeToken();
+      await localDataSource.removeUser();
+      await localDataSource.removeTotpSecret();
+      await localDataSource.removeBackupCodes();
+
       final result = await remoteDataSource.signup(
         username: username,
         passphrase: passphrase,

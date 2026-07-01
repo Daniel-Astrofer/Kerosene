@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/design_system/icons.dart';
 
 import '../../../../core/theme/app_typography.dart';
@@ -56,6 +57,7 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
   Widget build(BuildContext context) {
     final bottomInset = MediaQuery.viewPaddingOf(context).bottom;
     final size = MediaQuery.sizeOf(context);
+    final availableHeight = size.height - 12 - (20 + bottomInset);
     final compactWidth = size.width < 380;
     final compactHeight = size.height < 720;
     final horizontalPadding = compactWidth ? 20.0 : 24.0;
@@ -72,7 +74,7 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
       color: Colors.black,
       child: SafeArea(
         child: LayoutBuilder(
-          builder: (context, constraints) {
+          builder: (context, _) {
             return SingleChildScrollView(
               padding: EdgeInsets.fromLTRB(
                 horizontalPadding,
@@ -83,137 +85,154 @@ class _PinEntryScaffoldState extends State<PinEntryScaffold> {
               child: Center(
                 child: ConstrainedBox(
                   constraints: BoxConstraints(maxWidth: maxWidth),
-                  child: SizedBox(
-                    height: constraints.maxHeight - 12 - (20 + bottomInset),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.stretch,
-                      children: [
-                        SizedBox(height: topSpacing),
-                        const Spacer(flex: 1),
-                        GestureDetector(
-                          behavior: HitTestBehavior.opaque,
-                          onTap: _openPad,
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                widget.instruction,
-                                textAlign: TextAlign.left,
-                                style: AppTypography.newsreader(
-                                  color: monoTextColor,
-                                  fontSize: instructionFontSize,
-                                  fontWeight: FontWeight.w500,
-                                  height: 1.04,
-                                  letterSpacing: -0.35,
-                                  decoration: TextDecoration.none,
-                                ),
-                              ),
-                              SizedBox(height: contentGap),
-                              Align(
-                                alignment: Alignment.centerLeft,
-                                child: PinEntryDots(
-                                  length: widget.valueLength,
-                                  maxLength: widget.maxLength,
-                                  dotSize: dotSize,
-                                ),
-                              ),
-                              const SizedBox(height: 14),
-                              SizedBox(
-                                height: 42,
-                                child: AnimatedSwitcher(
-                                  duration: KeroseneMotion.short,
-                                  child: widget.error == null
-                                      ? const SizedBox.shrink()
-                                      : Text(
-                                          widget.error!,
-                                          key: ValueKey(widget.error),
-                                          textAlign: TextAlign.left,
-                                          style: AppTypography.caption.copyWith(
-                                            color: monoMutedTextColor,
-                                            height: 1.28,
-                                            letterSpacing: 0,
-                                            fontSize: 12.5,
-                                            decoration: TextDecoration.none,
-                                          ),
-                                        ),
-                                ),
-                              ),
-                              if (!_showPad) ...[
-                                const SizedBox(height: 14),
+                  child: ConstrainedBox(
+                    constraints: BoxConstraints(
+                      minHeight: availableHeight > 0 ? availableHeight : 0,
+                    ),
+                    child: IntrinsicHeight(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.stretch,
+                        children: [
+                          SizedBox(height: topSpacing),
+                          const Spacer(flex: 1),
+                          GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: _openPad,
+                            child: Column(
+                              crossAxisAlignment: CrossAxisAlignment.start,
+                              children: [
                                 Text(
-                                  tapToEnterLabel,
+                                  widget.instruction,
                                   textAlign: TextAlign.left,
-                                  style: AppTypography.caption.copyWith(
-                                    color: monoFaintTextColor,
-                                    height: 1.2,
+                                  style: AppTypography.newsreader(
+                                    color: monoTextColor,
+                                    fontSize: instructionFontSize,
+                                    fontWeight: FontWeight.w500,
+                                    height: 1.04,
+                                    letterSpacing: -0.35,
+                                    decoration: TextDecoration.none,
+                                  ),
+                                ),
+                                SizedBox(height: contentGap),
+                                Align(
+                                  alignment: Alignment.centerLeft,
+                                  child: PinEntryDots(
+                                    length: widget.valueLength,
+                                    maxLength: widget.maxLength,
+                                    dotSize: dotSize,
+                                  ),
+                                ),
+                                const SizedBox(height: 14),
+                                SizedBox(
+                                  height: 42,
+                                  child: AnimatedSwitcher(
+                                    duration: KeroseneMotion.short,
+                                    child: widget.error == null
+                                        ? const SizedBox.shrink()
+                                        : Text(
+                                            widget.error!,
+                                            key: ValueKey(widget.error),
+                                            textAlign: TextAlign.left,
+                                            style:
+                                                AppTypography.caption.copyWith(
+                                              color: monoMutedTextColor,
+                                              height: 1.28,
+                                              letterSpacing: 0,
+                                              fontSize: 12.5,
+                                              decoration: TextDecoration.none,
+                                            ),
+                                          ),
+                                  ),
+                                ),
+                                if (!_showPad) ...[
+                                  const SizedBox(height: 14),
+                                  Text(
+                                    tapToEnterLabel,
+                                    textAlign: TextAlign.left,
+                                    style: AppTypography.caption.copyWith(
+                                      color: monoFaintTextColor,
+                                      height: 1.2,
+                                      letterSpacing: 0,
+                                      decoration: TextDecoration.none,
+                                    ),
+                                  ),
+                                ],
+                              ],
+                            ),
+                          ),
+                          const Spacer(flex: 2),
+                          AnimatedSwitcher(
+                            duration: KeroseneMotion.short,
+                            child: widget.busy
+                                ? const SizedBox(
+                                    key: ValueKey('pin_pad_loading'),
+                                    height: 180,
+                                    child: Center(
+                                      child: TorLoadingDots(
+                                        dotSize: 8,
+                                        spacing: 10,
+                                        travel: 14,
+                                      ),
+                                    ),
+                                  )
+                                : _showPad
+                                    ? PinNumericPad(
+                                        key: const ValueKey('pin_pad_visible'),
+                                        enabled: widget.enabled && !widget.busy,
+                                        onDigit: widget.onDigit,
+                                        onDelete: widget.onDelete,
+                                        keySize: padKeySize,
+                                        digitFontSize: digitFontSize,
+                                      )
+                                    : const SizedBox.shrink(
+                                        key: ValueKey('pin_pad_hidden'),
+                                      ),
+                          ),
+                          if (widget.confirmLabel != null) ...[
+                            const SizedBox(height: 18),
+                            SizedBox(
+                              height: 52,
+                              child: FilledButton(
+                                onPressed: widget.enabled && !widget.busy
+                                    ? widget.onConfirm
+                                    : null,
+                                style: FilledButton.styleFrom(
+                                  backgroundColor: monoTextColor,
+                                  foregroundColor: Colors.black,
+                                  disabledBackgroundColor:
+                                      monoTextColor.withValues(alpha: 0.20),
+                                  disabledForegroundColor:
+                                      monoTextColor.withValues(alpha: 0.42),
+                                  shape: RoundedRectangleBorder(
+                                    borderRadius: BorderRadius.circular(26),
+                                  ),
+                                  textStyle: AppTypography.buttonText.copyWith(
+                                    color: Colors.black,
+                                    fontWeight: FontWeight.w800,
                                     letterSpacing: 0,
                                     decoration: TextDecoration.none,
                                   ),
                                 ),
-                              ],
-                            ],
-                          ),
-                        ),
-                        const Spacer(flex: 2),
-                        AnimatedSwitcher(
-                          duration: KeroseneMotion.short,
-                          child: _showPad
-                              ? PinNumericPad(
-                                  key: const ValueKey('pin_pad_visible'),
-                                  enabled: widget.enabled && !widget.busy,
-                                  onDigit: widget.onDigit,
-                                  onDelete: widget.onDelete,
-                                  keySize: padKeySize,
-                                  digitFontSize: digitFontSize,
-                                )
-                              : const SizedBox.shrink(
-                                  key: ValueKey('pin_pad_hidden'),
-                                ),
-                        ),
-                        if (widget.confirmLabel != null) ...[
-                          const SizedBox(height: 18),
-                          SizedBox(
-                            height: 52,
-                            child: FilledButton(
-                              onPressed: widget.enabled && !widget.busy
-                                  ? widget.onConfirm
-                                  : null,
-                              style: FilledButton.styleFrom(
-                                backgroundColor: monoTextColor,
-                                foregroundColor: Colors.black,
-                                disabledBackgroundColor:
-                                    monoTextColor.withValues(alpha: 0.20),
-                                disabledForegroundColor:
-                                    monoTextColor.withValues(alpha: 0.42),
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(26),
-                                ),
-                                textStyle: AppTypography.buttonText.copyWith(
-                                  color: Colors.black,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: 0,
-                                  decoration: TextDecoration.none,
-                                ),
+                                child: widget.busy
+                                    ? const SizedBox(
+                                        width: 18,
+                                        height: 18,
+                                        child: CircularProgressIndicator(
+                                          strokeWidth: 2,
+                                          color: Colors.black,
+                                        ),
+                                      )
+                                    : Text(widget.confirmLabel!),
                               ),
-                              child: widget.busy
-                                  ? const SizedBox(
-                                      width: 18,
-                                      height: 18,
-                                      child: CircularProgressIndicator(
-                                        strokeWidth: 2,
-                                        color: Colors.black,
-                                      ),
-                                    )
-                                  : Text(widget.confirmLabel!),
                             ),
-                          ),
+                          ],
+                          if (widget.footer != null) ...[
+                            const SizedBox(height: 12),
+                            Center(child: widget.footer!),
+                          ],
+                          const Spacer(flex: 1),
                         ],
-                        if (widget.footer != null) ...[
-                          const SizedBox(height: 12),
-                          Center(child: widget.footer!),
-                        ],
-                        const Spacer(flex: 1),
-                      ],
+                      ),
                     ),
                   ),
                 ),

@@ -50,6 +50,10 @@ final accountSecurityProfileProvider =
 
 final appPinStatusProvider = FutureProvider<AppPinStatus>(
   (ref) async {
+    final sessionScope = ref.watch(sessionStorageScopeProvider);
+    if (sessionScope == null) {
+      return const AppPinStatus();
+    }
     final repository = ref.watch(securityRepositoryProvider);
     final result = await repository.getAppPinStatus();
     return result.fold(

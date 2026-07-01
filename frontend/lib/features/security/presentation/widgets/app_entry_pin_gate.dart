@@ -36,8 +36,14 @@ class AppEntryPinGate extends ConsumerWidget {
         }
         return _AppEntryPinLockScreen(status: status);
       },
-      loading: () => child,
-      error: (_, __) => child,
+      loading: () => const ColoredBox(
+        color: Colors.black,
+        child: SizedBox.expand(),
+      ),
+      error: (_, __) => const ColoredBox(
+        color: Colors.black,
+        child: SizedBox.expand(),
+      ),
     );
   }
 }
