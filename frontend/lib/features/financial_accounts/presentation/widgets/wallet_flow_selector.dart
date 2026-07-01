@@ -39,7 +39,6 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
   static const Color _background = AppColors.hexFF000000;
   static const Color _text = AppColors.hexFFFFFFFF;
   static const Color _muted = AppColors.hexFFA1A1A1;
-  static const double _contentMaxWidth = 430;
 
   Wallet? _selectedWallet;
 
@@ -192,10 +191,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
         final width = constraints.maxWidth;
         final height = constraints.maxHeight;
         final compact = width < 380 || height < 720 || wallets.length >= 3;
-        final outerHorizontal = width <= 360 ? 12.0 : 18.0;
-        final maxWidth = (width - outerHorizontal * 2)
-            .clamp(280.0, _contentMaxWidth)
-            .toDouble();
+        final maxWidth = width;
         final canFitWithoutScrolling = wallets.length <= 3;
         final verticalPadding = canFitWithoutScrolling ? 32.0 : 84.0;
         final gap = compact ? 10.0 : 14.0;
@@ -229,11 +225,11 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           final maxTileHeight = wallets.isEmpty
               ? 0.0
               : (availableHeight / wallets.length)
-                  .clamp(compact ? 156.0 : 184.0, compact ? 210.0 : 250.0)
+                  .clamp(compact ? 156.0 : 184.0, double.infinity)
                   .toDouble();
           return Padding(
             padding: EdgeInsets.symmetric(
-              horizontal: outerHorizontal,
+              horizontal: 0,
               vertical: verticalPadding,
             ),
             child: Center(
@@ -263,10 +259,10 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           physics: const BouncingScrollPhysics(
             parent: AlwaysScrollableScrollPhysics(),
           ),
-          padding: EdgeInsets.fromLTRB(
-            outerHorizontal,
+          padding: const EdgeInsets.fromLTRB(
+            0,
             84,
-            outerHorizontal,
+            0,
             28,
           ),
           itemCount: wallets.length,

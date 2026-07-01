@@ -11,7 +11,7 @@ import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
 
-const Duration kWalletHoldSelectionDuration = Duration(seconds: 2);
+const Duration kWalletHoldSelectionDuration = Duration(seconds: 1);
 
 String walletSelectionBalanceLabel(Wallet wallet) {
   final amount = MoneyDisplay.format(
