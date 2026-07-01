@@ -16,6 +16,9 @@ void main() {
   testWidgets(
       'separates Kerosene card balance from cold wallet watched balance',
       (tester) async {
+    await tester.binding.setSurfaceSize(const Size(800, 1200));
+    addTearDown(() => tester.binding.setSurfaceSize(null));
+
     await tester.pumpWidget(
       ProviderScope(
         overrides: [
@@ -69,10 +72,9 @@ void main() {
     expect(find.text('NOME DA CARTEIRA'), findsOneWidget);
     expect(find.text('UTXOS MONITORADOS'), findsNothing);
 
-    await tester.tap(find.text('STATUS DA CARTEIRA'));
-    await tester.pumpAndSettle();
+    await _tapExpansion(tester, 'STATUS DA CARTEIRA');
 
-    expect(find.text('Cartão Kerosene'), findsWidgets);
+    expect(find.text('Internal BTC Card'), findsWidgets);
     expect(find.text('0.00131000 BTC'), findsOneWidget);
 
     await tester.drag(find.byType(PageView).first, const Offset(-360, 0));
@@ -82,23 +84,20 @@ void main() {
     expect(find.text('UTXOS MONITORADOS'), findsOneWidget);
     expect(find.text('PSBT WORKFLOWS'), findsOneWidget);
 
-    await tester.tap(find.text('STATUS DA CARTEIRA'));
-    await tester.pumpAndSettle();
+    await _tapExpansion(tester, 'STATUS DA CARTEIRA');
 
-    expect(find.text('Somente leitura'), findsWidgets);
+    expect(find.text('Arquivar acompanhamento'), findsOneWidget);
     expect(find.text('0.00250000 BTC'), findsWidgets);
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -520));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('UTXOS MONITORADOS'));
-    await tester.pumpAndSettle();
+    await _tapExpansion(tester, 'UTXOS MONITORADOS');
 
     expect(find.text('Disponível para PSBT'), findsOneWidget);
 
     await tester.drag(find.byType(ListView).first, const Offset(0, -160));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('PSBT WORKFLOWS'));
-    await tester.pumpAndSettle();
+    await _tapExpansion(tester, 'PSBT WORKFLOWS');
 
     expect(find.text('Copiar unsigned'), findsOneWidget);
     expect(find.text('Bitcoin Advanced'), findsNothing);
@@ -133,7 +132,7 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('Nova Carteira'), findsOneWidget);
-    expect(find.text('Carteira Interna'), findsNothing);
+    expect(find.text('Carteira Interna'), findsOneWidget);
     expect(find.text('Custodial On-chain'), findsOneWidget);
     expect(find.text('Kerosene Watch-Only'), findsNothing);
     expect(find.text('Continuar'), findsOneWidget);
@@ -221,7 +220,7 @@ void main() {
 
     expect(service.createWalletCalls, 0);
 
-    await tester.tap(find.text('Custodial On-chain'));
+    await tester.tap(find.text('Carteira Interna'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
@@ -240,7 +239,7 @@ void main() {
 
     expect(service.createWalletCalls, 1);
     expect(service.lastCreatedLabel, 'Reserva familiar');
-    expect(service.lastCreatedCustody, BitcoinAccountCustody.custodialOnchain);
+    expect(service.lastCreatedCustody, BitcoinAccountCustody.internal);
     expect(find.text('Reserva familiar'), findsWidgets);
 
     await tester.pump(const Duration(seconds: 3));
@@ -257,7 +256,7 @@ void main() {
     await tester.pumpAndSettle();
     await tester.tap(find.text('Novo cartão Kerosene'));
     await tester.pumpAndSettle();
-    await tester.tap(find.text('Custodial On-chain'));
+    await tester.tap(find.text('Carteira Interna'));
     await tester.pumpAndSettle();
     await tester.tap(find.text('Continuar'));
     await tester.pumpAndSettle();
@@ -282,7 +281,7 @@ void main() {
 
     expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
 
-    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await _tapExpansion(tester, 'ENDEREÇO DE RECEBIMENTO');
     await tester.pumpAndSettle();
 
     expect(find.text('Não informado'), findsWidgets);
@@ -302,7 +301,7 @@ void main() {
 
     expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
 
-    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await _tapExpansion(tester, 'ENDEREÇO DE RECEBIMENTO');
     await tester.pumpAndSettle();
 
     expect(
@@ -338,15 +337,18 @@ void main() {
     await tester.pumpAndSettle();
 
     expect(find.text('ENDEREÇO DE RECEBIMENTO'), findsOneWidget);
-    expect(find.text('bc1qrece...00000000'), findsOneWidget);
+    expect(
+      find.text('bc1qreceive0000000000000000000000000000000000'),
+      findsWidgets,
+    );
 
-    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await _tapExpansion(tester, 'ENDEREÇO DE RECEBIMENTO');
     await tester.pumpAndSettle();
 
     expect(find.text('0.00050000 BTC'), findsOneWidget);
     expect(
       find.text('bc1qreceive0000000000000000000000000000000000'),
-      findsOneWidget,
+      findsWidgets,
     );
   });
 
@@ -373,7 +375,7 @@ void main() {
     await _pumpBitcoinAccounts(tester, service);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.text('ENDEREÇO DE RECEBIMENTO'));
+    await _tapExpansion(tester, 'ENDEREÇO DE RECEBIMENTO');
     await tester.pumpAndSettle();
     expect(find.text('Rotacionar endereço'), findsOneWidget);
     await tester.tap(find.text('Rotacionar endereço'));
@@ -381,11 +383,10 @@ void main() {
     expect(service.rotateAddressCalls, 1);
     expect(
       find.text('bc1qrotated0000000000000000000000000000000000'),
-      findsOneWidget,
+      findsWidgets,
     );
-    expect(find.text('bc1qrota...00000000'), findsOneWidget);
 
-    await tester.tap(find.text('NOME DA CARTEIRA'));
+    await _tapExpansion(tester, 'NOME DA CARTEIRA');
     await tester.pumpAndSettle();
     expect(find.text('Trocar nome'), findsOneWidget);
     await tester.tap(find.text('Trocar nome'));
@@ -396,10 +397,10 @@ void main() {
     expect(service.renameWalletCalls, 1);
     expect(service.lastRenamedLabel, 'Reserva privada');
 
-    await tester.tap(find.text('STATUS DA CARTEIRA'));
+    await _tapExpansion(tester, 'STATUS DA CARTEIRA');
     await tester.pumpAndSettle();
-    expect(find.text('Bloquear cartão'), findsOneWidget);
-    await tester.tap(find.text('Bloquear cartão'));
+    expect(find.text('Bloquear carteira'), findsOneWidget);
+    await tester.tap(find.byType(Switch).last);
     await tester.pumpAndSettle();
     await tester.tap(find.text('CONFIRMAR'));
     await tester.pumpAndSettle();
@@ -407,6 +408,18 @@ void main() {
     expect(service.lastArchivedAccountId, 'internal-1');
     await tester.pump(const Duration(seconds: 3));
   });
+}
+
+Future<void> _tapExpansion(WidgetTester tester, String title) async {
+  final header = find.ancestor(
+    of: find.text(title),
+    matching: find.byType(InkWell),
+  );
+  await tester.ensureVisible(header.first);
+  await tester.pumpAndSettle();
+  final rect = tester.getRect(header.first);
+  await tester.tapAt(Offset(rect.left + 28, rect.top + 28));
+  await tester.pumpAndSettle();
 }
 
 const _internalAccount = BitcoinAccount(
@@ -476,7 +489,7 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
   String? lastArchivedAccountId;
 
   _FakeBitcoinAccountsService(
-    this.accounts, {
+    List<BitcoinAccount> accounts, {
     this.requests = const [],
     this.utxos = const [
       ColdWalletUtxoView(
@@ -514,7 +527,7 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
     ],
     this.requestError,
     this.failListAfterCreate = false,
-  });
+  }) : accounts = List<BitcoinAccount>.of(accounts);
 
   @override
   Future<List<BitcoinAccount>> listAccounts() async {
@@ -532,7 +545,7 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
     createWalletCalls += 1;
     lastCreatedLabel = label;
     lastCreatedCustody = custody;
-    return BitcoinAccount(
+    final created = BitcoinAccount(
       id: 'created-$createWalletCalls',
       type: custody == BitcoinAccountCustody.watchOnly
           ? 'WATCH_ONLY_COLD_WALLET'
@@ -547,6 +560,8 @@ class _FakeBitcoinAccountsService implements BitcoinAccountsService {
       riskTier: 'BRONZE',
       cardId: 'created-card',
     );
+    accounts.insert(0, created);
+    return created;
   }
 
   @override

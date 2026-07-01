@@ -129,11 +129,7 @@ class _StatementTransactionScrollStackState
   }
 
   List<int> _paintOrder(int? expandedIndex) {
-    final indexes = List<int>.generate(widget.itemCount, (index) => index);
-    if (expandedIndex == null) return indexes;
-    indexes.remove(expandedIndex);
-    indexes.add(expandedIndex);
-    return indexes;
+    return List<int>.generate(widget.itemCount, (index) => index);
   }
 
   Widget _positionedItem(
@@ -250,9 +246,9 @@ class StatementTransactionCard extends ConsumerWidget {
             border: Border.all(color: style.border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.28),
-                blurRadius: 20,
-                offset: const Offset(0, 10),
+                color: Colors.black.withValues(alpha: 0.55),
+                blurRadius: 24,
+                offset: const Offset(0, 14),
               ),
             ],
           ),
@@ -867,6 +863,10 @@ class _BankTransactionDetailsRow extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
+        if (row.copyValue != null) ...[
+          const SizedBox(width: 6),
+          _DarkTransactionDetailCopyButton(row: row),
+        ],
         const SizedBox(width: 12),
         Expanded(
           child: Text(
@@ -883,10 +883,6 @@ class _BankTransactionDetailsRow extends StatelessWidget {
             ),
           ),
         ),
-        if (row.copyValue != null) ...[
-          const SizedBox(width: 8),
-          _DarkTransactionDetailCopyButton(row: row),
-        ],
       ],
     );
   }
@@ -904,15 +900,16 @@ class _DarkTransactionDetailCopyButton extends StatelessWidget {
       child: IconButton(
         key: ValueKey('statement-detail-copy-${row.key}'),
         onPressed: () => _copyDetail(context, row),
+        visualDensity: VisualDensity.compact,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        constraints: const BoxConstraints.tightFor(width: 24, height: 24),
         style: IconButton.styleFrom(
-          minimumSize: const Size.square(48),
-          tapTargetSize: MaterialTapTargetSize.padded,
+          minimumSize: const Size.square(24),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
         icon: const Icon(
           KeroseneIcons.copy,
-          size: 17,
+          size: 15,
           color: AppColors.hexFFB8BCC2,
         ),
       ),
@@ -1071,7 +1068,7 @@ class _TransactionDetailsRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      crossAxisAlignment: CrossAxisAlignment.start,
+      crossAxisAlignment: CrossAxisAlignment.center,
       children: [
         Text(
           row.label,
@@ -1083,6 +1080,10 @@ class _TransactionDetailsRow extends StatelessWidget {
             letterSpacing: 0,
           ),
         ),
+        if (row.copyValue != null) ...[
+          const SizedBox(width: 6),
+          _TransactionDetailCopyButton(row: row, style: style),
+        ],
         const SizedBox(width: 14),
         Expanded(
           child: Text(
@@ -1091,7 +1092,7 @@ class _TransactionDetailsRow extends StatelessWidget {
             maxLines: 2,
             overflow: TextOverflow.ellipsis,
             style: TextStyle(
-              color: style.secondaryText,
+              color: Colors.black,
               fontFamily: row.displayValue.length > 20
                   ? AppTypography.financialFontFamily
                   : AppTypography.bodyFontFamily,
@@ -1101,10 +1102,6 @@ class _TransactionDetailsRow extends StatelessWidget {
             ),
           ),
         ),
-        if (row.copyValue != null) ...[
-          const SizedBox(width: 8),
-          _TransactionDetailCopyButton(row: row, style: style),
-        ],
       ],
     );
   }
@@ -1123,14 +1120,14 @@ class _TransactionDetailCopyButton extends StatelessWidget {
       child: IconButton(
         key: ValueKey('statement-detail-copy-${row.key}'),
         onPressed: () => _copyDetail(context, row),
-        visualDensity: VisualDensity.standard,
+        visualDensity: VisualDensity.compact,
         padding: EdgeInsets.zero,
-        constraints: const BoxConstraints.tightFor(width: 48, height: 48),
+        constraints: const BoxConstraints.tightFor(width: 24, height: 24),
         style: IconButton.styleFrom(
-          minimumSize: const Size.square(48),
-          tapTargetSize: MaterialTapTargetSize.padded,
+          minimumSize: const Size.square(24),
+          tapTargetSize: MaterialTapTargetSize.shrinkWrap,
         ),
-        icon: Icon(KeroseneIcons.copy, size: 17, color: style.secondaryText),
+        icon: Icon(KeroseneIcons.copy, size: 15, color: Colors.black),
       ),
     );
   }

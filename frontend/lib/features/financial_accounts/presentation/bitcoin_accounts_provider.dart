@@ -23,8 +23,17 @@ class BitcoinAccountsNotifier extends AsyncNotifier<List<BitcoinAccount>> {
   }
 
   Future<void> refresh() async {
+    final previousAccounts = state.asData?.value ?? const <BitcoinAccount>[];
     state = const AsyncLoading<List<BitcoinAccount>>();
-    state = await AsyncValue.guard(_service.listAccounts);
+    try {
+      state = AsyncValue.data(await _service.listAccounts());
+    } catch (error, stackTrace) {
+      if (previousAccounts.isNotEmpty) {
+        state = AsyncValue.data(previousAccounts);
+        return;
+      }
+      state = AsyncValue.error(error, stackTrace);
+    }
   }
 
   Future<BitcoinAccount> createInternalCard({

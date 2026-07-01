@@ -227,8 +227,9 @@ class InternalAccountCreationFlowState
 
   BitcoinAccountCustody get selectedCustody {
     return switch (selectedCustodyIndex) {
+      0 => BitcoinAccountCustody.internal,
       1 => BitcoinAccountCustody.custodialOnchain,
-      _ => BitcoinAccountCustody.custodialOnchain,
+      _ => BitcoinAccountCustody.internal,
     };
   }
 
@@ -242,6 +243,13 @@ class InternalAccountCreationFlowState
           };
 
     return [
+      if (!unavailableCustodies.contains(BitcoinAccountCustody.internal))
+        CustodyCreationOption(
+          index: 0,
+          icon: KeroseneIcons.creditCard,
+          title: context.tr.bitcoinAccountsCustodyInternalTitle,
+          subtitle: context.tr.bitcoinAccountsCustodyInternalSubtitle,
+        ),
       if (!unavailableCustodies
           .contains(BitcoinAccountCustody.custodialOnchain))
         CustodyCreationOption(
@@ -255,8 +263,9 @@ class InternalAccountCreationFlowState
 
   String get selectedCustodyLabel {
     return switch (selectedCustodyIndex) {
+      0 => context.tr.bitcoinAccountsCustodyInternalTitle,
       1 => context.tr.bitcoinAccountsCustodyOnchainTitle,
-      _ => context.tr.bitcoinAccountsCustodyOnchainTitle,
+      _ => context.tr.bitcoinAccountsCustodyInternalTitle,
     };
   }
 

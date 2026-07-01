@@ -323,12 +323,12 @@ class _StatementHeader extends StatelessWidget {
       children: [
         Text(
           _copy(context, pt: 'Extrato', en: 'Statement', es: 'Extracto'),
-          style: AppTypography.inter(
+          style: AppTypography.newsreader(
             color: _StatementColors.textPrimary,
-            fontSize: MediaQuery.sizeOf(context).width >= 720 ? 34 : 30,
-            fontWeight: FontWeight.w600,
+            fontSize: MediaQuery.sizeOf(context).width >= 720 ? 36 : 32,
+            fontWeight: FontWeight.w500,
             height: 1.12,
-            letterSpacing: 0,
+            letterSpacing: -0.2,
           ),
         ),
         const SizedBox(height: AppSpacing.base),

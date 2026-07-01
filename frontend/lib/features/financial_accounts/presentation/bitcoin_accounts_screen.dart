@@ -342,19 +342,32 @@ class _AccountCardPalette {
 }
 
 _AccountCardPalette _accountCardPalette(BitcoinAccount account) {
-  final seed = '${account.id}:${account.label}:${account.custody}';
-  final hash = seed.codeUnits.fold<int>(
-    17,
-    (value, unit) => ((value * 31) + unit) & 0x7fffffff,
-  );
-  final hue = (hash % 360).toDouble();
+  if (account.isWatchOnly) {
+    return const _AccountCardPalette(
+      top: AppColors.hexFF242424,
+      middle: AppColors.hexFF151515,
+      bottom: AppColors.hexFF050505,
+      accent: AppColors.hexFFC4C4C4,
+      glow: AppColors.hexFF8A8A8E,
+    );
+  }
 
-  return _AccountCardPalette(
-    top: HSVColor.fromAHSV(1, hue, 0.44, 0.21).toColor(),
-    middle: HSVColor.fromAHSV(1, (hue + 10) % 360, 0.52, 0.105).toColor(),
-    bottom: HSVColor.fromAHSV(1, (hue + 20) % 360, 0.62, 0.035).toColor(),
-    accent: HSVColor.fromAHSV(1, (hue + 28) % 360, 0.34, 0.72).toColor(),
-    glow: HSVColor.fromAHSV(1, (hue + 42) % 360, 0.22, 0.96).toColor(),
+  if (account.isCustodialOnchain) {
+    return const _AccountCardPalette(
+      top: AppColors.hexFF222222,
+      middle: AppColors.hexFF111111,
+      bottom: AppColors.hexFF020303,
+      accent: AppColors.hexFF63FEA7,
+      glow: AppColors.hexFF63FEA7,
+    );
+  }
+
+  return const _AccountCardPalette(
+    top: AppColors.hexFF1F1F1F,
+    middle: AppColors.hexFF101010,
+    bottom: AppColors.hexFF000000,
+    accent: AppColors.hexFFFFFFFF,
+    glow: AppColors.hexFFC4C4C4,
   );
 }
 
@@ -453,6 +466,8 @@ class FocusedAccountCard extends StatelessWidget {
         ? context.tr.homeFallbackUser
         : userDisplayName.trim();
     final networkLabel = bitcoinAccountCardNetworkLabel(account);
+    final balanceLabel = formatSats(bitcoinAccountVisibleBalance(account));
+    final colors = BitcoinAccountsColors.of(context);
     final cardPalette = _accountCardPalette(account);
 
     return Align(
@@ -464,10 +479,10 @@ class FocusedAccountCard extends StatelessWidget {
             borderRadius: BorderRadius.circular(30),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withValues(alpha: 0.52),
-                blurRadius: 34,
-                spreadRadius: -18,
-                offset: const Offset(0, 24),
+                color: colors.cardShadow,
+                blurRadius: 26,
+                spreadRadius: -20,
+                offset: const Offset(0, 18),
               ),
               BoxShadow(
                 color: Colors.white.withValues(alpha: 0.06),
@@ -569,48 +584,91 @@ class FocusedAccountCard extends StatelessWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.stretch,
                       children: [
-                        Align(
-                          alignment: Alignment.centerLeft,
-                          child: Text(
-                            label,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            style: AppTypography.inter(
-                              color: Colors.white.withValues(alpha: 0.78),
-                              fontSize: 11,
-                              letterSpacing: 1.15,
-                              fontWeight: FontWeight.w700,
+                        Row(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Expanded(
+                              child: Text(
+                                label,
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: AppTypography.inter(
+                                  color: colors.text,
+                                  fontSize: 14,
+                                  letterSpacing: -0.1,
+                                  fontWeight: FontWeight.w700,
+                                ),
+                              ),
                             ),
-                          ),
+                            const SizedBox(width: 12),
+                            DecoratedBox(
+                              decoration: BoxDecoration(
+                                color: colors.text.withValues(alpha: 0.08),
+                                borderRadius: BorderRadius.circular(999),
+                                border: Border.all(
+                                  color: colors.text.withValues(alpha: 0.10),
+                                ),
+                              ),
+                              child: Padding(
+                                padding: const EdgeInsets.symmetric(
+                                  horizontal: 10,
+                                  vertical: 6,
+                                ),
+                                child: Text(
+                                  networkLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.inter(
+                                    color: colors.text.withValues(alpha: 0.82),
+                                    fontSize: 10.5,
+                                    letterSpacing: 0.2,
+                                    fontWeight: FontWeight.w700,
+                                  ),
+                                ),
+                              ),
+                            ),
+                          ],
                         ),
                         Expanded(
-                          child: Center(
+                          child: Align(
+                            alignment: Alignment.centerLeft,
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
+                              crossAxisAlignment: CrossAxisAlignment.start,
                               children: [
                                 Text(
                                   ownerName,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
                                   style: AppTypography.newsreader(
-                                    color: Colors.white,
-                                    fontSize: 31,
-                                    fontWeight: FontWeight.w500,
-                                    height: 1.05,
-                                    letterSpacing: -0.25,
+                                    color: colors.text,
+                                    fontSize: 29,
+                                    fontWeight: FontWeight.w600,
+                                    height: 1,
+                                    letterSpacing: -0.55,
                                   ),
                                 ),
-                                const SizedBox(height: 7),
+                                const SizedBox(height: 10),
                                 Text(
-                                  networkLabel,
+                                  kKeroseneBrandLabel,
                                   maxLines: 1,
                                   overflow: TextOverflow.ellipsis,
-                                  textAlign: TextAlign.center,
                                   style: AppTypography.inter(
-                                    color: Colors.white.withValues(alpha: 0.88),
-                                    fontSize: 12,
-                                    letterSpacing: 0.55,
+                                    color: colors.mutedText,
+                                    fontSize: 11,
+                                    letterSpacing: 1.2,
+                                    fontWeight: FontWeight.w600,
+                                  ),
+                                ),
+                                const SizedBox(height: 8),
+                                Text(
+                                  balanceLabel,
+                                  maxLines: 1,
+                                  overflow: TextOverflow.ellipsis,
+                                  style: AppTypography.inter(
+                                    color: colors.text,
+                                    fontSize: 18,
+                                    letterSpacing: 0,
                                     fontWeight: FontWeight.w700,
                                   ),
                                 ),
@@ -618,36 +676,47 @@ class FocusedAccountCard extends StatelessWidget {
                             ),
                           ),
                         ),
-                        Row(
-                          crossAxisAlignment: CrossAxisAlignment.end,
-                          children: [
-                            Expanded(
-                              child: Text(
-                                displayIdentifier,
-                                softWrap: true,
-                                maxLines: 3,
-                                overflow: TextOverflow.visible,
-                                style: AppTypography.technicalMono(
-                                  textStyle: Theme.of(context)
-                                      .textTheme
-                                      .labelSmall
-                                      ?.copyWith(
-                                        color: Colors.white
-                                            .withValues(alpha: 0.72),
-                                        fontSize: 10.5,
-                                        height: 1.25,
-                                        letterSpacing: -0.2,
-                                        fontWeight: FontWeight.w500,
-                                      ),
+                        DecoratedBox(
+                          decoration: BoxDecoration(
+                            color: colors.text.withValues(alpha: 0.055),
+                            borderRadius: BorderRadius.circular(16),
+                            border: Border.all(
+                              color: colors.text.withValues(alpha: 0.08),
+                            ),
+                          ),
+                          child: Padding(
+                            padding: const EdgeInsets.fromLTRB(14, 10, 8, 10),
+                            child: Row(
+                              children: [
+                                Expanded(
+                                  child: Text(
+                                    displayIdentifier,
+                                    softWrap: false,
+                                    maxLines: 1,
+                                    overflow: TextOverflow.ellipsis,
+                                    style: AppTypography.technicalMono(
+                                      textStyle: Theme.of(context)
+                                          .textTheme
+                                          .labelSmall
+                                          ?.copyWith(
+                                            color: colors.text
+                                                .withValues(alpha: 0.68),
+                                            fontSize: 10.5,
+                                            height: 1.2,
+                                            letterSpacing: -0.15,
+                                            fontWeight: FontWeight.w500,
+                                          ),
+                                    ),
+                                  ),
                                 ),
-                              ),
+                                const SizedBox(width: 8),
+                                InlineCopyButton(
+                                  value: displayIdentifier,
+                                  semanticLabel: 'Copiar endereço da carteira',
+                                ),
+                              ],
                             ),
-                            const SizedBox(width: 8),
-                            InlineCopyButton(
-                              value: displayIdentifier,
-                              semanticLabel: 'Copiar endereço da carteira',
-                            ),
-                          ],
+                          ),
                         ),
                       ],
                     ),

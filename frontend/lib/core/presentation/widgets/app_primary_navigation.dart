@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
+import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
@@ -320,7 +321,7 @@ class _KeroseneExpandableNavigationButtonState
   static const double _closedSize = AppPrimaryNavigationBar._buttonSize;
   static const double _openHeight = 64;
   static const double _maxOpenWidth = 330;
-  static const Color _navBackground = Color(0xFF1A1A1A);
+  static const Color _navBackground = AppColors.hexFF1A1A1A;
 
   late final AnimationController _menuController;
   late final AnimationController _pressController;
