@@ -1,22 +1,17 @@
 import 'dart:async';
 
 import 'package:flutter/material.dart';
-import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
-import 'package:flutter_animate/flutter_animate.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
-import 'package:kerosene/core/providers/currency_provider.dart';
-import 'package:kerosene/core/providers/price_provider.dart';
-import 'package:kerosene/core/theme/app_animations.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
-import 'package:kerosene/core/utils/money_display.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_hold_selection_tile.dart';
 
 class WalletFlowSelector extends ConsumerStatefulWidget {
   final String title;
@@ -44,6 +39,7 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
   static const Color _background = AppColors.hexFF000000;
   static const Color _text = AppColors.hexFFFFFFFF;
   static const Color _muted = AppColors.hexFFA1A1A1;
+  static const double _contentMaxWidth = 430;
 
   Wallet? _selectedWallet;
 
@@ -73,59 +69,38 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
     return Scaffold(
       backgroundColor: _background,
       body: SafeArea(
-        child: Column(
-          crossAxisAlignment: CrossAxisAlignment.stretch,
+        child: Stack(
           children: [
-            _buildTopBar(context),
-            Expanded(child: _buildBody(context, walletState)),
+            Positioned.fill(child: _buildBody(context, walletState)),
+            _buildBackButton(context),
           ],
         ),
       ),
     );
   }
 
-  Widget _buildTopBar(BuildContext context) {
-    return SizedBox(
-      height: 64,
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 16),
-        child: Stack(
-          alignment: Alignment.center,
-          children: [
-            Align(
-              alignment: Alignment.centerLeft,
-              child: widget.showBackButton
-                  ? IconButton(
-                      onPressed:
-                          widget.onBack ?? () => Navigator.maybePop(context),
-                      icon: const Icon(KeroseneIcons.back, size: 22),
-                      tooltip: context.tr.authBackAction,
-                      style: IconButton.styleFrom(
-                        foregroundColor: _text,
-                        minimumSize: const Size.square(40),
-                        tapTargetSize: MaterialTapTargetSize.shrinkWrap,
-                      ),
-                    )
-                  : const SizedBox(width: 40, height: 40),
-            ),
-            Text(
-              widget.title,
-              textAlign: TextAlign.center,
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: AppTypography.newsreader(
-                color: _text,
-                fontSize: 24,
-                fontWeight: FontWeight.w600,
-                height: 1.2,
-                letterSpacing: 0,
-              ),
-            ),
-            const Align(
-              alignment: Alignment.centerRight,
-              child: SizedBox(width: 40, height: 40),
-            ),
-          ],
+  Widget _buildBackButton(BuildContext context) {
+    if (!widget.showBackButton) {
+      return const SizedBox.shrink();
+    }
+    return Positioned(
+      top: 12,
+      left: 16,
+      child: DecoratedBox(
+        decoration: BoxDecoration(
+          color: _background.withValues(alpha: 0.42),
+          shape: BoxShape.circle,
+          border: Border.all(color: _text.withValues(alpha: 0.10)),
+        ),
+        child: IconButton(
+          onPressed: widget.onBack ?? () => Navigator.maybePop(context),
+          icon: const Icon(KeroseneIcons.back, size: 22),
+          tooltip: context.tr.authBackAction,
+          style: IconButton.styleFrom(
+            foregroundColor: _text,
+            minimumSize: const Size.square(40),
+            tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+          ),
         ),
       ),
     );
@@ -206,95 +181,98 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
     return Semantics(
       label: widget.subtitle,
       container: true,
-      child: Stack(
-        children: [
-          Positioned.fill(
-            child: wallets.length <= 3
-                ? _buildTwoWalletLayout(wallets, selectedWallet)
-                : _buildVerticalWalletList(wallets, selectedWallet),
-          ),
-          Positioned(
-            left: 0,
-            right: 0,
-            bottom: 0,
-            child: _ContinueOverlay(
-              enabled: selectedWallet != null,
-              onPressed: selectedWallet == null
-                  ? null
-                  : () => _continueWith(selectedWallet),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _buildTwoWalletLayout(List<Wallet> wallets, Wallet? selectedWallet) {
-    return Row(
-      children: [
-        for (var index = 0; index < wallets.length; index++)
-          Expanded(
-            child: _WalletFlowTile(
-              wallet: wallets[index],
-              selected: _sameWallet(wallets[index], selectedWallet),
-              showLeftBorder: index > 0,
-              listLayout: false,
-              onTap: () => _select(wallets[index]),
-            )
-                .animate(
-                    delay: KeroseneMotion.stagger(
-                  index,
-                  step: KeroseneMotion.listStagger,
-                ))
-                .fade(
-                  duration: AppAnimations.emphasized,
-                  curve: AppAnimations.standardCurve,
-                )
-                .slideX(
-                  begin: index == 0 ? -0.04 : 0.04,
-                  end: 0,
-                  duration: AppAnimations.emphasized,
-                  curve: AppAnimations.emphasizedCurve,
-                ),
-          ),
-      ],
+      child: _buildVerticalWalletList(wallets, selectedWallet),
     );
   }
 
   Widget _buildVerticalWalletList(
       List<Wallet> wallets, Wallet? selectedWallet) {
-    return ListView.separated(
-      physics: const BouncingScrollPhysics(
-        parent: AlwaysScrollableScrollPhysics(),
-      ),
-      padding: const EdgeInsets.only(bottom: 112),
-      itemCount: wallets.length,
-      separatorBuilder: (_, __) => const SizedBox(height: 12),
-      itemBuilder: (context, index) {
-        final wallet = wallets[index];
-        final selected = _sameWallet(wallet, selectedWallet);
-        return _WalletFlowTile(
-          wallet: wallet,
-          selected: selected,
-          showLeftBorder: true,
-          listLayout: true,
-          onTap: () => _select(wallet),
-        )
-            .animate(
-                delay: KeroseneMotion.stagger(
-              index,
-              step: KeroseneMotion.compactStagger,
-            ))
-            .fade(
-              duration: AppAnimations.emphasized,
-              curve: AppAnimations.standardCurve,
-            )
-            .slideY(
-              begin: 0.03,
-              end: 0,
-              duration: AppAnimations.emphasized,
-              curve: AppAnimations.emphasizedCurve,
-            );
+    return LayoutBuilder(
+      builder: (context, constraints) {
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
+        final compact = width < 380 || height < 720 || wallets.length >= 3;
+        final outerHorizontal = width <= 360 ? 12.0 : 18.0;
+        final maxWidth = (width - outerHorizontal * 2)
+            .clamp(280.0, _contentMaxWidth)
+            .toDouble();
+        final canFitWithoutScrolling = wallets.length <= 3;
+        final verticalPadding = canFitWithoutScrolling ? 32.0 : 84.0;
+        final gap = compact ? 10.0 : 14.0;
+
+        Widget itemBuilder(Wallet wallet) {
+          final selected = _sameWallet(wallet, selectedWallet);
+          final tileWidth = selected ? maxWidth : maxWidth * 0.86;
+          return Align(
+            alignment: Alignment.center,
+            child: AnimatedContainer(
+              key: ValueKey('wallet-flow-tile-${wallet.id}'),
+              duration: const Duration(milliseconds: 260),
+              curve: Curves.easeOutQuart,
+              width: tileWidth,
+              child: WalletHoldSelectionTile(
+                wallet: wallet,
+                selected: selected,
+                compact: compact,
+                onSelect: _select,
+                onConfirmed: _continueWith,
+              ),
+            ),
+          );
+        }
+
+        if (canFitWithoutScrolling) {
+          final availableHeight =
+              (height - verticalPadding * 2 - gap * (wallets.length - 1))
+                  .clamp(0.0, double.infinity)
+                  .toDouble();
+          final maxTileHeight = wallets.isEmpty
+              ? 0.0
+              : (availableHeight / wallets.length)
+                  .clamp(compact ? 156.0 : 184.0, compact ? 210.0 : 250.0)
+                  .toDouble();
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: outerHorizontal,
+              vertical: verticalPadding,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
+                child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
+                  children: [
+                    for (var index = 0; index < wallets.length; index++) ...[
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: compact ? 148 : 172,
+                          maxHeight: maxTileHeight,
+                        ),
+                        child: itemBuilder(wallets[index]),
+                      ),
+                      if (index < wallets.length - 1) SizedBox(height: gap),
+                    ],
+                  ],
+                ),
+              ),
+            ),
+          );
+        }
+
+        return ListView.separated(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
+          ),
+          padding: EdgeInsets.fromLTRB(
+            outerHorizontal,
+            84,
+            outerHorizontal,
+            28,
+          ),
+          itemCount: wallets.length,
+          separatorBuilder: (_, __) => SizedBox(height: gap),
+          itemBuilder: (context, index) => itemBuilder(wallets[index]),
+        );
       },
     );
   }
@@ -333,7 +311,9 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
   }
 
   void _select(Wallet wallet) {
-    HapticFeedback.selectionClick();
+    if (_selectedWallet?.id != wallet.id) {
+      HapticFeedback.selectionClick();
+    }
     setState(() => _selectedWallet = wallet);
   }
 
@@ -341,262 +321,5 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
     HapticFeedback.mediumImpact();
     ref.read(walletProvider.notifier).selectWallet(wallet);
     widget.onContinue(wallet);
-  }
-}
-
-class _ContinueOverlay extends StatelessWidget {
-  final bool enabled;
-  final VoidCallback? onPressed;
-
-  const _ContinueOverlay({
-    required this.enabled,
-    required this.onPressed,
-  });
-
-  static const Color _background = AppColors.hexFF000000;
-  static const Color _text = AppColors.hexFFFFFFFF;
-
-  @override
-  Widget build(BuildContext context) {
-    return DecoratedBox(
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          begin: Alignment.topCenter,
-          end: Alignment.bottomCenter,
-          colors: [
-            _background.withValues(alpha: 0),
-            _background.withValues(alpha: 0.70),
-            _background.withValues(alpha: 0.94),
-          ],
-        ),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(16, 32, 16, 24),
-        child: SizedBox(
-          height: 56,
-          child: FilledButton(
-            onPressed: enabled ? onPressed : null,
-            style: FilledButton.styleFrom(
-              backgroundColor: _text,
-              foregroundColor: _background,
-              disabledBackgroundColor: _text.withValues(alpha: 0.22),
-              disabledForegroundColor: _text.withValues(alpha: 0.42),
-              shape: RoundedRectangleBorder(
-                borderRadius: BorderRadius.circular(14),
-              ),
-              textStyle: Theme.of(context).textTheme.labelLarge?.copyWith(
-                    fontSize: 13,
-                    fontWeight: FontWeight.w800,
-                    letterSpacing: 1.8,
-                  ),
-            ),
-            child: Text(context.tr.continueButton),
-          ),
-        ),
-      ),
-    );
-  }
-}
-
-class _WalletFlowTile extends ConsumerWidget {
-  final Wallet wallet;
-  final bool selected;
-  final bool showLeftBorder;
-  final bool listLayout;
-  final VoidCallback onTap;
-
-  const _WalletFlowTile({
-    required this.wallet,
-    required this.selected,
-    required this.showLeftBorder,
-    required this.listLayout,
-    required this.onTap,
-  });
-
-  static const Color _background = AppColors.hexFF000000;
-  static const Color _surface = AppColors.hexFF1A1A1A;
-  static const Color _surfaceHigh = AppColors.hexFF2A2A2A;
-  static const Color _border = AppColors.hexFF333333;
-  static const Color _text = AppColors.hexFFFFFFFF;
-  static const Color _muted = AppColors.hexFFA1A1A1;
-
-  @override
-  Widget build(BuildContext context, WidgetRef ref) {
-    final foreground = selected ? _background : _text;
-    final muted = selected ? _background.withValues(alpha: 0.68) : _muted;
-    final selectedCurrency = ref.watch(currencyProvider);
-    final balanceLabel = MoneyDisplay.formatAmountFromBtc(
-      btcAmount: wallet.balance,
-      currency: selectedCurrency,
-      btcUsd: ref.watch(latestBtcPriceProvider),
-      btcEur: ref.watch(btcEurPriceProvider),
-      btcBrl: ref.watch(btcBrlPriceProvider),
-      decimalPlaces: selectedCurrency == Currency.btc ? 6 : null,
-    );
-
-    return Semantics(
-      key: ValueKey('wallet-flow-tile-${wallet.id}'),
-      button: true,
-      selected: selected,
-      label: wallet.name,
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          onTap: onTap,
-          splashColor: Colors.white.withValues(alpha: 0.05),
-          highlightColor: Colors.white.withValues(alpha: 0.03),
-          child: AnimatedScale(
-            scale: selected ? 1 : 0.985,
-            duration: AppAnimations.standard,
-            curve: AppAnimations.emphasizedCurve,
-            child: AnimatedContainer(
-              duration: AppAnimations.emphasized,
-              curve: AppAnimations.standardCurve,
-              padding: EdgeInsets.fromLTRB(
-                20,
-                listLayout ? 22 : 28,
-                20,
-                listLayout ? 20 : 24,
-              ),
-              decoration: BoxDecoration(
-                color: selected ? _text : _surface,
-                border: Border(
-                  left: BorderSide(
-                    color: selected
-                        ? _text
-                        : showLeftBorder
-                            ? _border
-                            : Colors.transparent,
-                  ),
-                  top: BorderSide(color: selected ? _text : _border),
-                  right: BorderSide(color: selected ? _text : _border),
-                  bottom: BorderSide(color: selected ? _text : _border),
-                ),
-                boxShadow: selected
-                    ? [
-                        BoxShadow(
-                          color: Colors.white.withValues(alpha: 0.08),
-                          blurRadius: 24,
-                          spreadRadius: -8,
-                        ),
-                      ]
-                    : null,
-              ),
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                mainAxisSize: listLayout ? MainAxisSize.min : MainAxisSize.max,
-                children: [
-                  const SizedBox(height: 2),
-                  Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      AnimatedContainer(
-                        duration: AppAnimations.emphasized,
-                        curve: AppAnimations.standardCurve,
-                        width: 64,
-                        height: 64,
-                        decoration: BoxDecoration(
-                          shape: BoxShape.circle,
-                          color: selected
-                              ? _background.withValues(alpha: 0.10)
-                              : _surfaceHigh,
-                        ),
-                        child: Icon(
-                          _walletIcon(wallet),
-                          color: foreground,
-                          size: 30,
-                        ),
-                      ),
-                      SizedBox(height: listLayout ? 14 : 18),
-                      Text(
-                        _displayName(wallet.name),
-                        textAlign: TextAlign.center,
-                        maxLines: 2,
-                        overflow: TextOverflow.ellipsis,
-                        style: AppTypography.newsreader(
-                          color: foreground,
-                          fontSize: 22,
-                          fontWeight: FontWeight.w700,
-                          height: 1.05,
-                          letterSpacing: 0,
-                        ),
-                      ),
-                      const SizedBox(height: 9),
-                      Text(
-                        _modeLabel(wallet),
-                        textAlign: TextAlign.center,
-                        maxLines: 1,
-                        overflow: TextOverflow.ellipsis,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: muted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.2,
-                            ),
-                      ),
-                    ],
-                  ),
-                  if (listLayout) ...[
-                    const SizedBox(height: 14),
-                  ],
-                  Column(
-                    children: [
-                      Text(
-                        context.tr.walletSelectorAvailableBalance.toUpperCase(),
-                        textAlign: TextAlign.center,
-                        style: Theme.of(context).textTheme.labelSmall?.copyWith(
-                              color: muted,
-                              fontSize: 10,
-                              fontWeight: FontWeight.w800,
-                              letterSpacing: 1.1,
-                            ),
-                      ),
-                      const SizedBox(height: 5),
-                      FittedBox(
-                        fit: BoxFit.scaleDown,
-                        child: Text(
-                          balanceLabel,
-                          maxLines: 1,
-                          style: Theme.of(context)
-                              .textTheme
-                              .bodyMedium
-                              ?.copyWith(
-                                color: foreground,
-                                fontFamily: AppTypography.financialFontFamily,
-                                fontSize: 16,
-                                fontWeight: FontWeight.w800,
-                                letterSpacing: 0,
-                              ),
-                        ),
-                      ),
-                    ],
-                  ),
-                ],
-              ),
-            ),
-          ),
-        ),
-      ),
-    );
-  }
-
-  static IconData _walletIcon(Wallet wallet) {
-    if (wallet.isColdWallet || wallet.isCustodialOnchain) {
-      return KeroseneIcons.coldWallet;
-    }
-    return KeroseneIcons.wallet;
-  }
-
-  static String _displayName(String value) {
-    final trimmed = value.trim();
-    if (trimmed.isEmpty) return 'Wallet';
-    final words = trimmed.split(RegExp(r'\s+'));
-    if (words.length <= 1) return trimmed;
-    return words.take(2).join('\n');
-  }
-
-  static String _modeLabel(Wallet wallet) {
-    return wallet.custodyDisplayLabel;
   }
 }

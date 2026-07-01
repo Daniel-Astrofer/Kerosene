@@ -5,13 +5,14 @@ import 'package:kerosene/core/l10n/app_localizations.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_hold_selection_tile.dart';
 import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_flow_selector.dart';
 import 'package:kerosene/storybook/storybook_mocks.dart';
 
 void main() {
   TestWidgetsFlutterBinding.ensureInitialized();
 
-  testWidgets('wallet flow selector uses full-height two column layout',
+  testWidgets('wallet flow selector uses centered vertical hold layout',
       (tester) async {
     Wallet? selectedWallet;
 
@@ -28,11 +29,12 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(GridView), findsNothing);
-    expect(
-        find.text('Escolha de qual carteira o envio vai sair.'), findsNothing);
-    expect(find.text('Reserva\nprincipal'), findsOneWidget);
-    expect(find.text('Cold\nvault'), findsOneWidget);
-    expect(find.text('SALDO DISPONÍVEL'), findsWidgets);
+    expect(find.byType(ListView), findsNothing);
+    expect(find.text('Enviar'), findsNothing);
+    expect(find.text('CONTINUAR'), findsNothing);
+    expect(find.text('Reserva principal'), findsOneWidget);
+    expect(find.text('Cold vault'), findsOneWidget);
+    expect(find.textContaining('BTC'), findsWidgets);
 
     final firstTile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${mockWallets.first.id}')),
@@ -40,22 +42,32 @@ void main() {
     final secondTile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${mockWallets[1].id}')),
     );
-    expect(firstTile.top, closeTo(64, 1));
-    expect(firstTile.bottom, closeTo(900, 1));
-    expect(firstTile.width, closeTo(215, 1));
-    expect(secondTile.top, closeTo(firstTile.top, 1));
-    expect(secondTile.bottom, closeTo(firstTile.bottom, 1));
+    expect(firstTile.top, lessThan(secondTile.top));
+    expect(firstTile.width, greaterThan(secondTile.width));
+    expect(firstTile.center.dx, closeTo(215, 1));
+    expect(secondTile.center.dx, closeTo(215, 1));
 
-    await tester
-        .tap(find.byKey(ValueKey('wallet-flow-tile-${mockWallets[1].id}')));
-    await tester.pump(const Duration(milliseconds: 220));
-    await tester.tap(find.text('CONTINUAR'));
+    final holdGesture = await tester.startGesture(
+      tester.getCenter(
+        find.byKey(ValueKey('wallet-flow-tile-${mockWallets[1].id}')),
+      ),
+    );
     await tester.pump();
+    await tester.pump(const Duration(milliseconds: 320));
+
+    final expandedSecondTile = tester.getRect(
+      find.byKey(ValueKey('wallet-flow-tile-${mockWallets[1].id}')),
+    );
+    expect(expandedSecondTile.width, greaterThan(secondTile.width));
+
+    await tester.pump(kWalletHoldSelectionDuration);
+    await holdGesture.up();
+    await tester.pumpAndSettle();
 
     expect(selectedWallet?.id, mockWallets[1].id);
   });
 
-  testWidgets('wallet flow selector uses two column layout for three wallets',
+  testWidgets('wallet flow selector keeps three wallets vertical and fitted',
       (tester) async {
     Wallet? selectedWallet;
     final wallets = [
@@ -81,7 +93,7 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(ListView), findsNothing);
-    expect(find.text('Travel\nwallet'), findsOneWidget);
+    expect(find.text('Travel wallet'), findsOneWidget);
 
     final firstTile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${wallets.first.id}')),
@@ -89,14 +101,14 @@ void main() {
     final thirdTile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${wallets[2].id}')),
     );
-    expect(firstTile.top, closeTo(64, 1));
-    expect(firstTile.bottom, closeTo(900, 1));
-    expect(thirdTile.top, closeTo(firstTile.top, 1));
+    final secondTile = tester.getRect(
+      find.byKey(ValueKey('wallet-flow-tile-${wallets[1].id}')),
+    );
+    expect(firstTile.top, lessThan(secondTile.top));
+    expect(secondTile.top, lessThan(thirdTile.top));
+    expect(thirdTile.bottom, lessThanOrEqualTo(900));
 
-    await tester.tap(find.byKey(ValueKey('wallet-flow-tile-${wallets[2].id}')));
-    await tester.pump(const Duration(milliseconds: 220));
-    await tester.tap(find.text('CONTINUAR'));
-    await tester.pump();
+    await _holdWallet(tester, wallets[2].id);
 
     expect(selectedWallet?.id, wallets[2].id);
   });
@@ -119,17 +131,16 @@ void main() {
     await tester.pump(const Duration(milliseconds: 300));
 
     expect(find.byType(GridView), findsNothing);
-    expect(find.text('Reserva\nprincipal'), findsOneWidget);
+    expect(find.text('Reserva principal'), findsOneWidget);
+    expect(find.text('CONTINUAR'), findsNothing);
 
     final tile = tester.getRect(
       find.byKey(ValueKey('wallet-flow-tile-${wallets.first.id}')),
     );
-    expect(tile.top, closeTo(64, 1));
-    expect(tile.bottom, closeTo(900, 1));
-    expect(tile.width, closeTo(430, 1));
+    expect(tile.center.dx, closeTo(215, 1));
+    expect(tile.width, greaterThan(390));
 
-    await tester.tap(find.text('CONTINUAR'));
-    await tester.pump();
+    await _holdWallet(tester, wallets.first.id);
 
     expect(selectedWallet?.id, wallets.first.id);
   });
@@ -153,11 +164,11 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Reserva\nprincipal'), findsOneWidget);
-    expect(find.text('Cold\nvault'), findsOneWidget);
+    expect(find.text('Reserva principal'), findsOneWidget);
+    expect(find.text('Cold vault'), findsOneWidget);
   });
 
-  testWidgets('wallet flow selector shows wallet name and custody label',
+  testWidgets('wallet flow selector shows wallet name and BTC balance',
       (tester) async {
     final wallets = [
       Wallet(
@@ -196,12 +207,22 @@ void main() {
     await tester.pump();
     await tester.pump(const Duration(milliseconds: 300));
 
-    expect(find.text('Carteira\nGlobal'), findsOneWidget);
-    expect(find.text('Carteira global'), findsOneWidget);
-    expect(find.text('Reserva\non-chain'), findsOneWidget);
-    expect(find.text('Custodial on-chain'), findsOneWidget);
+    expect(find.text('Carteira Global'), findsOneWidget);
+    expect(find.text('Reserva on-chain'), findsOneWidget);
+    expect(find.textContaining('BTC'), findsNWidgets(2));
+    expect(find.text('Carteira global'), findsNothing);
+    expect(find.text('Custodial on-chain'), findsNothing);
     expect(find.text('KEROSENE'), findsNothing);
   });
+}
+
+Future<void> _holdWallet(WidgetTester tester, String walletId) async {
+  final finder = find.byKey(ValueKey('wallet-flow-tile-$walletId'));
+  final gesture = await tester.startGesture(tester.getCenter(finder));
+  await tester.pump(const Duration(milliseconds: 1000));
+  await tester.pump(kWalletHoldSelectionDuration);
+  await gesture.up();
+  await tester.pumpAndSettle();
 }
 
 Future<void> _pumpSelector(

@@ -557,25 +557,19 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     final selectedWallet = _resolveWallet(walletState);
 
     return SendWalletSelectionStep(
-      topBar: _buildInternalTopBar(context),
       walletState: walletState,
       selectedWallet: selectedWallet,
       onRefresh: () => ref.read(walletProvider.notifier).refresh(),
+      onBack: _handleBack,
       onWalletSelected: (wallet) {
         HapticFeedback.selectionClick();
         setState(() => _selectedWallet = wallet);
       },
-      onContinue: () {
-        if (selectedWallet == null) {
-          SnackbarHelper.showError(
-            SendMoneyCopy.chooseWalletToContinue(context),
-          );
-          return;
-        }
+      onWalletConfirmed: (wallet) {
         HapticFeedback.selectionClick();
-        ref.read(walletProvider.notifier).selectWallet(selectedWallet);
+        ref.read(walletProvider.notifier).selectWallet(wallet);
         setState(() {
-          _selectedWallet = selectedWallet;
+          _selectedWallet = wallet;
           _currentStep = 1;
         });
         _pageController.nextPage(

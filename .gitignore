@@ -10,6 +10,8 @@
 !/frontend/**
 !/infra/
 !/infra/**
+infra/runtime/logs/
+infra/runtime/logs/**
 !/docs/
 !/docs/**
 !/docs-final/

@@ -17,6 +17,66 @@ import 'package:kerosene/features/movement/screens/send_money_screen.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 
 void main() {
+  testWidgets('wallet selection step confirms send wallet by hold',
+      (tester) async {
+    final wallets = [
+      _wallet(name: 'Conta Assegurada', balance: 0.12),
+      _wallet(
+        id: '61a8bb23-e18e-4f32-8414-9844e7300c99',
+        name: 'Reserva on-chain',
+        balance: 0.04,
+      ),
+    ];
+
+    await tester.pumpWidget(
+      ProviderScope(
+        overrides: [
+          walletProvider.overrideWith(() => _WalletTestNotifier(wallets)),
+          latestBtcPriceProvider.overrideWith((ref) => 65000),
+          btcEurPriceProvider.overrideWith((ref) => 60000),
+          btcBrlPriceProvider.overrideWith((ref) => 350000),
+          recentTransactionDestinationsProvider.overrideWith(
+            () => _EmptyRecentDestinationsNotifier(),
+          ),
+        ],
+        child: MaterialApp(
+          scaffoldMessengerKey: SnackbarHelper.scaffoldMessengerKey,
+          debugShowCheckedModeBanner: false,
+          theme: ThemeData.dark(useMaterial3: false).copyWith(
+            splashFactory: NoSplash.splashFactory,
+          ),
+          locale: const Locale('pt'),
+          localizationsDelegates: AppLocalizations.localizationsDelegates,
+          supportedLocales: AppLocalizations.supportedLocales,
+          home: const SendMoneyScreen(),
+        ),
+      ),
+    );
+
+    await tester.pump();
+    await tester.pump(const Duration(milliseconds: 300));
+
+    expect(find.text('Enviar'), findsNothing);
+    expect(find.text('CONTINUAR'), findsNothing);
+    expect(find.text('Conta Assegurada'), findsOneWidget);
+    expect(find.text('Reserva on-chain'), findsOneWidget);
+    expect(find.textContaining('BTC'), findsWidgets);
+
+    final secondWalletFinder = find.byKey(
+      ValueKey('send-wallet-option-${wallets[1].id}'),
+    );
+    final gesture = await tester.startGesture(
+      tester.getCenter(secondWalletFinder),
+    );
+    await tester.pump(const Duration(milliseconds: 1000));
+    expect(find.text('Para quem deseja enviar?'), findsNothing);
+    await tester.pump(const Duration(milliseconds: 1100));
+    await gesture.up();
+    await tester.pumpAndSettle();
+
+    expect(find.text('Para quem deseja enviar?'), findsOneWidget);
+  });
+
   testWidgets('shows transfer destination screen with frequent contacts',
       (tester) async {
     await tester.pumpWidget(
@@ -341,11 +401,15 @@ void main() {
   });
 }
 
-Wallet _wallet({double balance = 0.1}) {
+Wallet _wallet({
+  String id = '61a8bb23-e18e-4f32-8414-9844e7300c14',
+  String name = 'Carteira Global',
+  double balance = 0.1,
+}) {
   return Wallet(
-    id: '61a8bb23-e18e-4f32-8414-9844e7300c14',
-    name: 'Carteira Global',
-    address: '61a8bb23-e18e-4f32-8414-9844e7300c14',
+    id: id,
+    name: name,
+    address: id,
     walletMode: 'KEROSENE',
     balance: balance,
     derivationPath: "m/84'/0'/0'/0/0",

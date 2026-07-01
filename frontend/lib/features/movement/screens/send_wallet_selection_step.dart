@@ -8,53 +8,57 @@ import 'package:kerosene/core/theme/kerosene_brand_tokens.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
+import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_hold_selection_tile.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
-import 'package:kerosene/features/movement/screens/send_money_formatters.dart';
 import 'package:kerosene/features/movement/copy/send_money_copy.dart';
-import 'package:kerosene/features/movement/widgets/send_money_components.dart';
 
 class SendWalletSelectionStep extends StatelessWidget {
-  final Widget topBar;
   final WalletState walletState;
   final Wallet? selectedWallet;
   final VoidCallback onRefresh;
+  final VoidCallback onBack;
   final ValueChanged<Wallet> onWalletSelected;
-  final VoidCallback onContinue;
+  final ValueChanged<Wallet> onWalletConfirmed;
 
   const SendWalletSelectionStep({
     super.key,
-    required this.topBar,
     required this.walletState,
     required this.selectedWallet,
     required this.onRefresh,
+    required this.onBack,
     required this.onWalletSelected,
-    required this.onContinue,
+    required this.onWalletConfirmed,
   });
 
   static const internalBlack = KeroseneBrandTokens.background;
-  static const internalSurface = KeroseneBrandTokens.surface;
-  static const internalSurfaceHigh = KeroseneBrandTokens.surfaceHigh;
   static const internalBorder = KeroseneBrandTokens.border;
   static const internalText = KeroseneBrandTokens.textPrimary;
   static const internalMutedText = KeroseneBrandTokens.textMuted;
-  static const internalOutline = KeroseneBrandTokens.borderStrong;
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.stretch,
+    return Stack(
       children: [
-        topBar,
-        Expanded(child: _buildBody(context)),
-        Padding(
-          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
-          child: InternalPrimaryButton(
-            label: context.tr.continueButton,
-            icon: KeroseneIcons.next,
-            enabled: selectedWallet != null,
-            onTap: onContinue,
-            backgroundColor: internalText,
-            foregroundColor: internalBlack,
+        Positioned.fill(child: _buildBody(context)),
+        Positioned(
+          top: 12,
+          left: 16,
+          child: DecoratedBox(
+            decoration: BoxDecoration(
+              color: internalBlack.withValues(alpha: 0.42),
+              shape: BoxShape.circle,
+              border: Border.all(color: internalText.withValues(alpha: 0.10)),
+            ),
+            child: IconButton(
+              onPressed: onBack,
+              icon: const Icon(KeroseneIcons.back, size: 22),
+              tooltip: context.tr.authBackAction,
+              style: IconButton.styleFrom(
+                foregroundColor: internalText,
+                minimumSize: const Size.square(40),
+                tapTargetSize: MaterialTapTargetSize.shrinkWrap,
+              ),
+            ),
           ),
         ),
       ],
@@ -76,6 +80,7 @@ class SendWalletSelectionStep extends StatelessWidget {
         walletState: state,
         selectedWallet: selectedWallet,
         onWalletSelected: onWalletSelected,
+        onWalletConfirmed: onWalletConfirmed,
       );
     }
     return const SizedBox.shrink();
@@ -242,11 +247,13 @@ class _WalletList extends StatelessWidget {
   final WalletLoaded walletState;
   final Wallet? selectedWallet;
   final ValueChanged<Wallet> onWalletSelected;
+  final ValueChanged<Wallet> onWalletConfirmed;
 
   const _WalletList({
     required this.walletState,
     required this.selectedWallet,
     required this.onWalletSelected,
+    required this.onWalletConfirmed,
   });
 
   @override
@@ -270,262 +277,88 @@ class _WalletList extends StatelessWidget {
 
     return LayoutBuilder(
       builder: (context, constraints) {
-        final compact = wallets.length >= 3 || constraints.maxWidth < 380;
-        final titleSize = compact ? 36.0 : 42.0;
-        final topPadding = compact ? 14.0 : 24.0;
-        final bottomPadding = compact ? 24.0 : 40.0;
-        final headerGap = compact ? 18.0 : 28.0;
+        final width = constraints.maxWidth;
+        final height = constraints.maxHeight;
+        final compact = width < 380 || height < 720 || wallets.length >= 3;
+        final outerHorizontal = width <= 360 ? 12.0 : 18.0;
+        final maxWidth =
+            (width - outerHorizontal * 2).clamp(280.0, 430.0).toDouble();
+        final canFitWithoutScrolling = wallets.length <= 3;
+        final verticalPadding = canFitWithoutScrolling ? 32.0 : 84.0;
+        final gap = compact ? 10.0 : 14.0;
 
-        return SingleChildScrollView(
-          physics: const BouncingScrollPhysics(),
-          padding: EdgeInsets.fromLTRB(16, topPadding, 16, bottomPadding),
-          child: Center(
-            child: ConstrainedBox(
-              constraints: const BoxConstraints(maxWidth: 560),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.stretch,
-                children: [
-                  Text(
-                    SendMoneyCopy.sendTitle(context),
-                    maxLines: 1,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.newsreader(
-                      color: SendWalletSelectionStep.internalText,
-                      fontSize: titleSize,
-                      fontWeight: FontWeight.w400,
-                      height: 1.05,
-                      letterSpacing: 0,
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    SendMoneyCopy.walletSelectionSubtitle(context),
-                    maxLines: compact ? 2 : 3,
-                    overflow: TextOverflow.ellipsis,
-                    style: Theme.of(context).textTheme.bodySmall?.copyWith(
-                          color: SendWalletSelectionStep.internalMutedText,
-                          fontSize: compact ? 13 : 14,
-                          height: 1.38,
-                        ),
-                  ),
-                  SizedBox(height: headerGap),
-                  for (final wallet in wallets)
-                    _WalletOption(
-                      wallet: wallet,
-                      selectedWallet: selectedWallet,
-                      compact: compact,
-                      onSelected: onWalletSelected,
-                    ),
-                ],
+        Widget itemBuilder(Wallet wallet) {
+          final selected = selectedWallet?.id == wallet.id;
+          final tileWidth = selected ? maxWidth : maxWidth * 0.86;
+          return Align(
+            alignment: Alignment.center,
+            child: AnimatedContainer(
+              key: ValueKey('send-wallet-option-${wallet.id}'),
+              duration: KeroseneMotion.medium,
+              curve: KeroseneMotion.entrance,
+              width: tileWidth,
+              child: WalletHoldSelectionTile(
+                wallet: wallet,
+                selected: selected,
+                compact: compact,
+                onSelect: onWalletSelected,
+                onConfirmed: onWalletConfirmed,
               ),
             ),
-          ),
-        );
-      },
-    );
-  }
-}
+          );
+        }
 
-class _WalletOption extends StatelessWidget {
-  final Wallet wallet;
-  final Wallet? selectedWallet;
-  final bool compact;
-  final ValueChanged<Wallet> onSelected;
-
-  const _WalletOption({
-    required this.wallet,
-    required this.selectedWallet,
-    required this.compact,
-    required this.onSelected,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final selected = selectedWallet?.id == wallet.id;
-    const availableBalanceLabel = 'SALDO DISPONÍVEL';
-    final walletMode = wallet.walletMode.trim().isEmpty
-        ? 'KEROSENE'
-        : wallet.walletMode.trim().replaceAll('_', ' ');
-
-    return LayoutBuilder(
-      builder: (context, constraints) {
-        final narrow = constraints.maxWidth < 360;
-        final dense = compact || narrow;
-        final cardPadding = dense ? 14.0 : 18.0;
-        final iconSize = dense ? 36.0 : 42.0;
-        final iconGap = dense ? 10.0 : 14.0;
-        final checkSize = dense ? 20.0 : 22.0;
-        final checkIconSize = dense ? 12.0 : 14.0;
-        final titleFontSize = dense ? 15.0 : 16.0;
-        final bottomGap = dense ? 10.0 : 12.0;
-
-        return Padding(
-          padding: EdgeInsets.only(bottom: dense ? 10 : 12),
-          child: Material(
-            color: Colors.transparent,
-            child: InkWell(
-              borderRadius: BorderRadius.circular(12),
-              onTap: () => onSelected(wallet),
-              child: AnimatedContainer(
-                duration: KeroseneMotion.short,
-                padding: EdgeInsets.all(cardPadding),
-                decoration: BoxDecoration(
-                  color: SendWalletSelectionStep.internalSurface,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: selected
-                        ? SendWalletSelectionStep.internalText
-                        : SendWalletSelectionStep.internalBorder,
-                    width: selected ? 1.4 : 1,
-                  ),
-                ),
+        if (canFitWithoutScrolling) {
+          final availableHeight =
+              (height - verticalPadding * 2 - gap * (wallets.length - 1))
+                  .clamp(0.0, double.infinity)
+                  .toDouble();
+          final maxTileHeight = wallets.isEmpty
+              ? 0.0
+              : (availableHeight / wallets.length)
+                  .clamp(compact ? 156.0 : 184.0, compact ? 210.0 : 250.0)
+                  .toDouble();
+          return Padding(
+            padding: EdgeInsets.symmetric(
+              horizontal: outerHorizontal,
+              vertical: verticalPadding,
+            ),
+            child: Center(
+              child: ConstrainedBox(
+                constraints: BoxConstraints(maxWidth: maxWidth),
                 child: Column(
+                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Row(
-                      children: [
-                        Container(
-                          width: iconSize,
-                          height: iconSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: SendWalletSelectionStep.internalSurfaceHigh,
-                            border: Border.all(
-                              color: SendWalletSelectionStep.internalBorder,
-                            ),
-                          ),
-                          child: Icon(
-                            KeroseneIcons.wallet,
-                            color: SendWalletSelectionStep.internalText,
-                            size: dense ? 18 : 20,
-                          ),
+                    for (var index = 0; index < wallets.length; index++) ...[
+                      ConstrainedBox(
+                        constraints: BoxConstraints(
+                          minHeight: compact ? 148 : 172,
+                          maxHeight: maxTileHeight,
                         ),
-                        SizedBox(width: iconGap),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              Text(
-                                wallet.name,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodyMedium
-                                    ?.copyWith(
-                                      color:
-                                          SendWalletSelectionStep.internalText,
-                                      fontSize: titleFontSize,
-                                      fontWeight: FontWeight.w700,
-                                      height: 1.2,
-                                    ),
-                              ),
-                              const SizedBox(height: 3),
-                              Text(
-                                walletMode,
-                                maxLines: 1,
-                                overflow: TextOverflow.ellipsis,
-                                softWrap: false,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color: SendWalletSelectionStep
-                                          .internalMutedText,
-                                      fontSize: dense ? 11.5 : 12,
-                                      height: 1.2,
-                                    ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 10),
-                        AnimatedContainer(
-                          duration: KeroseneMotion.short,
-                          width: checkSize,
-                          height: checkSize,
-                          decoration: BoxDecoration(
-                            shape: BoxShape.circle,
-                            color: selected
-                                ? SendWalletSelectionStep.internalText
-                                : Colors.transparent,
-                            border: Border.all(
-                              color: selected
-                                  ? SendWalletSelectionStep.internalText
-                                  : SendWalletSelectionStep.internalOutline,
-                            ),
-                          ),
-                          child: selected
-                              ? Icon(
-                                  KeroseneIcons.check,
-                                  color: SendWalletSelectionStep.internalBlack,
-                                  size: checkIconSize,
-                                )
-                              : null,
-                        ),
-                      ],
-                    ),
-                    SizedBox(height: dense ? 12 : 16),
-                    Container(
-                      height: 1,
-                      color: SendWalletSelectionStep.internalBorder,
-                    ),
-                    SizedBox(height: bottomGap),
-                    Row(
-                      children: [
-                        Flexible(
-                          flex: 2,
-                          child: Text(
-                            availableBalanceLabel,
-                            maxLines: 1,
-                            overflow: TextOverflow.ellipsis,
-                            softWrap: false,
-                            style: Theme.of(context)
-                                .textTheme
-                                .labelSmall
-                                ?.copyWith(
-                                  color:
-                                      SendWalletSelectionStep.internalMutedText,
-                                  fontSize: dense ? 9.5 : 10,
-                                  fontWeight: FontWeight.w800,
-                                  letterSpacing: dense ? 0.85 : 1.1,
-                                ),
-                          ),
-                        ),
-                        const SizedBox(width: 12),
-                        Flexible(
-                          flex: 3,
-                          child: Align(
-                            alignment: Alignment.centerRight,
-                            child: FittedBox(
-                              fit: BoxFit.scaleDown,
-                              alignment: Alignment.centerRight,
-                              child: Text(
-                                walletBalanceLabel(wallet.balance),
-                                maxLines: 1,
-                                softWrap: false,
-                                style: Theme.of(context)
-                                    .textTheme
-                                    .bodySmall
-                                    ?.copyWith(
-                                      color:
-                                          SendWalletSelectionStep.internalText,
-                                      fontFamily:
-                                          AppTypography.financialFontFamily,
-                                      fontSize: dense ? 12.5 : 13,
-                                      fontWeight: FontWeight.w700,
-                                    ),
-                              ),
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
+                        child: itemBuilder(wallets[index]),
+                      ),
+                      if (index < wallets.length - 1) SizedBox(height: gap),
+                    ],
                   ],
                 ),
               ),
             ),
+          );
+        }
+
+        return ListView.separated(
+          physics: const BouncingScrollPhysics(
+            parent: AlwaysScrollableScrollPhysics(),
           ),
+          padding: EdgeInsets.fromLTRB(
+            outerHorizontal,
+            84,
+            outerHorizontal,
+            28,
+          ),
+          itemCount: wallets.length,
+          separatorBuilder: (_, __) => SizedBox(height: gap),
+          itemBuilder: (context, index) => itemBuilder(wallets[index]),
         );
       },
     );
