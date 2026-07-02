@@ -3,7 +3,6 @@
 class User {
   final String id;
   final String username;
-  final bool testBalanceClaimed;
   final bool passkeyEnabledForTransactions;
   final String role;
   final bool isAdmin;
@@ -14,7 +13,6 @@ class User {
   const User({
     required this.id,
     required this.username,
-    this.testBalanceClaimed = false,
     this.passkeyEnabledForTransactions = false,
     this.role = 'USER',
     this.isAdmin = false,
@@ -33,7 +31,6 @@ class User {
     return other is User &&
         other.id == id &&
         other.username == username &&
-        other.testBalanceClaimed == testBalanceClaimed &&
         other.passkeyEnabledForTransactions == passkeyEnabledForTransactions &&
         other.role == role &&
         other.isAdmin == isAdmin &&
@@ -46,7 +43,6 @@ class User {
   int get hashCode {
     return id.hashCode ^
         username.hashCode ^
-        testBalanceClaimed.hashCode ^
         passkeyEnabledForTransactions.hashCode ^
         role.hashCode ^
         isAdmin.hashCode ^
@@ -57,6 +53,6 @@ class User {
 
   @override
   String toString() {
-    return 'User(id: $id, username: $username, role: $role, testBalanceClaimed: $testBalanceClaimed, passkeyEnabled: $passkeyEnabledForTransactions, lastLogin: $lastLogin)';
+    return 'User(id: $id, username: $username, role: $role, passkeyEnabled: $passkeyEnabledForTransactions, lastLogin: $lastLogin)';
   }
 }

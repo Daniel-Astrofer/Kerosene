@@ -3,7 +3,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
@@ -84,7 +84,7 @@ class _TorLoadingOverlayState extends ConsumerState<TorLoadingOverlay> {
       opacity: _transitionOpacity,
       duration: KeroseneMotion.calm,
       curve: KeroseneMotion.spring,
-      child: const KeroseneLogoLoadingView(),
+      child: const Center(child: TorLoadingDots()),
     );
   }
 }

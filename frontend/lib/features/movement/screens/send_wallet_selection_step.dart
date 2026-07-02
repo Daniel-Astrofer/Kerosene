@@ -37,11 +37,12 @@ class SendWalletSelectionStep extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final topInset = MediaQuery.viewPaddingOf(context).top;
     return Stack(
       children: [
         Positioned.fill(child: _buildBody(context)),
         Positioned(
-          top: 12,
+          top: topInset + 12,
           left: 16,
           child: DecoratedBox(
             decoration: BoxDecoration(
@@ -282,64 +283,44 @@ class _WalletList extends StatelessWidget {
         final compact = width < 380 || height < 720 || wallets.length >= 3;
         final maxWidth = width;
         final canFitWithoutScrolling = wallets.length <= 3;
-        final verticalPadding = canFitWithoutScrolling ? 32.0 : 84.0;
-        final gap = compact ? 10.0 : 14.0;
+        final gap = canFitWithoutScrolling
+            ? 0.0
+            : compact
+                ? 10.0
+                : 14.0;
 
-        Widget itemBuilder(Wallet wallet) {
+        Widget itemBuilder(Wallet wallet, {required bool fill}) {
           final selected = selectedWallet?.id == wallet.id;
-          final tileWidth = selected ? maxWidth : maxWidth * 0.86;
-          return Align(
-            alignment: Alignment.center,
-            child: AnimatedContainer(
-              key: ValueKey('send-wallet-option-${wallet.id}'),
-              duration: KeroseneMotion.medium,
-              curve: KeroseneMotion.entrance,
-              width: tileWidth,
-              child: WalletHoldSelectionTile(
-                wallet: wallet,
-                selected: selected,
-                compact: compact,
-                onSelect: onWalletSelected,
-                onConfirmed: onWalletConfirmed,
-              ),
-            ),
+          final tile = WalletHoldSelectionTile(
+            wallet: wallet,
+            selected: selected,
+            compact: compact,
+            onSelect: onWalletSelected,
+            onConfirmed: onWalletConfirmed,
+          );
+
+          return AnimatedContainer(
+            key: ValueKey('send-wallet-option-${wallet.id}'),
+            duration: KeroseneMotion.medium,
+            curve: KeroseneMotion.entrance,
+            width: maxWidth,
+            child: fill ? SizedBox.expand(child: tile) : tile,
           );
         }
 
         if (canFitWithoutScrolling) {
-          final availableHeight =
-              (height - verticalPadding * 2 - gap * (wallets.length - 1))
-                  .clamp(0.0, double.infinity)
-                  .toDouble();
-          final maxTileHeight = wallets.isEmpty
-              ? 0.0
-              : (availableHeight / wallets.length)
-                  .clamp(compact ? 156.0 : 184.0, double.infinity)
-                  .toDouble();
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 0,
-              vertical: verticalPadding,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var index = 0; index < wallets.length; index++) ...[
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: compact ? 148 : 172,
-                          maxHeight: maxTileHeight,
-                        ),
-                        child: itemBuilder(wallets[index]),
-                      ),
-                      if (index < wallets.length - 1) SizedBox(height: gap),
-                    ],
-                  ],
-                ),
-              ),
+          return SizedBox.expand(
+            child: Column(
+              children: [
+                for (var index = 0; index < wallets.length; index++) ...[
+                  Expanded(
+                    flex: selectedWallet?.id == wallets[index].id ? 2 : 1,
+                    child: itemBuilder(wallets[index], fill: true),
+                  ),
+                  if (gap > 0 && index < wallets.length - 1)
+                    SizedBox(height: gap),
+                ],
+              ],
             ),
           );
         }
@@ -356,7 +337,8 @@ class _WalletList extends StatelessWidget {
           ),
           itemCount: wallets.length,
           separatorBuilder: (_, __) => SizedBox(height: gap),
-          itemBuilder: (context, index) => itemBuilder(wallets[index]),
+          itemBuilder: (context, index) =>
+              itemBuilder(wallets[index], fill: false),
         );
       },
     );

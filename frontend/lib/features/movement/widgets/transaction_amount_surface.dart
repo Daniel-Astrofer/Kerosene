@@ -762,16 +762,30 @@ class TransactionAmountLine extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final parts = _TransactionAmountParts.from(amountLabel);
+    final fractionalStyle = amountStyle.copyWith(
+      color: amountStyle.color?.withValues(alpha: 0.58),
+      fontSize: (amountStyle.fontSize ?? 48) * 0.68,
+      fontWeight: FontWeight.w500,
+    );
+
     return Row(
       mainAxisSize: MainAxisSize.min,
       crossAxisAlignment: CrossAxisAlignment.baseline,
       textBaseline: TextBaseline.alphabetic,
       children: [
-        Text(
-          amountLabel,
+        Text.rich(
+          TextSpan(
+            children: [
+              TextSpan(text: parts.integer, style: amountStyle),
+              if (parts.fraction.isNotEmpty) ...[
+                TextSpan(text: parts.separator, style: fractionalStyle),
+                TextSpan(text: parts.fraction, style: fractionalStyle),
+              ],
+            ],
+          ),
           maxLines: 1,
           softWrap: false,
-          style: amountStyle,
         ),
         const SizedBox(width: 8),
         Padding(
@@ -784,6 +798,41 @@ class TransactionAmountLine extends StatelessWidget {
           ),
         ),
       ],
+    );
+  }
+}
+
+class _TransactionAmountParts {
+  final String integer;
+  final String separator;
+  final String fraction;
+
+  const _TransactionAmountParts({
+    required this.integer,
+    required this.separator,
+    required this.fraction,
+  });
+
+  factory _TransactionAmountParts.from(String value) {
+    final trimmed = value.trim();
+    final dot = trimmed.lastIndexOf('.');
+    final comma = trimmed.lastIndexOf(',');
+    final separatorIndex = dot > comma ? dot : comma;
+    if (separatorIndex < 0) {
+      return _TransactionAmountParts(
+        integer: trimmed.isEmpty ? '0' : trimmed,
+        separator: '',
+        fraction: '',
+      );
+    }
+
+    final integer = trimmed.substring(0, separatorIndex);
+    final rawFraction = trimmed.substring(separatorIndex + 1);
+    final fraction = rawFraction.replaceFirst(RegExp(r'0+$'), '');
+    return _TransactionAmountParts(
+      integer: integer.isEmpty ? '0' : integer,
+      separator: fraction.isEmpty ? '' : trimmed[separatorIndex],
+      fraction: fraction,
     );
   }
 }

@@ -81,7 +81,7 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
       es: 'Contexto',
     );
     final statusMeta = paymentLink != null
-        ? FinancialStatusBadge.paymentLink(paymentLink!.status)
+        ? FinancialStatusBadge.paymentLink(paymentLink!.displayStatus)
         : FinancialStatusBadge.transaction(transaction!.status);
     final amountBtc = paymentLink?.amountBtc ?? transaction!.signedAmountBTC;
     final selectedCurrency = ref.watch(currencyProvider);
@@ -388,6 +388,9 @@ class FinancialActivityDetailsSheet extends ConsumerWidget {
     if (paymentLink != null) {
       if (paymentLink!.isVerifyingOnboarding) {
         return 'Estamos conferindo este pagamento para liberar a próxima etapa automaticamente.';
+      }
+      if (paymentLink!.hasObservedOnchainPayment && !paymentLink!.isPaid) {
+        return 'A transação foi criada e está sendo validada na rede.';
       }
       if (paymentLink!.isPaid || paymentLink!.isCompleted) {
         return 'Pagamento recebido. Se houver uma próxima etapa, ela já pode ser liberada.';

@@ -190,6 +190,9 @@ final totalBalanceBtcProvider = Provider<double>((ref) {
   if (walletState is! WalletLoaded) return 0.0;
 
   return walletState.wallets.fold(0.0, (sum, wallet) {
+    if (!wallet.hasKeroseneSpendableBalance) {
+      return sum;
+    }
     return sum + wallet.balance;
   });
 });

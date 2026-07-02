@@ -6,7 +6,7 @@ import 'package:flutter/material.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
@@ -177,7 +177,7 @@ class _ReceiveNfcFlowScreenState extends State<ReceiveNfcFlowScreen>
   @override
   Widget build(BuildContext context) {
     if (_checkingCompatibility) {
-      return const KeroseneLogoLoadingView();
+      return const Center(child: TorLoadingDots());
     }
 
     return Scaffold(

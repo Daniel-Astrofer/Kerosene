@@ -260,9 +260,25 @@ class HomeFundsDistributionSection extends ConsumerWidget {
               : 0,
         ),
     ];
+    final dominantEntry = entries.isEmpty
+        ? null
+        : entries.reduce((a, b) {
+            if (b.share != a.share) return b.share > a.share ? b : a;
+            return a.wallet.name.toLowerCase().compareTo(
+                          b.wallet.name.toLowerCase(),
+                        ) <=
+                    0
+                ? a
+                : b;
+          });
     return HomeGlassPanel(
       borderRadius: BorderRadius.circular(homeSize(16)),
-      padding: EdgeInsets.all(homeSize(20)),
+      padding: EdgeInsets.fromLTRB(
+        homeSize(20),
+        homeSize(18),
+        homeSize(20),
+        homeSize(18),
+      ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
@@ -297,35 +313,72 @@ class HomeFundsDistributionSection extends ConsumerWidget {
             ],
           ),
           SizedBox(height: homeSize(14)),
-          Center(
-            child: SizedBox(
-              width: homeSize(126),
-              height: homeSize(126),
-              child: Stack(
-                alignment: Alignment.center,
-                children: [
-                  CustomPaint(
-                    size: Size.square(homeSize(126)),
-                    painter: HomeDistributionChartPainter(entries: entries),
-                  ),
-                  Column(
-                    mainAxisSize: MainAxisSize.min,
+          if (entries.isEmpty)
+            const HomeDistributionEmptyState()
+          else
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                SizedBox(
+                  width: homeSize(142),
+                  height: homeSize(142),
+                  child: Stack(
+                    alignment: Alignment.center,
                     children: [
-                      Text(
-                        totalBalance > 0 ? '100%' : '0%',
-                        style: theme.textTheme.labelLarge?.copyWith(
-                          color: Colors.white,
-                          fontSize: homeFontSize(13),
-                          fontWeight: FontWeight.w300,
-                          letterSpacing: 0,
+                      CustomPaint(
+                        size: Size.square(homeSize(142)),
+                        painter: HomeDistributionChartPainter(entries: entries),
+                      ),
+                      SizedBox(
+                        width: homeSize(84),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Text(
+                              dominantEntry?.wallet.name ?? '',
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.labelSmall?.copyWith(
+                                color: Colors.white.withValues(alpha: 0.84),
+                                fontSize: homeFontSize(10),
+                                fontWeight: FontWeight.w600,
+                                height: 1.15,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                            SizedBox(height: homeSize(4)),
+                            Text(
+                              _homeDistributionPercentLabel(
+                                (dominantEntry?.share ?? 0) * 100,
+                              ),
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              textAlign: TextAlign.center,
+                              style: theme.textTheme.labelLarge?.copyWith(
+                                color: Colors.white,
+                                fontSize: homeFontSize(17),
+                                fontWeight: FontWeight.w600,
+                                letterSpacing: 0,
+                              ),
+                            ),
+                          ],
                         ),
                       ),
                     ],
                   ),
-                ],
-              ),
+                ),
+                SizedBox(width: homeSize(18)),
+                Expanded(
+                  child: Column(
+                    children: [
+                      for (final entry in entries.take(4))
+                        HomeDistributionLegendItem(entry: entry),
+                    ],
+                  ),
+                ),
+              ],
             ),
-          ),
         ],
       ),
     );
@@ -408,6 +461,59 @@ class HomeDistributionEmptyState extends StatelessWidget {
   }
 }
 
+class HomeDistributionLegendItem extends StatelessWidget {
+  final HomeWalletDistributionEntry entry;
+
+  const HomeDistributionLegendItem({required this.entry});
+
+  @override
+  Widget build(BuildContext context) {
+    final theme = Theme.of(context);
+    return Padding(
+      padding: EdgeInsets.only(bottom: homeSize(10)),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.center,
+        children: [
+          DecoratedBox(
+            decoration: BoxDecoration(
+              color: entry.color,
+              shape: BoxShape.circle,
+            ),
+            child: SizedBox.square(dimension: homeSize(8)),
+          ),
+          SizedBox(width: homeSize(8)),
+          Expanded(
+            child: Text(
+              entry.wallet.name,
+              maxLines: 1,
+              overflow: TextOverflow.ellipsis,
+              style: theme.textTheme.bodySmall?.copyWith(
+                color: homeMutedTextColor,
+                fontSize: homeFontSize(12),
+                fontWeight: FontWeight.w400,
+                height: 1.2,
+                letterSpacing: 0,
+              ),
+            ),
+          ),
+          SizedBox(width: homeSize(8)),
+          Text(
+            _homeDistributionPercentLabel(entry.share * 100),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: theme.textTheme.labelSmall?.copyWith(
+              color: Colors.white,
+              fontSize: homeFontSize(12),
+              fontWeight: FontWeight.w500,
+              letterSpacing: 0,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 class HomeDistributionChartPainter extends CustomPainter {
   final List<HomeWalletDistributionEntry> entries;
 
@@ -416,12 +522,13 @@ class HomeDistributionChartPainter extends CustomPainter {
   @override
   void paint(Canvas canvas, Size size) {
     final center = Offset(size.width / 2, size.height / 2);
-    final radius = math.min(size.width, size.height) / 2 - homeSize(5);
-    final strokeWidth = homeSize(5);
+    final radius = math.min(size.width, size.height) / 2 - homeSize(12);
+    final strokeWidth = homeSize(16);
     final basePaint = Paint()
-      ..color = homePanelBorderColor
+      ..color = homePanelBorderColor.withValues(alpha: 0.72)
       ..style = PaintingStyle.stroke
-      ..strokeWidth = homeSize(3);
+      ..strokeWidth = strokeWidth
+      ..strokeCap = StrokeCap.butt;
     canvas.drawCircle(center, radius, basePaint);
 
     final totalShare =
@@ -431,10 +538,10 @@ class HomeDistributionChartPainter extends CustomPainter {
     final segmentPaint = Paint()
       ..style = PaintingStyle.stroke
       ..strokeWidth = strokeWidth
-      ..strokeCap = StrokeCap.round;
+      ..strokeCap = StrokeCap.butt;
     final rect = Rect.fromCircle(center: center, radius: radius);
     var start = -math.pi / 2;
-    const gap = 0.018;
+    const gap = 0.012;
 
     for (final entry in entries) {
       final normalizedShare = entry.share / totalShare;
@@ -481,6 +588,14 @@ Color _walletDistributionColor(int index) {
 }
 
 const Color _singleWalletDistributionColor = AppColors.hexFF444748;
+
+String _homeDistributionPercentLabel(double percent) {
+  if (percent.isNaN || percent.isInfinite || percent <= 0) return '0%';
+  if ((percent - percent.round()).abs() < 0.05) {
+    return '${percent.round()}%';
+  }
+  return '${percent.toStringAsFixed(1)}%';
+}
 
 String _distributionCopy(
   BuildContext context, {

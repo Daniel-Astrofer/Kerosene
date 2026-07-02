@@ -44,6 +44,24 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
     return const [];
   }
 
+  List<dynamic> _parseApiList(dynamic data) {
+    if (data is List) {
+      return data;
+    }
+    final map = _parseMap(data);
+    final unwrapped = map['data'] ?? map['result'] ?? map['items'];
+    if (unwrapped is List) {
+      return unwrapped;
+    }
+    if (unwrapped is Map) {
+      final content = unwrapped['content'] ?? unwrapped['items'];
+      if (content is List) {
+        return content;
+      }
+    }
+    return const [];
+  }
+
   Future<Map<String, dynamic>> _getDashboard() async {
     final response = await apiClient.get(AppConfig.kfeDashboard);
     return _parseMap(response.data);
@@ -167,6 +185,20 @@ class LedgerRemoteDataSourceImpl implements LedgerRemoteDataSource {
   @override
   Future<List<dynamic>> getHistory({int page = 0, int size = 50}) async {
     try {
+      try {
+        final response = await apiClient.get(
+          AppConfig.kfeTransactions,
+          queryParameters: {
+            'page': page,
+            'size': size,
+          },
+        );
+        final transactions = _parseApiList(response.data);
+        if (transactions.isNotEmpty) {
+          return transactions;
+        }
+      } catch (_) {}
+
       final dashboard = await _getDashboard();
       final statement = _dashboardStatement(dashboard);
       final offset = page * size;

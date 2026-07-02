@@ -39,8 +39,11 @@ class WalletBalanceCard extends ConsumerWidget {
                 : null,
           );
     final responsive = context.responsive;
-    const balanceLabel = 'Balance';
-    const portfolioLabel = 'Total Portfolio Value';
+    final balanceLabel =
+        wallet.isObservedOnlyBalance ? 'Observed balance' : 'Balance';
+    final portfolioLabel = wallet.isObservedOnlyBalance
+        ? 'Not spendable by Kerosene'
+        : 'Total Portfolio Value';
     final chartSize = responsive.isTinyPhone ? 132.0 : 160.0;
     final innerSize = chartSize * 0.625;
 
@@ -149,6 +152,23 @@ class WalletBalanceCard extends ConsumerWidget {
               fontSize: 14,
             ),
           ),
+          if (wallet.isObservedOnlyBalance &&
+              wallet.custodyExplanation.trim().isNotEmpty) ...[
+            const SizedBox(height: 8),
+            Text(
+              wallet.custodyExplanation,
+              textAlign: TextAlign.center,
+              maxLines: 3,
+              overflow: TextOverflow.ellipsis,
+              style: TextStyle(
+                color: Theme.of(context)
+                    .colorScheme
+                    .onPrimary
+                    .withValues(alpha: 0.42),
+                fontSize: 12,
+              ),
+            ),
+          ],
         ],
       ),
     );

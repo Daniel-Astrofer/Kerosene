@@ -27,7 +27,6 @@ import 'receive_request_flow_components.dart';
 enum ReceiveRequestStage { qr, confirmations, identified }
 
 const _receiveBackground = AppColors.hexFF050505;
-const _receiveBorder = AppColors.hexFF2A2A2A;
 const _receiveText = AppColors.hexFFFFFFFF;
 const _receiveMuted = AppColors.hexFFA3A3A3;
 
@@ -170,6 +169,8 @@ class _ReceiveRequestFlowScreenState
           txid: allocation.blockchainTxid,
         );
       });
+      ref.invalidate(externalTransfersProvider);
+      ref.invalidate(transactionHistoryProvider);
       _startTransferPolling();
     } catch (error) {
       if (!mounted) return;
@@ -319,12 +320,20 @@ class _ReceiveRequestFlowScreenState
   }
 
   void _applyPaymentLinkStage(PaymentLink link) {
-    if (link.isPaid || link.isCompleted) {
+    final complete = link.isCompleted ||
+        (!widget.onChainWallet && link.isPaid) ||
+        (widget.onChainWallet &&
+            link.isPaid &&
+            link.confirmations >= _requiredConfirmations);
+    if (complete) {
       _stage = ReceiveRequestStage.identified;
       _identifiedAt = link.completedAt ?? link.paidAt ?? DateTime.now();
       return;
     }
-    if (link.isVerifyingOnboarding || (link.txid?.trim().isNotEmpty ?? false)) {
+    if (link.isPaid ||
+        link.isVerifyingOnboarding ||
+        link.confirmations > 0 ||
+        link.hasObservedOnchainPayment) {
       _stage = ReceiveRequestStage.confirmations;
       return;
     }
@@ -392,6 +401,7 @@ class _ReceiveRequestFlowScreenState
     }
     return _observedTransfer?.confirmations ??
         _allocation?.confirmations ??
+        _link?.confirmations ??
         widget.initialConfirmations ??
         0;
   }
@@ -411,7 +421,28 @@ class _ReceiveRequestFlowScreenState
     return 'Confirmado na Kerosene';
   }
 
-  String get _amountLabel => '${widget.amountBtc.toStringAsFixed(6)} BTC';
+  String get _amountLabel {
+    final amount = MoneyDisplay.formatCompact(
+      amount: widget.amountBtc,
+      currency: Currency.btc,
+      withSymbol: false,
+      maxDecimalPlaces: 8,
+    );
+    return '$amount BTC';
+  }
+
+  String get _monitorStatusLabel {
+    if (_stage == ReceiveRequestStage.identified) {
+      return widget.onChainWallet ? 'Confirmado' : 'Recebido';
+    }
+    if (_stage == ReceiveRequestStage.confirmations) {
+      if (_link?.isValidatingSettlement == true) {
+        return 'Validando ${_currentConfirmations.clamp(0, _requiredConfirmations)}/$_requiredConfirmations confirmações';
+      }
+      return '${_currentConfirmations.clamp(0, _requiredConfirmations)}/$_requiredConfirmations confirmações';
+    }
+    return 'Pendente';
+  }
 
   String get _fiatLabel {
     final btcUsd = ref.watch(latestBtcPriceProvider);
@@ -427,18 +458,6 @@ class _ReceiveRequestFlowScreenState
   Future<void> _copyPaymentValue() async {
     final successMessage = context.tr.receiveQrCopied;
     await Clipboard.setData(ClipboardData(text: _paymentValue));
-    await HapticFeedback.selectionClick();
-    SnackbarHelper.showSuccess(successMessage);
-  }
-
-  Future<void> _copyAddressValue() async {
-    final address = _addressValue.trim();
-    if (address.isEmpty) {
-      return;
-    }
-    final successMessage = context.tr.receivePaymentLinkDepositAddressCopied;
-
-    await Clipboard.setData(ClipboardData(text: address));
     await HapticFeedback.selectionClick();
     SnackbarHelper.showSuccess(successMessage);
   }
@@ -489,20 +508,18 @@ class _ReceiveRequestFlowScreenState
   Widget _buildQrScreen(BuildContext context) {
     final receiveTitle =
         widget.onChainWallet ? 'Receber Bitcoin' : 'Receber na Kerosene';
-    const receiveSubtitle =
-        'Mostre este código para receber fundos em sua carteira';
     return Column(
       children: [
         ReceiveContextHeader(
-          title: 'Transação',
+          title: 'Pendente',
           icon: KeroseneIcons.close,
           onPressed: () => Navigator.of(context).maybePop(),
         ),
         Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 24),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   receiveTitle,
@@ -515,32 +532,12 @@ class _ReceiveRequestFlowScreenState
                     letterSpacing: 0.4,
                   ),
                 ),
-                const SizedBox(height: 8),
-                Text(
-                  receiveSubtitle,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.inter(
-                    color: _receiveMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                    letterSpacing: 0,
-                  ),
-                ),
-                const SizedBox(height: 32),
-                VaultCard(
-                  child: Column(
-                    children: [
-                      _buildQrBox(size: 240, showScanLine: true),
-                      const SizedBox(height: 24),
-                      _buildQrAmount(),
-                      const SizedBox(height: 24),
-                      _buildAddressPill(),
-                    ],
-                  ),
-                ),
+                const SizedBox(height: 22),
+                _buildQrBox(size: 180, showScanLine: true),
+                const SizedBox(height: 20),
+                _buildQrAmount(),
                 const SizedBox(height: 16),
-                _buildPaymentDetailsPanel(),
+                _buildPlainReceiveMeta(),
                 if (_errorMessage != null) ...[
                   const SizedBox(height: 16),
                   InlineNotice(message: _errorMessage!),
@@ -575,54 +572,31 @@ class _ReceiveRequestFlowScreenState
     );
   }
 
-  Widget _buildPaymentDetailsPanel() {
-    return VaultCard(
-      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
-      child: Column(
-        children: [
-          ReceiveDetailLine(
-            icon: KeroseneIcons.wallet,
-            label: 'Carteira',
-            value: widget.wallet.name,
-          ),
-          const ReceiveDivider(),
-          ReceiveDetailLine(
-            icon: widget.onChainWallet
-                ? KeroseneIcons.bitcoin
-                : KeroseneIcons.lightning,
-            label: 'Rede',
-            value: _networkLabel,
-          ),
-          const ReceiveDivider(),
-          ReceiveDetailLine(
-            icon: KeroseneIcons.history,
-            label: 'Solicitado',
-            value: _amountLabel,
-          ),
-          const ReceiveDivider(),
-          ReceiveDetailLine(
-            icon: KeroseneIcons.location,
-            label: widget.onChainWallet ? 'Endereço' : 'Destino',
-            value: shortenReceiveAddress(_addressValue, head: 14, tail: 8),
-            monospace: true,
-          ),
-        ],
-      ),
+  Widget _buildPlainReceiveMeta() {
+    return Column(
+      children: [
+        _ReceivePlainLine(label: 'Endereço', value: _addressValue),
+        const SizedBox(height: 10),
+        _ReceivePlainLine(label: 'Status', value: _monitorStatusLabel),
+      ],
     );
   }
 
   Widget _buildConfirmationsScreen(BuildContext context) {
     final receiveTitle =
         widget.onChainWallet ? 'Receber Bitcoin' : 'Receber na Kerosene';
-    const scanSubtitle = 'Escaneie para iniciar a transferência';
     return Column(
       children: [
-        const ReceiveShellHeader(),
+        ReceiveContextHeader(
+          title: _monitorStatusLabel,
+          icon: KeroseneIcons.close,
+          onPressed: () => Navigator.of(context).maybePop(),
+        ),
         Expanded(
-          child: SingleChildScrollView(
-            physics: const BouncingScrollPhysics(),
-            padding: const EdgeInsets.fromLTRB(24, 24, 24, 32),
+          child: Padding(
+            padding: const EdgeInsets.fromLTRB(24, 8, 24, 18),
             child: Column(
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(
                   receiveTitle,
@@ -635,39 +609,13 @@ class _ReceiveRequestFlowScreenState
                     letterSpacing: 0.4,
                   ),
                 ),
-                const SizedBox(height: 6),
-                Text(
-                  scanSubtitle,
-                  textAlign: TextAlign.center,
-                  style: AppTypography.inter(
-                    color: _receiveMuted,
-                    fontSize: 14,
-                    fontWeight: FontWeight.w400,
-                    height: 1.4,
-                  ),
-                ),
-                const SizedBox(height: 28),
-                ReceiveQrFrame(child: _buildQrBox(size: 248)),
+                const SizedBox(height: 22),
+                _buildQrBox(size: 180),
                 const SizedBox(height: 16),
-                VaultCard(
-                  padding: const EdgeInsets.all(24),
-                  child: Column(
-                    children: [
-                      _buildExpectedAmountBlock(),
-                      const ReceiveDivider(),
-                      ReceiveAddressBlock(
-                          onChainWallet: widget.onChainWallet,
-                          addressValue: _addressValue),
-                      const SizedBox(height: 16),
-                      ReceiveNetworkStatusRow(
-                          onChainWallet: widget.onChainWallet,
-                          identified: _stage == ReceiveRequestStage.identified,
-                          currentConfirmations: _currentConfirmations,
-                          requiredConfirmations: _requiredConfirmations),
-                    ],
-                  ),
-                ),
-                const SizedBox(height: 24),
+                _buildQrAmount(),
+                const SizedBox(height: 16),
+                _buildPlainReceiveMeta(),
+                const SizedBox(height: 18),
                 Row(
                   children: [
                     Expanded(
@@ -754,21 +702,9 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildQrBox({required double size, bool showScanLine = false}) {
-    return Container(
+    return SizedBox(
       width: size,
       height: size,
-      padding: const EdgeInsets.all(14),
-      decoration: BoxDecoration(
-        color: Colors.white,
-        borderRadius: BorderRadius.circular(8),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withValues(alpha: 0.22),
-            blurRadius: 22,
-            offset: const Offset(0, 12),
-          ),
-        ],
-      ),
       child: Stack(
         fit: StackFit.expand,
         children: [
@@ -818,124 +754,70 @@ class _ReceiveRequestFlowScreenState
   }
 
   Widget _buildQrAmount() {
-    const btcSuffix = ' BTC';
-    return Column(
-      children: [
-        RichText(
-          textAlign: TextAlign.center,
-          text: TextSpan(
-            children: [
-              TextSpan(
-                text: widget.amountBtc.toStringAsFixed(6),
-                style: AppTypography.newsreader(
-                  color: _receiveText,
-                  fontSize: 40,
-                  fontWeight: FontWeight.w400,
-                  height: 1.1,
-                  letterSpacing: 0,
-                ),
-              ),
-              TextSpan(
-                text: btcSuffix,
-                style: AppTypography.newsreader(
-                  color: _receiveMuted,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                  letterSpacing: 0.4,
-                ),
-              ),
-            ],
-          ),
-        ),
-      ],
-    );
-  }
-
-  Widget _buildAddressPill() {
-    final borderRadius = BorderRadius.circular(8);
-
-    return Container(
-      width: double.infinity,
-      decoration: BoxDecoration(
-        color: _receiveBackground,
-        borderRadius: borderRadius,
-        border: Border.all(color: _receiveBorder),
-      ),
-      child: Material(
-        color: Colors.transparent,
-        child: InkWell(
-          key: const ValueKey('receive-address-pill-copy'),
-          borderRadius: borderRadius,
-          onTap: _copyAddressValue,
-          child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-            child: Row(
-              children: [
-                Expanded(
-                  child: Text(
-                    shortenReceiveAddress(_addressValue, head: 22, tail: 0)
-                        .toUpperCase(),
-                    textAlign: TextAlign.center,
-                    maxLines: 2,
-                    overflow: TextOverflow.ellipsis,
-                    style: AppTypography.inter(
-                      color: _receiveMuted,
-                      fontSize: 12,
-                      fontWeight: FontWeight.w400,
-                      height: 1.2,
-                      letterSpacing: 1.1,
-                    ),
-                  ),
-                ),
-                const SizedBox(width: 10),
-                Icon(
-                  KeroseneIcons.copy,
-                  color: _receiveMuted,
-                  size: 16,
-                ),
-              ],
-            ),
-          ),
-        ),
+    return Text(
+      _amountLabel,
+      maxLines: 1,
+      overflow: TextOverflow.ellipsis,
+      textAlign: TextAlign.center,
+      style: AppTypography.inter(
+        color: _receiveText,
+        fontSize: 26,
+        fontWeight: FontWeight.w600,
+        height: 1.12,
+        letterSpacing: 0,
+        fontFeatures: const [FontFeature.tabularFigures()],
       ),
     );
   }
+}
 
-  Widget _buildExpectedAmountBlock() {
-    const btcLabel = 'BTC';
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 12),
+class _ReceivePlainLine extends StatelessWidget {
+  final String label;
+  final String value;
+
+  const _ReceivePlainLine({
+    required this.label,
+    required this.value,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final displayValue = label == 'Endereço'
+        ? shortenReceiveAddress(value, head: 18, tail: 8)
+        : value;
+    return GestureDetector(
+      behavior: HitTestBehavior.opaque,
+      onTap: label == 'Endereço'
+          ? () => Clipboard.setData(ClipboardData(text: value))
+          : null,
       child: Column(
         children: [
-          SectionLabel('VALOR ESPERADO'),
-          const SizedBox(height: 8),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.center,
-            crossAxisAlignment: CrossAxisAlignment.baseline,
-            textBaseline: TextBaseline.alphabetic,
-            children: [
-              Text(
-                widget.amountBtc.toStringAsFixed(8),
-                style: AppTypography.newsreader(
-                  color: _receiveText,
-                  fontSize: 20,
-                  fontWeight: FontWeight.w500,
-                  height: 1.4,
-                  letterSpacing: 0.4,
-                ),
-              ),
-              const SizedBox(width: 8),
-              Text(
-                btcLabel,
-                style: AppTypography.inter(
-                  color: _receiveMuted,
-                  fontSize: 14,
-                  fontWeight: FontWeight.w400,
-                  height: 1.4,
-                ),
-              ),
-            ],
+          Text(
+            label.toUpperCase(),
+            style: AppTypography.inter(
+              color: _receiveMuted,
+              fontSize: 11,
+              fontWeight: FontWeight.w600,
+              height: 1.2,
+              letterSpacing: 1.1,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            displayValue,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            textAlign: TextAlign.center,
+            style: (label == 'Endereço'
+                    ? AppTypography.ibmPlexMono()
+                    : AppTypography.inter())
+                .copyWith(
+              color: _receiveText,
+              fontSize: 13,
+              fontWeight: FontWeight.w500,
+              height: 1.25,
+              letterSpacing: 0,
+            ),
           ),
         ],
       ),

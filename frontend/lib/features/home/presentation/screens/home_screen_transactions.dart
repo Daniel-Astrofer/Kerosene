@@ -97,11 +97,11 @@ class _HomeTransactionsListState extends ConsumerState<HomeTransactionsList> {
 
         return StatementTransactionScrollStack(
           itemCount: visibleTxs.length,
-          itemExtent: homeSize(174),
-          expandedItemExtent: homeSize(376),
+          itemExtent: homeSize(148),
+          expandedItemExtent: homeSize(430),
           expandedIndex: expandedIndex >= 0 ? expandedIndex : null,
-          itemGap: homeSize(12),
-          stackGap: homeSize(114),
+          itemGap: homeSize(10),
+          stackGap: homeSize(104),
           topAnchorOffset: homeSize(10),
           itemBuilder: (context, index) {
             return _buildTransactionTile(
@@ -431,7 +431,9 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
             width: homeSize(48),
             height: homeSize(48),
             child: Center(
-              child: Icon(icon, color: Colors.white, size: homeSize(plainCenteredIcon ? 28 : 18)),
+              child: Icon(icon,
+                  color: Colors.white,
+                  size: homeSize(plainCenteredIcon ? 28 : 18)),
             ),
           ),
           SizedBox(height: homeSize(AppSpacing.lg)),
@@ -469,22 +471,22 @@ class HomeEmptyTransactionsPanel extends StatelessWidget {
             SizedBox(
               width: double.infinity,
               child: FilledButton.icon(
-              onPressed: onAction,
-              style: FilledButton.styleFrom(
-                minimumSize: Size.fromHeight(homeSize(50)),
-                backgroundColor: Colors.white,
-                foregroundColor: homeBackgroundColor,
-                shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(homeSize(14)),
+                onPressed: onAction,
+                style: FilledButton.styleFrom(
+                  minimumSize: Size.fromHeight(homeSize(50)),
+                  backgroundColor: Colors.white,
+                  foregroundColor: homeBackgroundColor,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(homeSize(14)),
+                  ),
+                  textStyle: theme.textTheme.labelLarge?.copyWith(
+                    fontSize: homeFontSize(14),
+                    fontWeight: FontWeight.w300,
+                    letterSpacing: 0,
+                  ),
                 ),
-                textStyle: theme.textTheme.labelLarge?.copyWith(
-                  fontSize: homeFontSize(14),
-                  fontWeight: FontWeight.w300,
-                  letterSpacing: 0,
-                ),
-              ),
-              icon: Icon(actionIcon, size: homeSize(16)),
-              label: Text(actionLabel.toUpperCase()),
+                icon: Icon(actionIcon, size: homeSize(16)),
+                label: Text(actionLabel.toUpperCase()),
               ),
             ),
           ],

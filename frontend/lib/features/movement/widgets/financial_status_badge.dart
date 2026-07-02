@@ -70,11 +70,14 @@ class FinancialStatusBadge extends StatelessWidget {
         );
       case 'VERIFYING_ONBOARDING':
       case 'AUTO_RESOLUTION_PENDING':
+      case 'VALIDATING':
+      case 'QUORUM_SYNC':
+      case 'EXECUTING':
         return const FinancialStatusMeta(
           label: LocalizedCopy(
-            en: 'Being checked',
-            pt: 'Em conferência',
-            es: 'En revisión',
+            en: 'Validating',
+            pt: 'Validando',
+            es: 'Validando',
           ),
           color: infoColor,
           icon: KeroseneIcons.sync,

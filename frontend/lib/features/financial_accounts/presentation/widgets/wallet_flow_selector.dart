@@ -9,6 +9,7 @@ import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart';
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/financial_accounts/presentation/widgets/wallet_hold_selection_tile.dart';
@@ -63,17 +64,16 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(balanceWebSocketServiceProvider);
     final walletState = ref.watch(walletProvider);
 
     return Scaffold(
       backgroundColor: _background,
-      body: SafeArea(
-        child: Stack(
-          children: [
-            Positioned.fill(child: _buildBody(context, walletState)),
-            _buildBackButton(context),
-          ],
-        ),
+      body: Stack(
+        children: [
+          Positioned.fill(child: _buildBody(context, walletState)),
+          _buildBackButton(context),
+        ],
       ),
     );
   }
@@ -82,8 +82,9 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
     if (!widget.showBackButton) {
       return const SizedBox.shrink();
     }
+    final topInset = MediaQuery.viewPaddingOf(context).top;
     return Positioned(
-      top: 12,
+      top: topInset + 12,
       left: 16,
       child: DecoratedBox(
         decoration: BoxDecoration(
@@ -193,64 +194,43 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
         final compact = width < 380 || height < 720 || wallets.length >= 3;
         final maxWidth = width;
         final canFitWithoutScrolling = wallets.length <= 3;
-        final verticalPadding = canFitWithoutScrolling ? 32.0 : 84.0;
-        final gap = compact ? 10.0 : 14.0;
+        final gap = canFitWithoutScrolling
+            ? 0.0
+            : compact
+                ? 10.0
+                : 14.0;
 
-        Widget itemBuilder(Wallet wallet) {
+        Widget itemBuilder(Wallet wallet, {required bool fill}) {
           final selected = _sameWallet(wallet, selectedWallet);
-          final tileWidth = selected ? maxWidth : maxWidth * 0.86;
-          return Align(
-            alignment: Alignment.center,
-            child: AnimatedContainer(
-              key: ValueKey('wallet-flow-tile-${wallet.id}'),
-              duration: const Duration(milliseconds: 260),
-              curve: Curves.easeOutQuart,
-              width: tileWidth,
-              child: WalletHoldSelectionTile(
-                wallet: wallet,
-                selected: selected,
-                compact: compact,
-                onSelect: _select,
-                onConfirmed: _continueWith,
-              ),
-            ),
+          final tile = WalletHoldSelectionTile(
+            wallet: wallet,
+            selected: selected,
+            compact: compact,
+            onSelect: _select,
+            onConfirmed: _continueWith,
+          );
+          return AnimatedContainer(
+            key: ValueKey('wallet-flow-tile-${wallet.id}'),
+            duration: const Duration(milliseconds: 320),
+            curve: Curves.easeOutCubic,
+            width: maxWidth,
+            child: fill ? SizedBox.expand(child: tile) : tile,
           );
         }
 
         if (canFitWithoutScrolling) {
-          final availableHeight =
-              (height - verticalPadding * 2 - gap * (wallets.length - 1))
-                  .clamp(0.0, double.infinity)
-                  .toDouble();
-          final maxTileHeight = wallets.isEmpty
-              ? 0.0
-              : (availableHeight / wallets.length)
-                  .clamp(compact ? 156.0 : 184.0, double.infinity)
-                  .toDouble();
-          return Padding(
-            padding: EdgeInsets.symmetric(
-              horizontal: 0,
-              vertical: verticalPadding,
-            ),
-            child: Center(
-              child: ConstrainedBox(
-                constraints: BoxConstraints(maxWidth: maxWidth),
-                child: Column(
-                  mainAxisAlignment: MainAxisAlignment.center,
-                  children: [
-                    for (var index = 0; index < wallets.length; index++) ...[
-                      ConstrainedBox(
-                        constraints: BoxConstraints(
-                          minHeight: compact ? 148 : 172,
-                          maxHeight: maxTileHeight,
-                        ),
-                        child: itemBuilder(wallets[index]),
-                      ),
-                      if (index < wallets.length - 1) SizedBox(height: gap),
-                    ],
-                  ],
-                ),
-              ),
+          return SizedBox.expand(
+            child: Column(
+              children: [
+                for (var index = 0; index < wallets.length; index++) ...[
+                  Expanded(
+                    flex: _sameWallet(wallets[index], selectedWallet) ? 2 : 1,
+                    child: itemBuilder(wallets[index], fill: true),
+                  ),
+                  if (gap > 0 && index < wallets.length - 1)
+                    SizedBox(height: gap),
+                ],
+              ],
             ),
           );
         }
@@ -267,7 +247,8 @@ class _WalletFlowSelectorState extends ConsumerState<WalletFlowSelector> {
           ),
           itemCount: wallets.length,
           separatorBuilder: (_, __) => SizedBox(height: gap),
-          itemBuilder: (context, index) => itemBuilder(wallets[index]),
+          itemBuilder: (context, index) =>
+              itemBuilder(wallets[index], fill: false),
         );
       },
     );

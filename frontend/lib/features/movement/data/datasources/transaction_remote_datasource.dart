@@ -312,7 +312,11 @@ class TransactionRemoteDataSourceImpl implements TransactionRemoteDataSource {
       'expiresAt': payload['expiresAt']?.toString() ??
           fallbackExpiresAt?.toIso8601String(),
       'paymentRail': payload['rail']?.toString() ?? 'ONCHAIN',
-      'settlementStatus': payload['status']?.toString() ?? 'PENDING',
+      'settlementStatus': payload['settlementStatus']?.toString() ??
+          payload['status']?.toString() ??
+          'PENDING',
+      'settlementReference': payload['settlementTransactionId']?.toString(),
+      'confirmations': payload['confirmations'],
       'terminal': payload['terminal'] ?? false,
     });
   }

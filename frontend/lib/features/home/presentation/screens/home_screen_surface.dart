@@ -125,7 +125,7 @@ class HomeLoadingContent extends StatelessWidget {
     if (MediaQuery.sizeOf(context).width >= 0) {
       return SizedBox(
         height: MediaQuery.sizeOf(context).height * 0.58,
-        child: KeroseneLogoLoadingView(logoSize: homeSize(154)),
+        child: const Center(child: TorLoadingDots()),
       );
     }
 

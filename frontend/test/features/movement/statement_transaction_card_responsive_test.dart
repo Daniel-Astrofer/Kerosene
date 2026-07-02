@@ -251,6 +251,141 @@ void main() {
       await tester.pump();
     });
 
+    testWidgets('expanded on-chain card shows blockchain data only', (
+      tester,
+    ) async {
+      final onChain = Transaction(
+        id: 'ledger-onchain-001',
+        fromAddress: 'bc1qsourceaddresswithaverylongvalue00000000000000000000',
+        toAddress: 'bc1qdestinationaddresswithaverylongvalue1111111111111111',
+        amountSatoshis: 300000,
+        feeSatoshis: 900,
+        status: TransactionStatus.confirming,
+        type: TransactionType.deposit,
+        confirmations: 3,
+        timestamp: DateTime(2026, 5, 22, 8, 30),
+        blockchainTxid:
+            '82b6f7a1f0d1f1422c3378e4a66de62c2bb91df1a8d2de8f9c11c2a6e3123456',
+        blockHeight: 845123,
+        blockHash:
+            '00000000000000000003f6a9b9db9e1e53f1db0f56bbf6b9f7c2d6f000000001',
+        hasNetworkFee: true,
+      );
+
+      await pumpCard(
+        tester,
+        size: regularPortrait,
+        child: SingleChildScrollView(
+          child: SizedBox(
+            width: 340,
+            child: StatementTransactionCard(
+              transaction: onChain,
+              expanded: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Confirmations'), findsOneWidget);
+      expect(find.text('TXID'), findsOneWidget);
+      expect(find.text('Block'), findsOneWidget);
+      expect(find.text('Payment hash'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('expanded lightning card shows payment data without chain rows',
+        (
+      tester,
+    ) async {
+      final lightning = Transaction(
+        id: 'ln-ledger-001',
+        fromAddress: 'alice@kerosene.test',
+        toAddress: 'bob@kerosene.test',
+        amountSatoshis: 42000,
+        feeSatoshis: 12,
+        status: TransactionStatus.confirmed,
+        type: TransactionType.receive,
+        confirmations: 0,
+        timestamp: DateTime(2026, 5, 22, 9),
+        invoiceId: 'invoice-0001',
+        lightningInvoice: 'lnbcrt420n1ptestinvoice',
+        paymentHash: 'payment-hash-00000000000000000000000000000001',
+        isLightning: true,
+        hasNetworkFee: true,
+      );
+
+      await pumpCard(
+        tester,
+        size: regularPortrait,
+        child: SingleChildScrollView(
+          child: SizedBox(
+            width: 340,
+            child: StatementTransactionCard(
+              transaction: lightning,
+              expanded: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Settlement'), findsOneWidget);
+      expect(find.text('Payment hash'), findsOneWidget);
+      expect(find.text('Invoice'), findsOneWidget);
+      expect(find.text('BOLT11'), findsOneWidget);
+      expect(find.text('Confirmations'), findsNothing);
+      expect(find.text('TXID'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
+    testWidgets('expanded internal card shows wallet movement without txid', (
+      tester,
+    ) async {
+      final internal = Transaction(
+        id: 'internal-ledger-001',
+        fromAddress: 'wallet-main',
+        toAddress: 'wallet-reserve',
+        walletId: 'wallet-main',
+        sourceWalletId: 'wallet-main',
+        destinationWalletId: 'wallet-reserve',
+        senderDisplayName: 'Conta principal',
+        receiverDisplayName: 'Reserva',
+        amountSatoshis: 120000,
+        feeSatoshis: 0,
+        status: TransactionStatus.confirmed,
+        type: TransactionType.send,
+        confirmations: 0,
+        timestamp: DateTime(2026, 5, 22, 10),
+        isInternal: true,
+      );
+
+      await pumpCard(
+        tester,
+        size: regularPortrait,
+        child: SingleChildScrollView(
+          child: SizedBox(
+            width: 340,
+            child: StatementTransactionCard(
+              transaction: internal,
+              expanded: true,
+            ),
+          ),
+        ),
+      );
+
+      expect(find.text('Internal status'), findsOneWidget);
+      expect(find.text('Source wallet'), findsOneWidget);
+      expect(find.text('Destination wallet'), findsOneWidget);
+      expect(find.text('TXID'), findsNothing);
+      expect(find.text('Confirmations'), findsNothing);
+
+      await tester.pumpWidget(const SizedBox.shrink());
+      await tester.pump();
+    });
+
     testWidgets('transaction list item keeps the debit sign for outgoing rows',
         (tester) async {
       final outgoing = Transaction(

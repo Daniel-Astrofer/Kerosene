@@ -7,7 +7,7 @@ import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/design_system/icons.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/providers/recent_transaction_destinations_provider.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/utils/bitcoin_network.dart';
@@ -27,6 +27,7 @@ import 'package:kerosene/features/movement/copy/send_money_copy.dart';
 
 import 'package:kerosene/features/financial_accounts/presentation/providers/wallet_provider.dart'
     hide transactionRepositoryProvider;
+import 'package:kerosene/features/financial_accounts/presentation/providers/balance_websocket_provider.dart';
 import 'package:kerosene/features/financial_accounts/presentation/state/wallet_state.dart';
 import 'package:kerosene/features/movement/widgets/send_money_components.dart';
 import 'package:kerosene/features/movement/providers/transaction_provider.dart';
@@ -186,6 +187,7 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
   @override
   Widget build(BuildContext context) {
+    ref.watch(balanceWebSocketServiceProvider);
     var isLoading = false;
     if (_currentStep == 2) {
       final isSending = ref.watch(
@@ -209,7 +211,7 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
 
     if (_currentStep != 0 &&
         (walletState is WalletInitial || walletState is WalletLoading)) {
-      return const KeroseneLogoLoadingView();
+      return const Center(child: TorLoadingDots());
     }
 
     final currentWallet = _resolveWallet(walletState);
@@ -228,14 +230,14 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
     return Scaffold(
       backgroundColor: internalBlack,
       resizeToAvoidBottomInset: true,
-      body: SafeArea(
-        child: PageView(
-          controller: _pageController,
-          physics: const NeverScrollableScrollPhysics(),
-          children: [
-            _buildWalletSelectionStep(context, walletState),
-            _buildDestinationStep(context),
-            _buildAmountStep(
+      body: PageView(
+        controller: _pageController,
+        physics: const NeverScrollableScrollPhysics(),
+        children: [
+          _buildWalletSelectionStep(context, walletState),
+          SafeArea(child: _buildDestinationStep(context)),
+          SafeArea(
+            child: _buildAmountStep(
               context,
               btcUsd: btcUsd,
               btcEur: btcEur,
@@ -246,8 +248,8 @@ class SendMoneyScreenState extends ConsumerState<SendMoneyScreen> {
               feeQuote: feeQuote,
               isLoading: isLoading,
             ),
-          ],
-        ),
+          ),
+        ],
       ),
     );
   }

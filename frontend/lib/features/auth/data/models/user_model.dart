@@ -6,7 +6,6 @@ class UserModel extends User {
   const UserModel({
     required super.id,
     required super.username,
-    super.testBalanceClaimed,
     super.passkeyEnabledForTransactions,
     super.role,
     super.isAdmin,
@@ -20,7 +19,6 @@ class UserModel extends User {
     return UserModel(
       id: (json['id'] ?? json['userId'] ?? '0').toString(),
       username: (json['username'] ?? json['name'] ?? '').toString(),
-      testBalanceClaimed: json['testBalanceClaimed'] == true,
       passkeyEnabledForTransactions:
           json['passkeyEnabledForTransactions'] == true,
       role: (json['role'] ?? 'USER').toString(),
@@ -45,7 +43,6 @@ class UserModel extends User {
     return {
       'id': id,
       'username': username,
-      'testBalanceClaimed': testBalanceClaimed,
       'passkeyEnabledForTransactions': passkeyEnabledForTransactions,
       'role': role,
       'isAdmin': isAdmin,
@@ -60,7 +57,6 @@ class UserModel extends User {
     return User(
       id: id,
       username: username,
-      testBalanceClaimed: testBalanceClaimed,
       passkeyEnabledForTransactions: passkeyEnabledForTransactions,
       role: role,
       isAdmin: isAdmin,
@@ -75,7 +71,6 @@ class UserModel extends User {
     return UserModel(
       id: user.id,
       username: user.username,
-      testBalanceClaimed: user.testBalanceClaimed,
       passkeyEnabledForTransactions: user.passkeyEnabledForTransactions,
       role: user.role,
       isAdmin: user.isAdmin,
@@ -89,7 +84,6 @@ class UserModel extends User {
   UserModel copyWith({
     String? id,
     String? username,
-    bool? testBalanceClaimed,
     bool? passkeyEnabledForTransactions,
     String? role,
     bool? isAdmin,
@@ -100,7 +94,6 @@ class UserModel extends User {
     return UserModel(
       id: id ?? this.id,
       username: username ?? this.username,
-      testBalanceClaimed: testBalanceClaimed ?? this.testBalanceClaimed,
       passkeyEnabledForTransactions:
           passkeyEnabledForTransactions ?? this.passkeyEnabledForTransactions,
       role: role ?? this.role,

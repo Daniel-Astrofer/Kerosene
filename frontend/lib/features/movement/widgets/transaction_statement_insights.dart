@@ -778,6 +778,7 @@ class _DistributionDonut extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final dominant = report.dominantDistributionSegment;
     return TweenAnimationBuilder<double>(
       key: ValueKey(
         'fund-distribution-${report.distribution.map((segment) => segment.visualSats).join('|')}',
@@ -805,36 +806,27 @@ class _DistributionDonut extends StatelessWidget {
                   mainAxisSize: MainAxisSize.min,
                   children: [
                     Text(
-                      'Total',
-                      style: AppTypography.financial(
-                        color: _primary,
-                        fontSize: 14,
-                        fontWeight: FontWeight.w700,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      _formatBtc(report.totalBalanceSats),
-                      maxLines: 1,
+                      dominant.label,
+                      maxLines: 2,
                       overflow: TextOverflow.ellipsis,
                       textAlign: TextAlign.center,
                       style: AppTypography.financial(
-                        color: _primary,
-                        fontSize: 18,
-                        fontWeight: FontWeight.w600,
-                      ),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      report.dominantWalletName,
-                      maxLines: 1,
-                      overflow: TextOverflow.ellipsis,
-                      textAlign: TextAlign.center,
-                      style: AppTypography.caption.copyWith(
                         color: _onSurfaceVariant,
-                        fontSize: 10,
-                        fontWeight: FontWeight.w700,
-                        height: 1.2,
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        height: 1.15,
+                      ),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      _formatPercent(dominant.percent),
+                      maxLines: 1,
+                      overflow: TextOverflow.ellipsis,
+                      textAlign: TextAlign.center,
+                      style: AppTypography.financial(
+                        color: _primary,
+                        fontSize: 24,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ],
@@ -1064,6 +1056,25 @@ class _StatementReport {
     required this.ignoredFailedTransactionCount,
     required this.ignoredOutOfPeriodTransactionCount,
   });
+
+  _DistributionSegment get dominantDistributionSegment {
+    if (distribution.isEmpty) {
+      return _DistributionSegment(
+        label: dominantWalletName,
+        sats: 0,
+        visualSats: 0,
+        percent: 0,
+        color: _singleWalletColor,
+        isDominant: true,
+      );
+    }
+    return distribution.reduce((a, b) {
+      if (b.sats != a.sats) return b.sats > a.sats ? b : a;
+      return a.label.toLowerCase().compareTo(b.label.toLowerCase()) <= 0
+          ? a
+          : b;
+    });
+  }
 
   factory _StatementReport.from({
     required BuildContext context,
@@ -1369,6 +1380,14 @@ String _formatBtc(int sats) {
   if (sats < 10000) return '$sats sats';
   final btc = sats / 100000000.0;
   return '${btc.toStringAsFixed(btc >= 1 ? 4 : 6)} BTC';
+}
+
+String _formatPercent(double percent) {
+  if (percent.isNaN || percent.isInfinite || percent <= 0) return '0%';
+  if ((percent - percent.round()).abs() < 0.05) {
+    return '${percent.round()}%';
+  }
+  return '${percent.toStringAsFixed(1)}%';
 }
 
 String _pluralPt(int count, String singular, String plural) {

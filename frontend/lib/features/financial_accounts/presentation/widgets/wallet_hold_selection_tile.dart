@@ -14,11 +14,11 @@ import 'package:kerosene/features/financial_accounts/domain/entities/wallet.dart
 const Duration kWalletHoldSelectionDuration = Duration(seconds: 1);
 
 String walletSelectionBalanceLabel(Wallet wallet) {
-  final amount = MoneyDisplay.format(
+  final amount = MoneyDisplay.formatCompact(
     amount: wallet.balance,
     currency: Currency.btc,
     withSymbol: false,
-    decimalPlaces: 8,
+    maxDecimalPlaces: 8,
   );
   return '$amount BTC';
 }

@@ -2,7 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
 import 'package:kerosene/core/utils/error_translator.dart';
 import 'package:kerosene/core/utils/money_display.dart';
@@ -103,7 +103,8 @@ class _MovementAmountScreenState extends ConsumerState<MovementAmountScreen> {
       return null;
     }
 
-    return ref.read(transactionRepositoryProvider).createPaymentLink(
+    final paymentLink =
+        await ref.read(transactionRepositoryProvider).createPaymentLink(
       amount: amountBtc,
       description: 'Recebimento ${widget.wallet.name}',
       expiresInMinutes: expiresInMinutes,
@@ -118,6 +119,9 @@ class _MovementAmountScreenState extends ConsumerState<MovementAmountScreen> {
         'source': 'receive_flow',
       },
     );
+    ref.invalidate(paymentLinksProvider);
+    ref.invalidate(transactionHistoryProvider);
+    return paymentLink;
   }
 
   @override
@@ -133,7 +137,7 @@ class _MovementAmountScreenState extends ConsumerState<MovementAmountScreen> {
             }
           });
         }
-        return const KeroseneLogoLoadingView();
+        return const Center(child: TorLoadingDots());
       }
     }
 

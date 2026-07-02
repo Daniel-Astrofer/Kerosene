@@ -1,4 +1,5 @@
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:kerosene/core/errors/failures.dart';
 import 'package:kerosene/core/motion/app_motion.dart';
 import 'package:kerosene/features/auth/controller/auth_controller.dart';
 import '../../domain/entities/app_pin_status.dart';
@@ -57,7 +58,7 @@ final appPinStatusProvider = FutureProvider<AppPinStatus>(
     final repository = ref.watch(securityRepositoryProvider);
     final result = await repository.getAppPinStatus();
     return result.fold(
-      (failure) => throw Exception(failure.message),
+      (failure) => throw _AppPinStatusFailure(failure),
       (status) => status,
     );
   },
@@ -68,7 +69,25 @@ Duration? _retryAppPinStatus(int retryCount, Object error) {
   if (error is Error) {
     return null;
   }
+  if (error is _AppPinStatusFailure) {
+    final statusCode = error.failure.statusCode;
+    if (statusCode != null && statusCode < 500) {
+      return null;
+    }
+  }
+  if (retryCount >= 3) {
+    return null;
+  }
   return KeroseneMotion.exponentialBackoff(retryCount);
+}
+
+class _AppPinStatusFailure implements Exception {
+  final Failure failure;
+
+  const _AppPinStatusFailure(this.failure);
+
+  @override
+  String toString() => failure.message;
 }
 
 final adminKeyStatusProvider =

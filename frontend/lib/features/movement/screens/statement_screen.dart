@@ -5,8 +5,8 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
 import 'package:kerosene/core/providers/price_provider.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_spacing.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
@@ -136,7 +136,7 @@ class _TransactionStatementScreenState
     final maxWidth = screenWidth >= 900 ? 980.0 : 430.0;
 
     if (historyAsync.isLoading && !historyAsync.hasValue) {
-      return const KeroseneLogoLoadingView();
+      return const Center(child: TorLoadingDots());
     }
 
     return Scaffold(

@@ -60,6 +60,7 @@ final walletNetworkProfileProvider =
 List<Transaction> _mergeExternalHistory({
   required List<Transaction> kfeTransactions,
   required List<ExternalTransfer> externalTransfers,
+  required List<PaymentLink> paymentLinks,
 }) {
   final merged = <String, Transaction>{};
 
@@ -77,6 +78,10 @@ List<Transaction> _mergeExternalHistory({
 
   for (final transfer in externalTransfers) {
     upsert(transfer.toTransaction());
+  }
+
+  for (final link in paymentLinks) {
+    upsert(link.toTransaction());
   }
 
   final history = merged.values.toList()
@@ -170,6 +175,18 @@ Future<List<ExternalTransfer>> _loadExternalTransfersSafely(Ref ref) async {
   }
 }
 
+Future<List<PaymentLink>> _loadPaymentLinksSafely(Ref ref) async {
+  if (ref.watch(sessionStorageScopeProvider) == null) {
+    return const <PaymentLink>[];
+  }
+
+  try {
+    return await ref.watch(transactionRepositoryProvider).getPaymentLinks();
+  } catch (_) {
+    return const <PaymentLink>[];
+  }
+}
+
 // ==================== Transaction History (API) ====================
 
 /// Busca o histórico de transações a partir do dashboard KFE.
@@ -191,6 +208,7 @@ final _scopedTransactionHistoryProvider =
   final ledgerRepo = ref.watch(ledgerRepositoryProvider);
   final result = await ledgerRepo.getHistory(page: 0, size: 50);
   final externalTransfers = await _loadExternalTransfersSafely(ref);
+  final paymentLinks = await _loadPaymentLinksSafely(ref);
 
   return result.fold(
     (failure) => throw Exception(failure.message),
@@ -198,6 +216,7 @@ final _scopedTransactionHistoryProvider =
       return _mergeExternalHistory(
         kfeTransactions: transactions,
         externalTransfers: externalTransfers,
+        paymentLinks: paymentLinks,
       );
     },
   );
@@ -237,9 +256,11 @@ final _scopedPagedTransactionHistoryProvider = FutureProvider.family<
   }
 
   final externalTransfers = await _loadExternalTransfersSafely(ref);
+  final paymentLinks = await _loadPaymentLinksSafely(ref);
   final merged = _mergeExternalHistory(
     kfeTransactions: transactions,
     externalTransfers: externalTransfers,
+    paymentLinks: paymentLinks,
   );
   return merged.take(request.size).toList();
 });

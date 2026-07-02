@@ -18,7 +18,7 @@ import 'package:kerosene/core/l10n/l10n_extension.dart';
 import 'package:kerosene/core/presentation/widgets/app_notice.dart';
 import 'package:kerosene/core/presentation/widgets/app_primary_navigation.dart';
 import 'package:kerosene/core/presentation/widgets/bitcoin_address_blocks.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/providers/network_status_provider.dart';
 import 'package:kerosene/core/responsive/kerosene_responsive.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
@@ -66,7 +66,7 @@ class BitcoinAccountsScreenState extends ConsumerState<BitcoinAccountsScreen> {
         authState is AuthAuthenticated ? authState.user.name.trim() : '';
 
     return accounts.when(
-      loading: () => const KeroseneLogoLoadingView(),
+      loading: () => const Center(child: TorLoadingDots()),
       error: (_, __) => Scaffold(
         backgroundColor: AppColors.hexFF000000,
         body: Stack(

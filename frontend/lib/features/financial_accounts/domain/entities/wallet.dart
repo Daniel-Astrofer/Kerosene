@@ -81,6 +81,12 @@ final class Wallet extends Equatable {
   /// Taxa de depósito externo aplicada pelo backend (ex: 0.009 = 0.9%).
   final double depositFeeRate;
 
+  /// Indica se este saldo pode ser movimentado pelo backend Kerosene.
+  final bool spendable;
+
+  /// Explicação do modelo de custódia retornada pelo backend.
+  final String custodyExplanation;
+
   const Wallet({
     required this.id,
     required this.name,
@@ -108,6 +114,8 @@ final class Wallet extends Equatable {
     this.previousCardExpiresAt,
     this.withdrawalFeeRate = WalletCardType.bronzeDefaultFeeRate,
     this.depositFeeRate = WalletCardType.bronzeDefaultFeeRate,
+    this.spendable = true,
+    this.custodyExplanation = '',
   });
 
   /// Cria cópia com modificações
@@ -138,6 +146,8 @@ final class Wallet extends Equatable {
     DateTime? previousCardExpiresAt,
     double? withdrawalFeeRate,
     double? depositFeeRate,
+    bool? spendable,
+    String? custodyExplanation,
   }) {
     return Wallet(
       id: id ?? this.id,
@@ -168,6 +178,8 @@ final class Wallet extends Equatable {
           previousCardExpiresAt ?? this.previousCardExpiresAt,
       withdrawalFeeRate: withdrawalFeeRate ?? this.withdrawalFeeRate,
       depositFeeRate: depositFeeRate ?? this.depositFeeRate,
+      spendable: spendable ?? this.spendable,
+      custodyExplanation: custodyExplanation ?? this.custodyExplanation,
     );
   }
 
@@ -235,6 +247,8 @@ final class Wallet extends Equatable {
         data['depositFeeRate'],
         cardType.defaultFeeRate,
       ),
+      spendable: spendable,
+      custodyExplanation: data['walletTypeDescription']?.toString() ?? '',
     );
   }
 
@@ -334,6 +348,10 @@ final class Wallet extends Equatable {
   }
 
   bool get isKeroseneCustody => isInternalCustody || isCustodialOnchain;
+
+  bool get hasKeroseneSpendableBalance => spendable && isKeroseneCustody;
+
+  bool get isObservedOnlyBalance => !spendable || isColdWallet;
 
   String get custodyDisplayLabel {
     if (isColdWallet) return 'Cold wallet';

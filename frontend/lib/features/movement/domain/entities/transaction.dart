@@ -474,6 +474,7 @@ final class Transaction extends Equatable {
     final receiverAmountSats =
         _parseInt(json['receiverAmountSats']) ?? grossAmountSats;
     final networkFeeSats = _parseInt(json['networkFeeSats']) ?? 0;
+    final confirmations = _parseInt(json['confirmations']) ?? 0;
     final isLightning = rail == 'LIGHTNING';
     final isInternal = rail == 'INTERNAL' || direction == 'INTERNAL';
     final isCredit = direction == 'INBOUND' ||
@@ -488,7 +489,10 @@ final class Transaction extends Equatable {
             : direction == 'INBOUND'
                 ? TransactionType.deposit
                 : TransactionType.withdrawal;
-    final status = _resolveKfeStatus(json['status']?.toString());
+    final status = _resolveKfeStatus(
+      json['status']?.toString(),
+      confirmations: confirmations,
+    );
     final blockchainTxid = json['blockchainTxid']?.toString();
     final id = [
       blockchainTxid,
@@ -510,13 +514,16 @@ final class Transaction extends Equatable {
       feeSatoshis: networkFeeSats.abs(),
       status: status,
       type: txType,
-      confirmations: status == TransactionStatus.confirmed ? 6 : 0,
+      confirmations: confirmations,
       timestamp: _parseDateTime(json['createdAt'] ?? json['timestamp']) ??
           DateTime.now(),
       blockchainTxid: blockchainTxid,
       externalReference: externalReference,
       paymentHash: json['paymentHash']?.toString(),
-      description: json['memo']?.toString(),
+      description: json['memo']?.toString() ??
+          (status == TransactionStatus.confirming
+              ? 'Transação detectada, aguardando confirmações'
+              : null),
       isInternal: isInternal,
       isLightning: isLightning,
       hasNetworkFee: networkFeeSats.abs() > 0,
@@ -757,7 +764,10 @@ final class Transaction extends Equatable {
     }
   }
 
-  static TransactionStatus _resolveKfeStatus(String? rawStatus) {
+  static TransactionStatus _resolveKfeStatus(
+    String? rawStatus, {
+    int confirmations = 0,
+  }) {
     switch (rawStatus?.toUpperCase()) {
       case 'SETTLED':
         return TransactionStatus.confirmed;
@@ -768,6 +778,9 @@ final class Transaction extends Equatable {
       case 'LOCKED':
       case 'QUORUM_SYNC':
       case 'VALIDATING':
+        return confirmations > 0
+            ? TransactionStatus.confirming
+            : TransactionStatus.pending;
       case 'INTENT':
       default:
         return TransactionStatus.pending;

@@ -6,7 +6,7 @@ import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:kerosene/design_system/icons.dart';
 import 'package:kerosene/core/navigation/app_page_transitions.dart';
-import 'package:kerosene/core/presentation/widgets/kerosene_logo_loading_view.dart';
+import 'package:kerosene/core/presentation/widgets/tor_loading_dots.dart';
 import 'package:kerosene/core/theme/app_colors.dart';
 import 'package:kerosene/core/theme/app_typography.dart';
 import 'package:kerosene/core/utils/snackbar_helper.dart';
@@ -211,7 +211,7 @@ class _MovementHubScreenState extends ConsumerState<MovementHubScreen> {
 
     if (widget.initialWallet == null &&
         (walletState is WalletInitial || walletState is WalletLoading)) {
-      return const KeroseneLogoLoadingView();
+      return const Center(child: TorLoadingDots());
     }
 
     return Scaffold(
@@ -668,7 +668,7 @@ class ReceiveGatewayProvidersScreen extends ConsumerWidget {
     final providers = _providerSections(context);
 
     if (urlsAsync.isLoading && !urlsAsync.hasValue) {
-      return const KeroseneLogoLoadingView();
+      return const Center(child: TorLoadingDots());
     }
 
     return Scaffold(

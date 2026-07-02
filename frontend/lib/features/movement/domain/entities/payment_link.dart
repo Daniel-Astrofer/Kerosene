@@ -32,6 +32,7 @@ class PaymentLink extends Equatable {
   final String settlementStatus;
   final String? settlementReference;
   final bool terminal;
+  final int confirmations;
 
   const PaymentLink({
     required this.id,
@@ -63,6 +64,7 @@ class PaymentLink extends Equatable {
     this.settlementStatus = 'QUOTED',
     this.settlementReference,
     this.terminal = false,
+    this.confirmations = 0,
   });
 
   bool get isPending => status == 'pending';
@@ -71,6 +73,22 @@ class PaymentLink extends Equatable {
   bool get isVerifyingOnboarding => status == 'verifying_onboarding';
   bool get isCancelled => status == 'cancelled';
   bool get isExpired => expiresAt != null && DateTime.now().isAfter(expiresAt!);
+  bool get isValidatingSettlement =>
+      settlementStatus == 'VALIDATING' ||
+      settlementStatus == 'QUORUM_SYNC' ||
+      settlementStatus == 'EXECUTING';
+  bool get hasObservedOnchainPayment =>
+      isValidatingSettlement || (txid != null && txid!.trim().isNotEmpty);
+  String get displayStatus {
+    if (isValidatingSettlement) {
+      return settlementStatus;
+    }
+    if (hasObservedOnchainPayment && isPending) {
+      return 'DETECTED';
+    }
+    return status;
+  }
+
   bool get isInternalPaymentRequest =>
       locked || (destinationHash != null && destinationHash!.isNotEmpty);
 
@@ -97,13 +115,15 @@ class PaymentLink extends Equatable {
         (data['netAmountBtc'] as num?)?.toDouble() ?? amountBtc;
 
     final rawStatus = data['status']?.toString() ?? 'pending';
+    final rawSettlementStatus =
+        data['settlementStatus']?.toString().toUpperCase();
     final normalizedStatus = _normalizeStatus(
       rawStatus,
       txid: data['txid']?.toString() ?? data['blockchainTxid']?.toString(),
+      settlementStatus: rawSettlementStatus,
     );
     final settlementStatus =
-        data['settlementStatus']?.toString().toUpperCase() ??
-            _settlementStatusFor(normalizedStatus);
+        rawSettlementStatus ?? _settlementStatusFor(normalizedStatus);
 
     return PaymentLink(
       id: data['id']?.toString() ??
@@ -166,6 +186,9 @@ class PaymentLink extends Equatable {
         data['terminal'],
         fallback: _terminalSettlementStatus(settlementStatus),
       ),
+      confirmations: (data['confirmations'] as num?)?.toInt() ??
+          (data['confirmationCount'] as num?)?.toInt() ??
+          0,
     );
   }
 
@@ -200,11 +223,17 @@ class PaymentLink extends Equatable {
         settlementStatus,
         settlementReference,
         terminal,
+        confirmations,
       ];
 
   /// Converte PaymentLink para Transaction para exibição no histórico unificado
   Transaction toTransaction() {
-    final bool isCompleted = status == 'completed' || status == 'paid';
+    final isOnchain = paymentRail.toUpperCase().contains('ONCHAIN') ||
+        (depositAddress.trim().isNotEmpty && !isInternalPaymentRequest);
+    final bool isCompleted = status == 'completed' ||
+        terminal ||
+        (!isOnchain && status == 'paid') ||
+        (isOnchain && status == 'paid' && confirmations >= 3);
     final bool isFailed = status == 'cancelled' || isExpired;
     final transactionDescription = isCancelled
         ? 'Link de pagamento cancelado'
@@ -222,12 +251,17 @@ class PaymentLink extends Equatable {
           ? TransactionStatus.confirmed
           : isFailed
               ? TransactionStatus.failed
-              : TransactionStatus.pending,
+              : hasObservedOnchainPayment
+                  ? TransactionStatus.confirming
+                  : TransactionStatus.pending,
       type: TransactionType.receive,
-      confirmations: isCompleted ? 6 : 0,
+      confirmations:
+          isCompleted ? (confirmations > 0 ? confirmations : 3) : confirmations,
       timestamp: createdAt ?? DateTime.now(),
       description: transactionDescription,
       isInternal: false,
+      blockchainTxid:
+          txid == null || txid!.trim().isEmpty ? null : txid!.trim(),
     );
   }
 
@@ -251,8 +285,23 @@ class PaymentLink extends Equatable {
     }
   }
 
-  static String _normalizeStatus(String status, {String? txid}) {
+  static String _normalizeStatus(
+    String status, {
+    String? txid,
+    String? settlementStatus,
+  }) {
     final normalized = status.trim().toUpperCase();
+    final hasTxid = txid != null && txid.trim().isNotEmpty;
+    if (settlementStatus == 'VALIDATING' ||
+        settlementStatus == 'QUORUM_SYNC' ||
+        settlementStatus == 'EXECUTING' ||
+        (hasTxid &&
+            (normalized == 'OPEN' ||
+                normalized == 'ACTIVE' ||
+                normalized == 'PENDING' ||
+                normalized == 'CREATED'))) {
+      return 'pending';
+    }
     switch (normalized) {
       case 'ACTIVE':
       case 'PENDING':
@@ -273,9 +322,6 @@ class PaymentLink extends Equatable {
       case 'FAILED':
         return 'failed';
       default:
-        if ((txid ?? '').trim().isNotEmpty) {
-          return 'paid';
-        }
         return normalized.toLowerCase();
     }
   }

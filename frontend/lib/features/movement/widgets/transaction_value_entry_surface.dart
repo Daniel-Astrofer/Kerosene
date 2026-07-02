@@ -302,17 +302,19 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
 
   String _displayAmountLabel() {
     final amount = MoneyDisplay.parseEditableInput(widget.amountInput);
-    return MoneyDisplay.format(
+    return MoneyDisplay.formatCompact(
       amount: amount,
       currency: widget.currency,
       withSymbol: false,
-      decimalPlaces: MoneyDisplay.decimalsFor(widget.currency),
+      maxDecimalPlaces: MoneyDisplay.decimalsFor(widget.currency),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final displayValue = '${widget.unitLabel}${_displayAmountLabel()}';
+    final amountLabel = _displayAmountLabel();
+    final amountKey = '${widget.unitLabel}$amountLabel';
+    final disableAnimations = MediaQuery.disableAnimationsOf(context);
 
     return Padding(
       padding: const EdgeInsets.fromLTRB(
@@ -363,22 +365,36 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
                     padding: const EdgeInsets.symmetric(
                       horizontal: AppSpacing.xs,
                     ),
-                    child: FittedBox(
-                      fit: BoxFit.scaleDown,
-                      alignment: Alignment.center,
-                      child: Text(
-                        displayValue,
-                        key: const ValueKey('movement-amount-display'),
-                        maxLines: 1,
-                        softWrap: false,
-                        textAlign: TextAlign.center,
-                        style: AppTypography.inter(
-                          color: _AmountEntryColors.text,
-                          fontSize: 72,
-                          fontWeight: FontWeight.w600,
-                          height: 1,
-                          letterSpacing: 3,
-                          fontFeatures: const [FontFeature.tabularFigures()],
+                    child: AnimatedSwitcher(
+                      duration: disableAnimations
+                          ? Duration.zero
+                          : KeroseneMotion.duration(
+                              context,
+                              KeroseneMotion.fast,
+                            ),
+                      switchInCurve: KeroseneMotion.standard,
+                      switchOutCurve: KeroseneMotion.exit,
+                      transitionBuilder: (child, animation) {
+                        return FadeTransition(
+                          opacity: animation,
+                          child: ScaleTransition(
+                            scale: Tween<double>(begin: 0.985, end: 1).animate(
+                              CurvedAnimation(
+                                parent: animation,
+                                curve: KeroseneMotion.standard,
+                              ),
+                            ),
+                            child: child,
+                          ),
+                        );
+                      },
+                      child: FittedBox(
+                        key: ValueKey(amountKey),
+                        fit: BoxFit.scaleDown,
+                        alignment: Alignment.center,
+                        child: _AmountEntryReadout(
+                          unitLabel: widget.unitLabel,
+                          amountLabel: amountLabel,
                         ),
                       ),
                     ),
@@ -413,6 +429,92 @@ class _AmountEntryDisplayState extends State<_AmountEntryDisplay> {
           ),
         ],
       ),
+    );
+  }
+}
+
+class _AmountEntryReadout extends StatelessWidget {
+  final String unitLabel;
+  final String amountLabel;
+
+  const _AmountEntryReadout({
+    required this.unitLabel,
+    required this.amountLabel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final parts = _AmountEntryParts.from(amountLabel);
+    final baseStyle = AppTypography.inter(
+      color: _AmountEntryColors.text,
+      fontSize: 72,
+      fontWeight: FontWeight.w600,
+      height: 1,
+      letterSpacing: 0,
+      fontFeatures: const [FontFeature.tabularFigures()],
+    );
+    final unitStyle = baseStyle.copyWith(
+      color: _AmountEntryColors.text.withValues(alpha: 0.72),
+      fontSize: 38,
+      fontWeight: FontWeight.w600,
+    );
+    final fractionStyle = baseStyle.copyWith(
+      color: _AmountEntryColors.muted.withValues(alpha: 0.72),
+      fontSize: 44,
+      fontWeight: FontWeight.w500,
+    );
+
+    return Text.rich(
+      TextSpan(
+        children: [
+          TextSpan(text: unitLabel, style: unitStyle),
+          const TextSpan(text: ' '),
+          TextSpan(text: parts.integer, style: baseStyle),
+          if (parts.fraction.isNotEmpty) ...[
+            TextSpan(text: parts.separator, style: fractionStyle),
+            TextSpan(text: parts.fraction, style: fractionStyle),
+          ],
+        ],
+      ),
+      key: const ValueKey('movement-amount-display'),
+      maxLines: 1,
+      softWrap: false,
+      textAlign: TextAlign.center,
+    );
+  }
+}
+
+class _AmountEntryParts {
+  final String integer;
+  final String separator;
+  final String fraction;
+
+  const _AmountEntryParts({
+    required this.integer,
+    required this.separator,
+    required this.fraction,
+  });
+
+  factory _AmountEntryParts.from(String value) {
+    final dot = value.lastIndexOf('.');
+    final comma = value.lastIndexOf(',');
+    final separatorIndex = dot > comma ? dot : comma;
+    if (separatorIndex < 0) {
+      return _AmountEntryParts(
+        integer: value.isEmpty ? '0' : value,
+        separator: '',
+        fraction: '',
+      );
+    }
+
+    final rawFraction = value.substring(separatorIndex + 1);
+    final trimmedFraction = rawFraction.replaceFirst(RegExp(r'0+$'), '');
+    return _AmountEntryParts(
+      integer: value.substring(0, separatorIndex).isEmpty
+          ? '0'
+          : value.substring(0, separatorIndex),
+      separator: trimmedFraction.isEmpty ? '' : value[separatorIndex],
+      fraction: trimmedFraction,
     );
   }
 }
